@@ -11,10 +11,11 @@
 		}
 	],
 	"settings": {
+		"files.eol": "\n",
 		"editor.formatOnSave": true,
 		"[json]": {
 			"editor.defaultFormatter": "esbenp.prettier-vscode"
-		}
+		},
 		"[javascript]": {
 			"editor.defaultFormatter": "esbenp.prettier-vscode",
 			"editor.codeActionsOnSave": {

@@ -17,11 +17,21 @@ module.exports = {
     'plugin:nuxt/recommended',
     'plugin:vue/vue3-recommended',
     'plugin:prettier/recommended',
+    'plugin:tailwindcss/recommended',
   ],
 
-  plugins: ['@typescript-eslint'],
+  plugins: ['@typescript-eslint', 'tailwindcss'],
 
   rules: {
     'vue/script-setup-no-uses-vars': 'off',
   },
+
+  overrides: [
+    {
+      files: ['pages/*.vue', 'layouts/*.vue'],
+      rules: {
+        'vue/multi-word-component-names': 'off',
+      },
+    },
+  ],
 }
