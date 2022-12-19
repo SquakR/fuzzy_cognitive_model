@@ -1,0 +1,37 @@
+{
+	"folders": [
+		{
+			"path": "api"
+		},
+		{
+			"path": "docs"
+		},
+		{
+			"path": "web"
+		}
+	],
+	"settings": {
+		"editor.formatOnSave": true,
+		"[json]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		}
+		"[javascript]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode",
+			"editor.codeActionsOnSave": {
+				"source.fixAll.eslint": true
+			}
+		},
+		"[typescript]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode",
+			"editor.codeActionsOnSave": {
+				"source.fixAll.eslint": true
+			}
+		},
+		"[vue]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode",
+			"editor.codeActionsOnSave": {
+				"source.fixAll.eslint": true
+			}
+		}
+	}
+}
