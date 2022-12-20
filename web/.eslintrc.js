@@ -33,5 +33,11 @@ module.exports = {
         'vue/multi-word-component-names': 'off',
       },
     },
+    {
+      files: ['tailwind.config.js'],
+      rules: {
+        '@typescript-eslint/no-var-requires': 'off',
+      },
+    },
   ],
 }
