@@ -37,9 +37,6 @@
         "source.fixAll.eslint": true
       }
     },
-    "cSpell.words": [
-      "dotenv",
-      "dotenvy"
-    ]
+    "cSpell.words": ["dotenv", "dotenvy", "openapi", "schemars"]
   }
 }

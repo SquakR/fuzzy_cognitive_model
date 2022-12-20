@@ -6,5 +6,5 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL UNIQUE,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
-    sir_name VARCHAR(255) NULL
+    patronymic VARCHAR(255) NULL
 )

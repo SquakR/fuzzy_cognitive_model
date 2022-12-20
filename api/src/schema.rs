@@ -8,6 +8,6 @@ diesel::table! {
         email -> Varchar,
         first_name -> Varchar,
         last_name -> Varchar,
-        sir_name -> Nullable<Varchar>,
+        patronymic -> Nullable<Varchar>,
     }
 }

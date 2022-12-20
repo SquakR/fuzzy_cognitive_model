@@ -1,7 +1,11 @@
 use diesel::result::Error as DieselError;
+use okapi::openapi3::Responses;
 use rocket::http::Status;
 use rocket::request::Request;
 use rocket::response::{self, Responder};
+use rocket_okapi::gen::OpenApiGenerator;
+use rocket_okapi::response::OpenApiResponderInner;
+use rocket_okapi::Result as RocketOkapiResult;
 
 pub struct QueryError {
     diesel_error: DieselError,
@@ -25,5 +29,11 @@ impl<'r> Responder<'r, 'static> for QueryError {
             DieselError::NotFound => Status::NotFound.respond_to(req),
             _ => Status::InternalServerError.respond_to(req),
         }
+    }
+}
+
+impl OpenApiResponderInner for QueryError {
+    fn responses(gen: &mut OpenApiGenerator) -> RocketOkapiResult<Responses> {
+        <Status>::responses(gen)
     }
 }
