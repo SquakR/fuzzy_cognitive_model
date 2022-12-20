@@ -1,0 +1,45 @@
+{
+  "folders": [
+    {
+      "path": "api"
+    },
+    {
+      "path": "docs"
+    },
+    {
+      "path": "web"
+    }
+  ],
+  "settings": {
+    "files.eol": "\n",
+    "editor.formatOnSave": true,
+    "[rust]": {
+      "editor.defaultFormatter": "rust-lang.rust-analyzer"
+    },
+    "[json]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[javascript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+      }
+    },
+    "[typescript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+      }
+    },
+    "[vue]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+      }
+    },
+    "cSpell.words": [
+      "dotenv",
+      "dotenvy"
+    ]
+  }
+}
