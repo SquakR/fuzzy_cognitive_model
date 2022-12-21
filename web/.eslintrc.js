@@ -17,10 +17,7 @@ module.exports = {
     'plugin:nuxt/recommended',
     'plugin:vue/vue3-recommended',
     'plugin:prettier/recommended',
-    'plugin:tailwindcss/recommended',
   ],
-
-  plugins: ['@typescript-eslint', 'tailwindcss'],
 
   rules: {
     'vue/script-setup-no-uses-vars': 'off',
@@ -31,12 +28,6 @@ module.exports = {
       files: ['pages/*.vue', 'layouts/*.vue'],
       rules: {
         'vue/multi-word-component-names': 'off',
-      },
-    },
-    {
-      files: ['tailwind.config.js'],
-      rules: {
-        '@typescript-eslint/no-var-requires': 'off',
       },
     },
   ],

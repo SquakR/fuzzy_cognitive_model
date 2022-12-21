@@ -1,9 +1,11 @@
 <template>
-  <footer
-    class="flex h-20 w-full flex-col items-center justify-center bg-emerald-500 text-orange-50"
-  >
-    <div>Copyright &#169; Orlov Artem</div>
-    <div>Version: {{ version }}</div>
+  <footer class="footer">
+    <div class="content has-text-centered">
+      <p>
+        Copyright &#169; Orlov Artem <br />
+        Version: {{ version }}
+      </p>
+    </div>
   </footer>
 </template>
 
