@@ -13,8 +13,11 @@
   "settings": {
     "files.eol": "\n",
     "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "cSpell.language": "en,ru",
     "[rust]": {
-      "editor.defaultFormatter": "rust-lang.rust-analyzer"
+      "editor.defaultFormatter": "rust-lang.rust-analyzer",
+      "editor.tabSize": 4
     },
     "[json]": {
       "editor.defaultFormatter": "esbenp.prettier-vscode"
@@ -37,6 +40,12 @@
         "source.fixAll.eslint": true
       }
     },
-    "cSpell.words": ["dotenv", "dotenvy", "openapi", "schemars"]
+    "cSpell.words": [
+      "composables",
+      "dotenv",
+      "dotenvy",
+      "openapi",
+      "schemars"
+    ]
   }
 }
