@@ -4,11 +4,11 @@
       "path": "api"
     },
     {
-      "path": "docs"
+      "path": "web"
     },
     {
-      "path": "web"
-    }
+      "path": "docs"
+    },
   ],
   "settings": {
     "files.eol": "\n",
@@ -40,12 +40,18 @@
         "source.fixAll.eslint": true
       }
     },
-    "cSpell.words": [
-      "composables",
-      "dotenv",
-      "dotenvy",
-      "openapi",
-      "schemars"
+    "cSpell.words": ["composables", "dotenv", "dotenvy", "openapi", "schemars"],
+    "sqltools.connections": [
+      {
+        "previewLimit": 50,
+        "server": "localhost",
+        "port": 5433,
+        "driver": "PostgreSQL",
+        "name": "fcm",
+        "database": "fcm",
+        "username": "postgres",
+        "password": "postgres"
+      }
     ]
   }
 }
