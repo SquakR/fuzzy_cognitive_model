@@ -1,22 +1,35 @@
 <template>
-  <div class="field">
+  <div class="field base-text-field__field">
     <label class="label">{{ label }}</label>
     <div class="control">
-      <input
+      <Field
+        v-slot="{ field, meta: { touched }, errors }"
         v-model="value"
-        class="input"
-        type="text"
-        :placeholder="placeholder"
-      />
+        :name="name"
+      >
+        <input
+          v-bind="field"
+          :placeholder="placeholder"
+          class="input"
+          :class="{
+            'is-danger': errors.length,
+            'is-success': touched && !errors.length,
+          }"
+        />
+      </Field>
     </div>
+    <ErrorMessage :name="name" class="help is-danger" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { Field, ErrorMessage } from 'vee-validate'
+
 export interface Props {
+  modelValue: string
+  name: string
   label?: string
   placeholder?: string
-  modelValue: string
 }
 export interface Emits {
   (e: 'update:modelValue', value: string): void
@@ -34,3 +47,8 @@ const value = computed({
   },
 })
 </script>
+
+<style lang="sass">
+.base-text-field__field
+  height: 94px
+</style>

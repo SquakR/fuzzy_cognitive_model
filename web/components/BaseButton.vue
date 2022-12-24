@@ -1,5 +1,10 @@
 <template>
-  <component v-bind="$attrs" :is="tag" :class="computedClass" :type="type"
+  <component
+    v-bind="$attrs"
+    :is="tag"
+    :class="computedClass"
+    :type="type"
+    :disabled="disabled"
     ><slot></slot
   ></component>
 </template>
@@ -15,6 +20,7 @@ export interface Props {
   tag?: string
   color?: string
   type?: string
+  disabled?: boolean
   loading?: boolean
   class?: string | Record<string, string> | string[] | null
 }
@@ -22,6 +28,7 @@ const props = withDefaults(defineProps<Props>(), {
   tag: 'button',
   color: 'primary',
   type: 'button',
+  disabled: false,
   loading: false,
   class: null,
 })
