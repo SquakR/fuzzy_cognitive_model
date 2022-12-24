@@ -40,7 +40,22 @@
         "source.fixAll.eslint": true
       }
     },
-    "cSpell.words": ["composables", "dotenv", "dotenvy", "openapi", "schemars"],
+    "cSpell.words": [
+      "Artem",
+      "bulma",
+      "composables",
+      "dotenv",
+      "dotenvy",
+      "fontawesome",
+      "fortawesome",
+      "hoverable",
+      "intlify",
+      "openapi",
+      "Orlov",
+      "schemars",
+      "unplugin",
+      "vueuse"
+    ],
     "sqltools.connections": [
       {
         "previewLimit": 50,

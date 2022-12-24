@@ -21,6 +21,7 @@ module.exports = {
 
   rules: {
     'vue/script-setup-no-uses-vars': 'off',
+    'vue/no-v-html': 'off',
   },
 
   overrides: [
