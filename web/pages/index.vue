@@ -3,7 +3,6 @@
     class="mt-2"
     :width="600"
     :title="t('userView')"
-    :loading="userLoading"
     :submit-text="t('fetchUser')"
     :validation-schema="validationSchema"
     :initial-values="initialValues"
@@ -39,7 +38,7 @@ const initialValues = {
 }
 
 const userId = ref('')
-const { pending: userLoading, data: user, execute: fetchUser } = useAPIUser()
+const { data: user, execute: fetchUser } = useAPIUser()
 const onUserSubmit = async (values: Record<string, unknown>) => {
   await fetchUser(values as UseAPIUserVariables)
 }

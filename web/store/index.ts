@@ -1,1 +1,1 @@
-export * from './global-messages'
+export * from './global-notification'
