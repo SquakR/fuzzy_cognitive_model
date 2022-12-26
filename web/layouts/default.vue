@@ -7,6 +7,7 @@
       </div>
     </main>
     <TheFooter />
+    <TheGlobalMessage />
   </div>
 </template>
 

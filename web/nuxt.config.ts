@@ -14,5 +14,5 @@ export default defineNuxtConfig({
       API_HTTP_BASE_URL: process.env.API_HTTP_BASE_URL,
     },
   },
-  modules: ['@vueuse/nuxt'],
+  modules: ['@vueuse/nuxt', '@pinia/nuxt'],
 })

@@ -52,6 +52,7 @@
       "intlify",
       "openapi",
       "Orlov",
+      "pinia",
       "schemars",
       "unplugin",
       "vueuse"
