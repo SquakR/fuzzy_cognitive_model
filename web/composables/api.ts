@@ -1,5 +1,6 @@
 import { User } from '~~/types'
 import { FetchError } from 'ofetch'
+import { useGlobalMessagesStore } from '~~/store/global-messages'
 
 export type UseAPIUserVariables = {
   userId: number
@@ -8,7 +9,7 @@ export type UseAPIUserVariables = {
 export const useAPIUser = () => {
   const pending = ref(false)
   const data = ref<User | null>(null)
-  const fetchResult = useFetchResult({ isGlobal: true })
+  const globalMessageStore = useGlobalMessagesStore()
   return {
     pending,
     data,
@@ -18,7 +19,7 @@ export const useAPIUser = () => {
         data.value = await localFetch(`/user/${userId}`)
       } catch (e) {
         if (e instanceof FetchError) {
-          fetchResult.updateResult({ success: null, fetchError: e })
+          globalMessageStore.addFetchErrorMessage(e, Infinity)
         } else {
           throw e
         }

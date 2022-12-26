@@ -1,5 +1,5 @@
 <template>
-  <div v-show="currentFetchResult" class="box the-global-message__box">
+  <div v-show="currentMessage" class="box the-global-message__box">
     <div class="notification" :class="notificationClasses">
       <button class="delete" @click="close" />
       {{ message }}
@@ -9,40 +9,40 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { useFetchResultStore } from '~~/store'
+import { useGlobalMessagesStore } from '~~/store'
 
 const { t } = useI18n()
 
-const fetchResultStore = useFetchResultStore()
+const globalMessagesStore = useGlobalMessagesStore()
 
-const currentFetchResultIndex = ref(0)
-const currentFetchResult = computed(() =>
-  currentFetchResultIndex.value < fetchResultStore.activeFetchResults.length
-    ? fetchResultStore.activeFetchResults[currentFetchResultIndex.value]
+const currentMessageIndex = ref(0)
+const currentMessage = computed(() =>
+  currentMessageIndex.value < globalMessagesStore.messages.length
+    ? globalMessagesStore.messages[currentMessageIndex.value]
     : null
 )
 
 const notificationClasses = computed(() => ({
-  'is-success': currentFetchResult.value?.result.success,
-  'is-danger': currentFetchResult.value?.result.fetchError,
+  'is-success': currentMessage.value?.type === 'success',
+  'is-danger': currentMessage.value?.type === 'fetchError',
 }))
 
 const message = computed(() => {
-  if (!currentFetchResult.value) {
+  if (!currentMessage.value) {
     return ''
   }
-  if (currentFetchResult.value.result.success) {
-    return t(currentFetchResult.value.result.success)
+  if (currentMessage.value.type === 'success') {
+    return t(currentMessage.value.message)
   }
-  if (currentFetchResult.value.result.fetchError) {
-    return currentFetchResult.value.result.fetchError.message
+  if (currentMessage.value.type === 'fetchError') {
+    return currentMessage.value.message
   }
   return ''
 })
 
 const close = () => {
-  if (currentFetchResult.value) {
-    currentFetchResult.value.clearResult()
+  if (currentMessage.value) {
+    globalMessagesStore.deleteMessage(currentMessage.value.id)
   }
 }
 </script>

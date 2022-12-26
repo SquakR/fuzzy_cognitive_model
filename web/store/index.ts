@@ -1,1 +1,1 @@
-export * from './fetch-result'
+export * from './global-messages'
