@@ -7,7 +7,7 @@ diesel::table! {
         password -> Varchar,
         email -> Varchar,
         first_name -> Varchar,
+        second_name -> Nullable<Varchar>,
         last_name -> Varchar,
-        patronymic -> Nullable<Varchar>,
     }
 }

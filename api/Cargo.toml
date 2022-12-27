@@ -15,3 +15,5 @@ schemars = "0.8.11"
 okapi = { version = "0.7.0-rc.1" }
 rocket_okapi = { version = "0.8.0-rc.2", features = ["swagger"] }
 rocket_cors = { git = "https://github.com/lawliet89/rocket_cors", branch = "master" }
+argon2 = "0.4.1"
+rand_core = { version = "0.6.4", features = ["std"] }

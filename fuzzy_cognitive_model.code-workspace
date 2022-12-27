@@ -8,7 +8,7 @@
     },
     {
       "path": "docs"
-    },
+    }
   ],
   "settings": {
     "files.eol": "\n",
@@ -48,6 +48,7 @@
       "dotenvy",
       "fontawesome",
       "fortawesome",
+      "Hasher",
       "hoverable",
       "intlify",
       "openapi",

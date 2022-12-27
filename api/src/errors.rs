@@ -3,25 +3,12 @@ use okapi::openapi3::Responses;
 use rocket::http::Status;
 use rocket::request::Request;
 use rocket::response::{self, Responder};
-use rocket::serde::json::Json;
-use rocket::serde::Serialize;
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::response::OpenApiResponderInner;
-use rocket_okapi::JsonSchema;
 use rocket_okapi::Result as RocketOkapiResult;
 
-/// Error in the business logic of the application
-#[derive(Serialize, JsonSchema)]
-pub struct BusinessLogicError {
-    /// Type of business logic error
-    #[serde(rename = "type")]
-    r#type: String,
-    /// Message of business logic error
-    message: String,
-}
-
 pub enum AppError {
-    BusinessLogicError(BusinessLogicError),
+    ValidationError(String),
     DieselError(DieselError),
 }
 
@@ -40,8 +27,10 @@ impl AppError {
 impl<'r> Responder<'r, 'static> for AppError {
     fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
         match &self {
-            AppError::BusinessLogicError(business_logic_error) => {
-                Json(business_logic_error).respond_to(req)
+            AppError::ValidationError(validation_error) => {
+                let mut response = validation_error.to_owned().respond_to(req)?;
+                response.set_status(Status::BadRequest);
+                return Ok(response);
             }
             AppError::DieselError(diesel_error) => match diesel_error {
                 DieselError::NotFound => Status::NotFound.respond_to(req),
@@ -53,7 +42,7 @@ impl<'r> Responder<'r, 'static> for AppError {
 
 impl OpenApiResponderInner for AppError {
     fn responses(gen: &mut OpenApiGenerator) -> RocketOkapiResult<Responses> {
-        let ok_responses = <Json<BusinessLogicError>>::responses(gen)?;
+        let ok_responses = <String>::responses(gen)?;
         let err_responses = <Status>::responses(gen)?;
         rocket_okapi::util::produce_any_responses(ok_responses, err_responses)
     }
