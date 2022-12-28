@@ -1,7 +1,7 @@
 use crate::errors::AppError;
 use crate::models::{Session, User};
-use crate::schema::sessions;
 use crate::schema::users;
+use crate::services::session_services;
 use crate::types::{Credentials, UserIn};
 use crate::utils;
 use argon2::{password_hash::PasswordHash, Argon2, PasswordHasher, PasswordVerifier};
@@ -47,17 +47,33 @@ pub fn create_user(connection: &mut PgConnection, user_in: UserIn) -> Result<Use
     )
 }
 
-pub fn get_user(connection: &mut PgConnection, user_id: i32) -> Result<User, AppError> {
+pub fn find_user_by_id(connection: &mut PgConnection, user_id: i32) -> Result<User, AppError> {
     AppError::update_result(users::table.find(user_id).first::<User>(connection))
+}
+
+pub fn find_user_by_username(
+    connection: &mut PgConnection,
+    username: &str,
+) -> Result<User, AppError> {
+    AppError::update_result(
+        users::table
+            .filter(users::username.eq(username))
+            .first::<User>(connection),
+    )
+}
+
+pub fn find_user_by_session(connection: &mut PgConnection, session: &Session) -> User {
+    users::table
+        .filter(users::id.eq(session.user_id))
+        .first::<User>(connection)
+        .unwrap()
 }
 
 pub fn sign_in(
     connection: &mut PgConnection,
     credentials: Credentials,
 ) -> Result<Session, AppError> {
-    let user_result = users::table
-        .filter(users::username.eq(&credentials.username))
-        .first::<User>(connection);
+    let user_result = find_user_by_username(connection, &credentials.username);
     let user = match user_result {
         Ok(user) => user,
         Err(_) => {
@@ -71,12 +87,7 @@ pub fn sign_in(
             "Incorrect username or password",
         )));
     }
-    let session = AppError::update_result(
-        diesel::insert_into(sessions::table)
-            .values(sessions::user_id.eq(user.id))
-            .get_result::<Session>(connection),
-    )?;
-    return Ok(session);
+    session_services::create_session(connection, user.id)
 }
 
 pub fn hash_password(password: &str) -> String {

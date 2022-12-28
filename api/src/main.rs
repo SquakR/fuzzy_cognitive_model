@@ -22,6 +22,22 @@ fn create_user(user_in: Json<UserIn>) -> Result<Json<User>, AppError> {
     Ok(Json(user))
 }
 
+/// Get an user by id
+#[openapi(tag = "users")]
+#[get("/users/<user_id>")]
+fn get_user(user_id: i32) -> Result<Json<User>, AppError> {
+    let connection = &mut db::establish_connection();
+    let user = users_services::find_user_by_id(connection, user_id)?;
+    Ok(Json(user))
+}
+
+/// Get current user
+#[openapi(tag = "users")]
+#[get("/me")]
+fn get_me(user: User) -> Json<User> {
+    Json(user)
+}
+
 /// Create new session
 #[openapi(tag = "users")]
 #[post("/sign_in", format = "json", data = "<credentials>")]
@@ -34,15 +50,6 @@ fn sign_in(credentials: Json<Credentials>, cookies: &CookieJar<'_>) -> Result<()
             .finish(),
     );
     Ok(())
-}
-
-/// Get an user by id
-#[openapi(tag = "users")]
-#[get("/users/<user_id>")]
-fn get_user(user_id: i32) -> Result<Json<User>, AppError> {
-    let connection = &mut db::establish_connection();
-    let user = users_services::get_user(connection, user_id)?;
-    Ok(Json(user))
 }
 
 fn get_docs() -> SwaggerUIConfig {
@@ -71,7 +78,7 @@ fn rocket() -> _ {
     rocket::custom(figment)
         .mount(
             "/api/v1",
-            openapi_get_routes![create_user, sign_in, get_user],
+            openapi_get_routes![create_user, get_user, get_me, sign_in],
         )
         .mount("/api/v1/docs", make_swagger_ui(&get_docs()))
         .attach(cors)
