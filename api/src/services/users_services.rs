@@ -1,11 +1,13 @@
 use crate::errors::AppError;
-use crate::models::{User, UserIn};
+use crate::models::{Session, User};
+use crate::schema::sessions;
 use crate::schema::users;
+use crate::types::{Credentials, UserIn};
+use crate::utils;
 use argon2::{password_hash::PasswordHash, Argon2, PasswordHasher, PasswordVerifier};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
-use std::env;
 
 pub fn create_user(connection: &mut PgConnection, user_in: UserIn) -> Result<User, AppError> {
     match users::table
@@ -49,13 +51,12 @@ pub fn get_user(connection: &mut PgConnection, user_id: i32) -> Result<User, App
     AppError::update_result(users::table.find(user_id).first::<User>(connection))
 }
 
-pub fn authenticate(
+pub fn sign_in(
     connection: &mut PgConnection,
-    username: &str,
-    password: &str,
-) -> Result<User, AppError> {
+    credentials: Credentials,
+) -> Result<Session, AppError> {
     let user_result = users::table
-        .filter(users::username.eq(username))
+        .filter(users::username.eq(&credentials.username))
         .first::<User>(connection);
     let user = match user_result {
         Ok(user) => user,
@@ -65,16 +66,21 @@ pub fn authenticate(
             )))
         }
     };
-    if verify_password(password, &user.password) {
+    if !verify_password(&credentials.password, &user.password) {
         return Err(AppError::ValidationError(String::from(
             "Incorrect username or password",
         )));
     }
-    return Ok(user);
+    let session = AppError::update_result(
+        diesel::insert_into(sessions::table)
+            .values(sessions::user_id.eq(user.id))
+            .get_result::<Session>(connection),
+    )?;
+    return Ok(session);
 }
 
 pub fn hash_password(password: &str) -> String {
-    let salt = env::var("PASSWORD_SALT").expect("PASSWORD_SALT must be set");
+    let salt = utils::get_env("PASSWORD_SALT");
     Argon2::default()
         .hash_password(password.as_bytes(), &salt)
         .unwrap()
