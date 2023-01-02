@@ -8,6 +8,7 @@ use rocket_okapi::response::OpenApiResponderInner;
 use rocket_okapi::Result as RocketOkapiResult;
 
 pub enum AppError {
+    BadRequestError,
     ValidationError(String),
     DieselError(DieselError),
 }
@@ -27,6 +28,7 @@ impl AppError {
 impl<'r> Responder<'r, 'static> for AppError {
     fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
         match &self {
+            AppError::BadRequestError => Status::BadRequest.respond_to(req),
             AppError::ValidationError(validation_error) => {
                 let mut response = validation_error.to_owned().respond_to(req)?;
                 response.set_status(Status::BadRequest);

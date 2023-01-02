@@ -90,6 +90,14 @@ pub fn sign_in(
     session_services::create_session(connection, user.id)
 }
 
+pub fn sign_out(
+    connection: &mut PgConnection,
+    user: &User,
+    session_id: i32,
+) -> Result<Session, AppError> {
+    session_services::deactivate(connection, user, session_id)
+}
+
 pub fn hash_password(password: &str) -> String {
     let salt = utils::get_env("PASSWORD_SALT");
     Argon2::default()

@@ -1,13 +1,14 @@
 #[macro_use]
 extern crate rocket;
 use dotenvy::dotenv;
+use fuzzy_cognitive_model::cookies;
 use fuzzy_cognitive_model::db;
 use fuzzy_cognitive_model::errors::AppError;
 use fuzzy_cognitive_model::models::User;
 use fuzzy_cognitive_model::services::users_services;
 use fuzzy_cognitive_model::types::{Credentials, UserIn};
 use fuzzy_cognitive_model::utils;
-use rocket::http::{Cookie, CookieJar};
+use rocket::http::CookieJar;
 use rocket::serde::json::Json;
 use rocket_cors::AllowedOrigins;
 use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
@@ -41,14 +42,27 @@ fn get_me(user: User) -> Json<User> {
 /// Create new session
 #[openapi(tag = "users")]
 #[post("/sign_in", format = "json", data = "<credentials>")]
-fn sign_in(credentials: Json<Credentials>, cookies: &CookieJar<'_>) -> Result<(), AppError> {
+fn sign_in(credentials: Json<Credentials>, cookies_jar: &CookieJar<'_>) -> Result<(), AppError> {
+    if cookies::has_session_id(cookies_jar) {
+        return Err(AppError::BadRequestError);
+    }
     let connection = &mut db::establish_connection();
     let session = users_services::sign_in(connection, credentials.into_inner())?;
-    cookies.add_private(
-        Cookie::build("session_id", session.id.to_string())
-            .http_only(true)
-            .finish(),
-    );
+    cookies::add_session_id(cookies_jar, session.id);
+    Ok(())
+}
+
+/// Deactivate current session
+#[openapi(tag = "users")]
+#[post("/sign_out")]
+fn sign_out(user: User, cookies_jar: &CookieJar<'_>) -> Result<(), AppError> {
+    let session_id = match cookies::get_session_id(cookies_jar) {
+        Some(session_id) => session_id,
+        None => return Err(AppError::BadRequestError),
+    };
+    let connection = &mut db::establish_connection();
+    users_services::sign_out(connection, &user, session_id)?;
+    cookies::remove_session_id(cookies_jar);
     Ok(())
 }
 
@@ -78,7 +92,7 @@ fn rocket() -> _ {
     rocket::custom(figment)
         .mount(
             "/api/v1",
-            openapi_get_routes![create_user, get_user, get_me, sign_in],
+            openapi_get_routes![create_user, get_user, get_me, sign_in, sign_out],
         )
         .mount("/api/v1/docs", make_swagger_ui(&get_docs()))
         .attach(cors)

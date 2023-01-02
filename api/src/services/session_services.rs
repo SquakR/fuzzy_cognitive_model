@@ -1,5 +1,5 @@
 use crate::errors::AppError;
-use crate::models::Session;
+use crate::models::{Session, User};
 use crate::schema::sessions;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
@@ -20,5 +20,38 @@ pub fn find_session_by_id(
         sessions::table
             .find(session_id)
             .first::<Session>(connection),
+    )
+}
+
+pub fn deactivate_all(
+    connection: &mut PgConnection,
+    user: &User,
+) -> Result<Vec<Session>, AppError> {
+    AppError::update_result(
+        diesel::update(sessions::table)
+            .filter(sessions::user_id.eq(user.id))
+            .filter(sessions::is_active.eq(true))
+            .set(sessions::is_active.eq(false))
+            .get_results::<Session>(connection),
+    )
+}
+
+pub fn deactivate(
+    connection: &mut PgConnection,
+    user: &User,
+    session_id: i32,
+) -> Result<Session, AppError> {
+    let session = find_session_by_id(connection, session_id)?;
+    if !session.is_active {
+        deactivate_all(connection, user)?;
+        return Err(AppError::BadRequestError);
+    }
+    if session.user_id != user.id {
+        return Err(AppError::BadRequestError);
+    }
+    AppError::update_result(
+        diesel::update(sessions::table.filter(sessions::id.eq(session_id)))
+            .set(sessions::is_active.eq(false))
+            .get_result::<Session>(connection),
     )
 }
