@@ -1,5 +1,6 @@
 use crate::errors::AppError;
 use path_slash::PathBufExt as _;
+use rocket::fs::NamedFile;
 use rocket::fs::TempFile;
 use rocket::http::MediaType;
 use std::env;
@@ -20,10 +21,12 @@ pub struct SubStorage {
 
 impl Storage {
     pub async fn add_user_avatar(&self, avatar_file: TempFile<'_>) -> Result<PathBuf, AppError> {
-        return self
-            .user_avatars_storage
+        self.user_avatars_storage
             .add_file(self.path.as_path(), avatar_file)
-            .await;
+            .await
+    }
+    pub async fn get_user_avatar(&self, avatar_path: PathBuf) -> Result<NamedFile, AppError> {
+        self.user_avatars_storage.get_file(avatar_path).await
     }
     pub fn new() -> Storage {
         let storage_path = env::current_dir().unwrap().join("storage");
@@ -46,13 +49,13 @@ impl SubStorage {
     pub async fn add_file(
         &self,
         storage_path: &Path,
-        mut avatar_file: TempFile<'_>,
+        mut file: TempFile<'_>,
     ) -> Result<PathBuf, AppError> {
-        let name = match avatar_file.name() {
+        let name = match file.name() {
             Some(name) => name,
             None => return Err(AppError::InternalServerError),
         };
-        let media_type = match avatar_file.content_type() {
+        let media_type = match file.content_type() {
             Some(ct) => ct.media_type(),
             None => {
                 return Err(AppError::ValidationError(format!(
@@ -80,7 +83,7 @@ impl SubStorage {
         let full_path = self
             .path
             .join(format!("{}_{}.{}", name, Uuid::new_v4(), extension));
-        if let Err(_) = avatar_file.persist_to(&full_path).await {
+        if let Err(_) = file.persist_to(&full_path).await {
             return Err(AppError::InternalServerError);
         }
         Ok(PathBuf::from(format!(
@@ -90,6 +93,12 @@ impl SubStorage {
                 .to_slash()
                 .unwrap(),
         )))
+    }
+    pub async fn get_file(&self, path: PathBuf) -> Result<NamedFile, AppError> {
+        match NamedFile::open(self.path.join(path)).await {
+            Ok(named_file) => Ok(named_file),
+            Err(_) => Err(AppError::NotFoundError),
+        }
     }
     fn new(name: String, storage_path: &Path, media_types: Vec<MediaType>) -> SubStorage {
         let path = storage_path.join(&name);

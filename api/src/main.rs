@@ -1,5 +1,7 @@
 #[macro_use]
 extern crate rocket;
+use std::path::PathBuf;
+
 use dotenvy::dotenv;
 use fuzzy_cognitive_model::cookies;
 use fuzzy_cognitive_model::db;
@@ -10,6 +12,7 @@ use fuzzy_cognitive_model::storage::Storage;
 use fuzzy_cognitive_model::types::{Credentials, UserIn};
 use fuzzy_cognitive_model::utils;
 use rocket::form::Form;
+use rocket::fs::NamedFile;
 use rocket::http::CookieJar;
 use rocket::serde::json::Json;
 use rocket::State;
@@ -73,6 +76,17 @@ fn sign_out(user: User, cookies_jar: &CookieJar<'_>) -> Result<(), AppError> {
     Ok(())
 }
 
+/// Get user avatar
+#[openapi(tag = "users")]
+#[get("/storage/user_avatars/<path..>")]
+async fn get_user_avatar(
+    path: PathBuf,
+    _user: User,
+    storage: &State<Storage>,
+) -> Result<NamedFile, AppError> {
+    storage.get_user_avatar(path).await
+}
+
 fn get_docs() -> SwaggerUIConfig {
     SwaggerUIConfig {
         url: String::from("/api/v1/openapi.json"),
@@ -82,11 +96,24 @@ fn get_docs() -> SwaggerUIConfig {
 
 fn get_routes() -> Vec<rocket::Route> {
     let settings = OpenApiSettings::new();
-    let mut spec = openapi_spec![create_user, get_user, get_me, sign_in, sign_out](&settings);
+    let mut spec = openapi_spec![
+        create_user,
+        get_user,
+        get_me,
+        sign_in,
+        sign_out,
+        get_user_avatar
+    ](&settings);
     spec.info.title = String::from("Fuzzy Cognitive Model");
     utils::patch_wrong_content_type(&mut spec, "/user");
-    let routes =
-        openapi_routes![create_user, get_user, get_me, sign_in, sign_out](Some(spec), &settings);
+    let routes = openapi_routes![
+        create_user,
+        get_user,
+        get_me,
+        sign_in,
+        sign_out,
+        get_user_avatar
+    ](Some(spec), &settings);
     return routes;
 }
 
