@@ -24,6 +24,8 @@ pub struct User {
     pub second_name: Option<String>,
     /// User last name
     pub last_name: String,
+    /// User avatar
+    pub avatar: Option<String>,
 }
 
 /// User session

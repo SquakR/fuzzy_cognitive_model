@@ -2,6 +2,7 @@ use crate::errors::AppError;
 use crate::models::{Session, User};
 use crate::schema::users;
 use crate::services::session_services;
+use crate::storage::Storage;
 use crate::types::{Credentials, UserIn};
 use crate::utils;
 use argon2::{password_hash::PasswordHash, Argon2, PasswordHasher, PasswordVerifier};
@@ -9,7 +10,11 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 
-pub fn create_user(connection: &mut PgConnection, user_in: UserIn) -> Result<User, AppError> {
+pub async fn create_user(
+    connection: &mut PgConnection,
+    storage: &Storage,
+    mut user_in: UserIn<'_>,
+) -> Result<User, AppError> {
     match users::table
         .filter(users::username.eq(&user_in.username))
         .or_filter(users::email.eq(&user_in.email))
@@ -33,6 +38,10 @@ pub fn create_user(connection: &mut PgConnection, user_in: UserIn) -> Result<Use
             }
         }
     }
+    let mut avatar = None;
+    if let Some(avatar_file) = user_in.avatar.take() {
+        avatar = Some(storage.add_user_avatar(avatar_file).await?);
+    }
     AppError::update_result(
         diesel::insert_into(users::table)
             .values((
@@ -42,6 +51,7 @@ pub fn create_user(connection: &mut PgConnection, user_in: UserIn) -> Result<Use
                 users::first_name.eq(user_in.first_name),
                 users::second_name.eq(user_in.second_name),
                 users::last_name.eq(user_in.last_name),
+                users::avatar.eq(avatar.and_then(|p| Some(p.to_str().unwrap().to_owned()))),
             ))
             .get_result::<User>(connection),
     )
@@ -78,13 +88,13 @@ pub fn sign_in(
         Ok(user) => user,
         Err(_) => {
             return Err(AppError::ValidationError(String::from(
-                "Incorrect username or password",
+                "Incorrect username or password.",
             )))
         }
     };
     if !verify_password(&credentials.password, &user.password) {
         return Err(AppError::ValidationError(String::from(
-            "Incorrect username or password",
+            "Incorrect username or password.",
         )));
     }
     session_services::create_session(connection, user.id)

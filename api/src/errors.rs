@@ -11,6 +11,7 @@ pub enum AppError {
     BadRequestError,
     ValidationError(String),
     DieselError(DieselError),
+    InternalServerError,
 }
 
 impl AppError {
@@ -38,6 +39,7 @@ impl<'r> Responder<'r, 'static> for AppError {
                 DieselError::NotFound => Status::NotFound.respond_to(req),
                 _ => Status::InternalServerError.respond_to(req),
             },
+            AppError::InternalServerError => Status::InternalServerError.respond_to(req),
         }
     }
 }

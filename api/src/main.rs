@@ -6,20 +6,27 @@ use fuzzy_cognitive_model::db;
 use fuzzy_cognitive_model::errors::AppError;
 use fuzzy_cognitive_model::models::User;
 use fuzzy_cognitive_model::services::users_services;
+use fuzzy_cognitive_model::storage::Storage;
 use fuzzy_cognitive_model::types::{Credentials, UserIn};
 use fuzzy_cognitive_model::utils;
+use rocket::form::Form;
 use rocket::http::CookieJar;
 use rocket::serde::json::Json;
+use rocket::State;
 use rocket_cors::AllowedOrigins;
+use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
-use rocket_okapi::{openapi, openapi_get_routes};
+use rocket_okapi::{openapi, openapi_routes, openapi_spec};
 
 /// Create new user
 #[openapi(tag = "users")]
-#[post("/user", format = "json", data = "<user_in>")]
-fn create_user(user_in: Json<UserIn>) -> Result<Json<User>, AppError> {
+#[post("/user", data = "<user_in>")]
+async fn create_user(
+    user_in: Form<UserIn<'_>>,
+    storage: &State<Storage>,
+) -> Result<Json<User>, AppError> {
     let connection = &mut db::establish_connection();
-    let user = users_services::create_user(connection, user_in.into_inner())?;
+    let user = users_services::create_user(connection, storage, user_in.into_inner()).await?;
     Ok(Json(user))
 }
 
@@ -73,6 +80,16 @@ fn get_docs() -> SwaggerUIConfig {
     }
 }
 
+fn get_routes() -> Vec<rocket::Route> {
+    let settings = OpenApiSettings::new();
+    let mut spec = openapi_spec![create_user, get_user, get_me, sign_in, sign_out](&settings);
+    spec.info.title = String::from("Fuzzy Cognitive Model");
+    utils::patch_wrong_content_type(&mut spec, "/user");
+    let routes =
+        openapi_routes![create_user, get_user, get_me, sign_in, sign_out](Some(spec), &settings);
+    return routes;
+}
+
 #[launch]
 fn rocket() -> _ {
     dotenv().unwrap();
@@ -89,11 +106,11 @@ fn rocket() -> _ {
 
     let figment = rocket::Config::figment().merge(("secret_key", utils::get_env("SECRET_KEY")));
 
+    let storage = Storage::new();
+
     rocket::custom(figment)
-        .mount(
-            "/api/v1",
-            openapi_get_routes![create_user, get_user, get_me, sign_in, sign_out],
-        )
+        .manage(storage)
+        .mount("/api/v1", get_routes())
         .mount("/api/v1/docs", make_swagger_ui(&get_docs()))
         .attach(cors)
 }
