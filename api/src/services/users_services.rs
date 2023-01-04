@@ -105,7 +105,7 @@ pub fn sign_out(
     user: &User,
     session_id: i32,
 ) -> Result<Session, AppError> {
-    session_services::deactivate(connection, user, session_id)
+    session_services::deactivate_user_session(connection, user, session_id)
 }
 
 pub fn hash_password(password: &str) -> String {

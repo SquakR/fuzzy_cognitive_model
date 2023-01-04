@@ -8,10 +8,10 @@ edition = "2021"
 [dependencies]
 serde = { version = "1.0.151", features = ["derive"] }
 rocket = { version = "0.5.0-rc.2", default-features = false, features = ["json", "secrets"] }
-diesel = { version = "2.0.0", features = ["postgres", "serde_json"] }
+diesel = { version = "2.0.0", features = ["postgres", "serde_json", "chrono"] }
 serde_json = { version = "1.0.91", features = ["preserve_order"] }
 dotenvy = "0.15.6"
-schemars = "0.8.11"
+schemars = { version = "0.8.11", features = ["chrono"] }
 okapi = { version = "0.7.0-rc.1" }
 rocket_okapi = { version = "0.8.0-rc.2", features = ["swagger"] }
 rocket_cors = { git = "https://github.com/lawliet89/rocket_cors", branch = "master" }
@@ -20,3 +20,4 @@ rand_core = { version = "0.6.4", features = ["std"] }
 pathdiff = "0.2.1"
 path-slash = "0.2.1"
 uuid = { version = "1.2.2", features = ["v4", "fast-rng", "macro-diagnostics"] }
+chrono = { version = "0.4.23", features = ["serde"] }

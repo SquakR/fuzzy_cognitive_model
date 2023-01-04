@@ -23,7 +23,7 @@ pub fn find_session_by_id(
     )
 }
 
-pub fn deactivate_all(
+pub fn deactivate_all_user_sessions(
     connection: &mut PgConnection,
     user: &User,
 ) -> Result<Vec<Session>, AppError> {
@@ -36,14 +36,14 @@ pub fn deactivate_all(
     )
 }
 
-pub fn deactivate(
+pub fn deactivate_user_session(
     connection: &mut PgConnection,
     user: &User,
     session_id: i32,
 ) -> Result<Session, AppError> {
     let session = find_session_by_id(connection, session_id)?;
     if !session.is_active {
-        deactivate_all(connection, user)?;
+        deactivate_all_user_sessions(connection, user)?;
         return Err(AppError::BadRequestError);
     }
     if session.user_id != user.id {

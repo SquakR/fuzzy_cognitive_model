@@ -1,7 +1,5 @@
 #[macro_use]
 extern crate rocket;
-use std::path::PathBuf;
-
 use dotenvy::dotenv;
 use fuzzy_cognitive_model::cookies;
 use fuzzy_cognitive_model::db;
@@ -20,6 +18,7 @@ use rocket_cors::AllowedOrigins;
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
 use rocket_okapi::{openapi, openapi_routes, openapi_spec};
+use std::path::PathBuf;
 
 /// Create new user
 #[openapi(tag = "users")]

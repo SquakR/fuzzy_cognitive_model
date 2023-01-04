@@ -5,6 +5,8 @@ diesel::table! {
         id -> Int4,
         is_active -> Bool,
         user_id -> Int4,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -18,6 +20,8 @@ diesel::table! {
         second_name -> Nullable<Varchar>,
         last_name -> Varchar,
         avatar -> Nullable<Varchar>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 

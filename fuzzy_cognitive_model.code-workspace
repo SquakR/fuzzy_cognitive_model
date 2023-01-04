@@ -58,6 +58,7 @@
       "pathdiff",
       "pinia",
       "schemars",
+      "Timestamptz",
       "unplugin",
       "vueuse"
     ],

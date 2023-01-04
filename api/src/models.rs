@@ -1,5 +1,6 @@
 use crate::schema::sessions;
 use crate::schema::users;
+use chrono::{DateTime, Utc};
 use diesel::{Identifiable, Queryable};
 use rocket::serde::Serialize;
 use rocket_okapi::okapi::schemars;
@@ -26,6 +27,10 @@ pub struct User {
     pub last_name: String,
     /// User avatar
     pub avatar: Option<String>,
+    /// User creation time
+    pub created_at: DateTime<Utc>,
+    /// User update time
+    pub updated_at: DateTime<Utc>,
 }
 
 /// User session
@@ -38,4 +43,8 @@ pub struct Session {
     pub is_active: bool,
     /// User identifier
     pub user_id: i32,
+    /// Session creation time
+    pub created_at: DateTime<Utc>,
+    /// Session update time
+    pub updated_at: DateTime<Utc>,
 }
