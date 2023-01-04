@@ -4,7 +4,9 @@ use dotenvy::dotenv;
 use fuzzy_cognitive_model::cookies;
 use fuzzy_cognitive_model::db;
 use fuzzy_cognitive_model::errors::AppError;
+use fuzzy_cognitive_model::models::Session;
 use fuzzy_cognitive_model::models::User;
+use fuzzy_cognitive_model::services::session_services;
 use fuzzy_cognitive_model::services::users_services;
 use fuzzy_cognitive_model::storage::Storage;
 use fuzzy_cognitive_model::types::{Credentials, UserIn};
@@ -51,13 +53,25 @@ fn get_me(user: User) -> Json<User> {
 /// Create new session
 #[openapi(tag = "users")]
 #[post("/sign_in", format = "json", data = "<credentials>")]
-fn sign_in(credentials: Json<Credentials>, cookies_jar: &CookieJar<'_>) -> Result<(), AppError> {
+fn sign_in(
+    credentials: Json<Credentials>,
+    cookies_jar: &CookieJar<'_>,
+) -> Result<Json<Session>, AppError> {
     if cookies::has_session_id(cookies_jar) {
         return Err(AppError::BadRequestError);
     }
     let connection = &mut db::establish_connection();
     let session = users_services::sign_in(connection, credentials.into_inner())?;
     cookies::add_session_id(cookies_jar, session.id);
+    Ok(Json(session))
+}
+
+/// Deactivate session
+#[openapi(tag = "users")]
+#[post("/sign_out/<session_id>")]
+fn sign_out_session(session_id: i32, user: User) -> Result<(), AppError> {
+    let connection = &mut db::establish_connection();
+    users_services::sign_out(connection, &user, session_id)?;
     Ok(())
 }
 
@@ -73,6 +87,15 @@ fn sign_out(user: User, cookies_jar: &CookieJar<'_>) -> Result<(), AppError> {
     users_services::sign_out(connection, &user, session_id)?;
     cookies::remove_session_id(cookies_jar);
     Ok(())
+}
+
+/// Get user sessions
+#[openapi(tag = "users")]
+#[get("/sessions")]
+fn get_sessions(user: User) -> Result<Json<Vec<Session>>, AppError> {
+    let connection = &mut db::establish_connection();
+    let sessions = session_services::get_user_active_sessions(connection, user.id)?;
+    Ok(Json(sessions))
 }
 
 /// Get user avatar
@@ -100,7 +123,9 @@ fn get_routes() -> Vec<rocket::Route> {
         get_user,
         get_me,
         sign_in,
+        sign_out_session,
         sign_out,
+        get_sessions,
         get_user_avatar
     ](&settings);
     spec.info.title = String::from("Fuzzy Cognitive Model");
@@ -110,7 +135,9 @@ fn get_routes() -> Vec<rocket::Route> {
         get_user,
         get_me,
         sign_in,
+        sign_out_session,
         sign_out,
+        get_sessions,
         get_user_avatar
     ](Some(spec), &settings);
     return routes;

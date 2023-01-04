@@ -12,6 +12,18 @@ pub fn create_session(connection: &mut PgConnection, user_id: i32) -> Result<Ses
     )
 }
 
+pub fn get_user_active_sessions(
+    connection: &mut PgConnection,
+    user_id: i32,
+) -> Result<Vec<Session>, AppError> {
+    AppError::update_result(
+        sessions::table
+            .filter(sessions::user_id.eq(user_id))
+            .filter(sessions::is_active.eq(true))
+            .get_results::<Session>(connection),
+    )
+}
+
 pub fn find_session_by_id(
     connection: &mut PgConnection,
     session_id: i32,
