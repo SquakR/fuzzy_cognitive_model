@@ -34,15 +34,6 @@ async fn create_user(
     Ok(Json(user))
 }
 
-/// Get an user by id
-#[openapi(tag = "users")]
-#[get("/users/<user_id>")]
-fn get_user(user_id: i32) -> Result<Json<User>, AppError> {
-    let connection = &mut db::establish_connection();
-    let user = users_services::find_user_by_id(connection, user_id)?;
-    Ok(Json(user))
-}
-
 /// Get current user
 #[openapi(tag = "users")]
 #[get("/me")]
@@ -120,7 +111,6 @@ fn get_routes() -> Vec<rocket::Route> {
     let settings = OpenApiSettings::new();
     let mut spec = openapi_spec![
         create_user,
-        get_user,
         get_me,
         sign_in,
         sign_out_session,
@@ -132,7 +122,6 @@ fn get_routes() -> Vec<rocket::Route> {
     utils::patch_wrong_content_type(&mut spec, "/user");
     let routes = openapi_routes![
         create_user,
-        get_user,
         get_me,
         sign_in,
         sign_out_session,
