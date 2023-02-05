@@ -121,32 +121,15 @@ fn get_docs() -> SwaggerUIConfig {
     }
 }
 
-fn get_routes() -> Vec<rocket::Route> {
-    let settings = OpenApiSettings::new();
-    let mut spec = openapi_spec![
-        create_user,
-        get_me,
-        update_me,
-        sign_in,
-        sign_out_session,
-        sign_out,
-        get_sessions,
-        get_user_avatar
-    ](&settings);
-    spec.info.title = String::from("Fuzzy Cognitive Model");
-    utils::patch_wrong_content_type(&mut spec, "/user", Operation::Post);
-    utils::patch_wrong_content_type(&mut spec, "/me", Operation::Put);
-    let routes = openapi_routes![
-        create_user,
-        get_me,
-        update_me,
-        sign_in,
-        sign_out_session,
-        sign_out,
-        get_sessions,
-        get_user_avatar
-    ](Some(spec), &settings);
-    return routes;
+macro_rules! get_routes {
+    ($first_route:expr, $($route:expr),*) => {{
+        let settings = OpenApiSettings::new();
+        let mut spec = openapi_spec![$first_route $(,$route)*](&settings);
+        spec.info.title = String::from("Fuzzy Cognitive Model");
+        utils::patch_wrong_content_type(&mut spec, "/user", Operation::Post);
+        utils::patch_wrong_content_type(&mut spec, "/me", Operation::Put);
+        openapi_routes![$first_route $(,$route)*](Some(spec), &settings)
+    }};
 }
 
 #[launch]
@@ -169,7 +152,19 @@ fn rocket() -> _ {
 
     rocket::custom(figment)
         .manage(storage)
-        .mount("/api/v1", get_routes())
+        .mount(
+            "/api/v1",
+            get_routes!(
+                create_user,
+                get_me,
+                update_me,
+                sign_in,
+                sign_out_session,
+                sign_out,
+                get_sessions,
+                get_user_avatar
+            ),
+        )
         .mount("/api/v1/docs", make_swagger_ui(&get_docs()))
         .attach(cors)
 }
