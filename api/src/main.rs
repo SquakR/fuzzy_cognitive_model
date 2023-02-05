@@ -9,8 +9,9 @@ use fuzzy_cognitive_model::models::User;
 use fuzzy_cognitive_model::services::session_services;
 use fuzzy_cognitive_model::services::users_services;
 use fuzzy_cognitive_model::storage::Storage;
-use fuzzy_cognitive_model::types::{Credentials, UserIn};
+use fuzzy_cognitive_model::types::{Credentials, UserInCreate, UserInUpdate};
 use fuzzy_cognitive_model::utils;
+use fuzzy_cognitive_model::utils::Operation;
 use rocket::form::Form;
 use rocket::fs::NamedFile;
 use rocket::http::CookieJar;
@@ -26,7 +27,7 @@ use std::path::PathBuf;
 #[openapi(tag = "users")]
 #[post("/user", data = "<user_in>")]
 async fn create_user(
-    user_in: Form<UserIn<'_>>,
+    user_in: Form<UserInCreate<'_>>,
     storage: &State<Storage>,
 ) -> Result<Json<User>, AppError> {
     let connection = &mut db::establish_connection();
@@ -39,6 +40,19 @@ async fn create_user(
 #[get("/me")]
 fn get_me(user: User) -> Json<User> {
     Json(user)
+}
+
+/// Update an current user
+#[openapi(tag = "users")]
+#[put("/me", data = "<user_in>")]
+async fn update_me(
+    user_in: Form<UserInUpdate<'_>>,
+    storage: &State<Storage>,
+    user: User,
+) -> Result<Json<User>, AppError> {
+    let connection = &mut db::establish_connection();
+    let user = users_services::update_user(connection, storage, user, user_in.into_inner()).await?;
+    Ok(Json(user))
 }
 
 /// Create new session
@@ -59,7 +73,7 @@ fn sign_in(
 
 /// Deactivate session
 #[openapi(tag = "users")]
-#[post("/sign_out/<session_id>")]
+#[patch("/sign_out/<session_id>")]
 fn sign_out_session(session_id: i32, user: User) -> Result<(), AppError> {
     let connection = &mut db::establish_connection();
     users_services::sign_out(connection, &user, session_id)?;
@@ -68,7 +82,7 @@ fn sign_out_session(session_id: i32, user: User) -> Result<(), AppError> {
 
 /// Deactivate current session
 #[openapi(tag = "users")]
-#[post("/sign_out")]
+#[patch("/sign_out")]
 fn sign_out(user: User, cookies_jar: &CookieJar<'_>) -> Result<(), AppError> {
     let session_id = match cookies::get_session_id(cookies_jar) {
         Some(session_id) => session_id,
@@ -112,6 +126,7 @@ fn get_routes() -> Vec<rocket::Route> {
     let mut spec = openapi_spec![
         create_user,
         get_me,
+        update_me,
         sign_in,
         sign_out_session,
         sign_out,
@@ -119,10 +134,12 @@ fn get_routes() -> Vec<rocket::Route> {
         get_user_avatar
     ](&settings);
     spec.info.title = String::from("Fuzzy Cognitive Model");
-    utils::patch_wrong_content_type(&mut spec, "/user");
+    utils::patch_wrong_content_type(&mut spec, "/user", Operation::Post);
+    utils::patch_wrong_content_type(&mut spec, "/me", Operation::Put);
     let routes = openapi_routes![
         create_user,
         get_me,
+        update_me,
         sign_in,
         sign_out_session,
         sign_out,
