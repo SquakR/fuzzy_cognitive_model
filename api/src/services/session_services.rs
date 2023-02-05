@@ -1,6 +1,7 @@
 use crate::errors::AppError;
 use crate::models::{Session, User};
 use crate::schema::sessions;
+use crate::types::Session as SessionType;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
@@ -66,4 +67,13 @@ pub fn deactivate_user_session(
             .set(sessions::is_active.eq(false))
             .get_result::<Session>(connection),
     )
+}
+
+pub fn session_to_session_type(session: &Session, active_session_id: i32) -> SessionType {
+    SessionType {
+        id: session.id,
+        is_current: session.id == active_session_id,
+        created_at: session.created_at,
+        updated_at: session.updated_at,
+    }
 }

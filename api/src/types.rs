@@ -1,6 +1,7 @@
+use chrono::{DateTime, Utc};
 use rocket::form::FromForm;
 use rocket::fs::TempFile;
-use rocket::serde::Deserialize;
+use rocket::serde::{Deserialize, Serialize};
 use rocket_okapi::JsonSchema;
 use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Metadata, ObjectValidation, Schema, SchemaObject};
@@ -48,6 +49,20 @@ pub struct UserInChange<'r> {
     pub avatar: Option<TempFile<'r>>,
     /// Reset user avatar
     pub reset_avatar: bool,
+}
+
+/// User session
+#[derive(Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Session {
+    /// Session identifier
+    pub id: i32,
+    /// Is session current
+    pub is_current: bool,
+    /// Session creation time
+    pub created_at: DateTime<Utc>,
+    /// Session update time
+    pub updated_at: DateTime<Utc>,
 }
 
 /// User credentials

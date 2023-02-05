@@ -4,12 +4,13 @@ use dotenvy::dotenv;
 use fuzzy_cognitive_model::cookies;
 use fuzzy_cognitive_model::db;
 use fuzzy_cognitive_model::errors::AppError;
-use fuzzy_cognitive_model::models::Session;
 use fuzzy_cognitive_model::models::User;
 use fuzzy_cognitive_model::services::session_services;
 use fuzzy_cognitive_model::services::users_services;
 use fuzzy_cognitive_model::storage::Storage;
-use fuzzy_cognitive_model::types::{ChangePassword, Credentials, UserInChange, UserInCreate};
+use fuzzy_cognitive_model::types::{
+    ChangePassword, Credentials, Session, UserInChange, UserInCreate,
+};
 use fuzzy_cognitive_model::utils;
 use fuzzy_cognitive_model::utils::Operation;
 use rocket::form::Form;
@@ -87,7 +88,8 @@ fn sign_in(
     let connection = &mut db::establish_connection();
     let session = users_services::sign_in(connection, credentials.into_inner())?;
     cookies::add_session_id(cookies_jar, session.id);
-    Ok(Json(session))
+    let session_type = session_services::session_to_session_type(&session, session.id);
+    Ok(Json(session_type))
 }
 
 /// Deactivate session
@@ -116,10 +118,18 @@ fn sign_out(user: User, cookies_jar: &CookieJar<'_>) -> Result<(), AppError> {
 /// Get user sessions
 #[openapi(tag = "users")]
 #[get("/sessions")]
-fn get_sessions(user: User) -> Result<Json<Vec<Session>>, AppError> {
+fn get_sessions(user: User, cookies_jar: &CookieJar<'_>) -> Result<Json<Vec<Session>>, AppError> {
+    let session_id = match cookies::get_session_id(cookies_jar) {
+        Some(session_id) => session_id,
+        None => return Err(AppError::BadRequestError),
+    };
     let connection = &mut db::establish_connection();
     let sessions = session_services::get_user_active_sessions(connection, user.id)?;
-    Ok(Json(sessions))
+    let session_types = sessions
+        .into_iter()
+        .map(|session| session_services::session_to_session_type(&session, session_id))
+        .collect::<Vec<Session>>();
+    Ok(Json(session_types))
 }
 
 /// Get user avatar

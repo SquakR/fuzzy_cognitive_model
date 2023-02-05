@@ -34,9 +34,8 @@ pub struct User {
 }
 
 /// User session
-#[derive(Queryable, Identifiable, Serialize, JsonSchema)]
+#[derive(Queryable, Identifiable)]
 #[diesel(belongs_to(User))]
-#[serde(rename_all = "camelCase")]
 pub struct Session {
     /// Session identifier
     pub id: i32,
