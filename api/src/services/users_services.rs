@@ -5,7 +5,7 @@ use crate::models::{Session, User};
 use crate::schema::users;
 use crate::services::session_services;
 use crate::storage::Storage;
-use crate::types::{Credentials, UserInCreate, UserInUpdate};
+use crate::types::{ChangePassword, Credentials, UserInChange, UserInCreate};
 use crate::utils;
 use argon2::{password_hash::PasswordHash, Argon2, PasswordHasher, PasswordVerifier};
 use diesel::pg::PgConnection;
@@ -64,11 +64,11 @@ pub fn find_user_by_session(connection: &mut PgConnection, session: &Session) ->
         .unwrap()
 }
 
-pub async fn update_user(
+pub async fn change_user(
     connection: &mut PgConnection,
     storage: &Storage,
     user: User,
-    mut user_in: UserInUpdate<'_>,
+    mut user_in: UserInChange<'_>,
 ) -> Result<User, AppError> {
     let username = if user_in.username != user.username {
         Some(user_in.username.as_str())
@@ -116,6 +116,31 @@ pub async fn update_user(
             ))
             .get_result::<User>(connection),
     )
+}
+
+pub fn change_user_password(
+    connection: &mut PgConnection,
+    user: &User,
+    change_password: ChangePassword,
+) -> Result<(), AppError> {
+    if !verify_password(&change_password.old_password, &user.password) {
+        return Err(AppError::ValidationError(String::from(
+            "Incorrect old password.",
+        )));
+    }
+    let new_password_hash = hash_password(&change_password.new_password);
+    if new_password_hash == user.password {
+        return Err(AppError::ValidationError(String::from(
+            "The new password must not be the same as the old one.",
+        )));
+    }
+    AppError::update_result(
+        diesel::update(users::table)
+            .filter(users::id.eq(&user.id))
+            .set(users::password.eq(new_password_hash))
+            .execute(connection),
+    )?;
+    Ok(())
 }
 
 pub fn sign_in(

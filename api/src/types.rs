@@ -28,9 +28,9 @@ pub struct UserInCreate<'r> {
     pub avatar: Option<TempFile<'r>>,
 }
 
-/// Type of user (expert or researcher) to update
+/// Type of user (expert or researcher) to change
 #[derive(FromForm)]
-pub struct UserInUpdate<'r> {
+pub struct UserInChange<'r> {
     /// User nickname
     pub username: String,
     /// User email
@@ -58,6 +58,16 @@ pub struct Credentials {
     pub username: String,
     /// User password
     pub password: String,
+}
+
+/// Change password type
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ChangePassword {
+    /// Old user password
+    pub old_password: String,
+    /// New user password
+    pub new_password: String,
 }
 
 macro_rules! user_json_schema {
@@ -156,7 +166,7 @@ impl<'r> JsonSchema for UserInCreate<'r> {
     }
 }
 
-impl<'r> JsonSchema for UserInUpdate<'r> {
+impl<'r> JsonSchema for UserInChange<'r> {
     fn schema_name() -> String {
         String::from("UserInUpdate")
     }
@@ -207,7 +217,7 @@ impl<'r> JsonSchema for UserInUpdate<'r> {
                     None
                 )
             ],
-            "Type of user (expert or researcher) to update"
+            "Type of user (expert or researcher) to change"
         )
     }
 }
