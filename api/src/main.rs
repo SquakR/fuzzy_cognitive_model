@@ -109,10 +109,12 @@ fn sign_in(
 
 /// Deactivate session
 #[openapi(tag = "users")]
-#[patch("/sign_out/<session_id>")]
-fn sign_out_session(session_id: i32, user: User) -> Result<(), AppError> {
+#[patch("/sign_out_multiple", format = "json", data = "<session_ids>")]
+fn sign_out_multiple(session_ids: Json<Vec<i32>>, user: User) -> Result<(), AppError> {
     let connection = &mut db::establish_connection();
-    users_services::sign_out(connection, &user, session_id)?;
+    for session_id in session_ids.into_inner() {
+        users_services::sign_out(connection, &user, session_id)?;
+    }
     Ok(())
 }
 
@@ -207,7 +209,7 @@ fn rocket() -> _ {
                 change_me,
                 change_me_password,
                 sign_in,
-                sign_out_session,
+                sign_out_multiple,
                 sign_out,
                 get_sessions,
                 get_user_avatar
