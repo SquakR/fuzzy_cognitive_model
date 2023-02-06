@@ -10,7 +10,8 @@ use fuzzy_cognitive_model::services::session_services;
 use fuzzy_cognitive_model::services::users_services;
 use fuzzy_cognitive_model::storage::Storage;
 use fuzzy_cognitive_model::types::{
-    ChangePassword, Credentials, Session, UserInChange, UserInCreate, UserOut,
+    ChangePasswordType, CredentialsType, SessionType, UserInChangeType, UserInCreateType,
+    UserOutType,
 };
 use fuzzy_cognitive_model::utils;
 use fuzzy_cognitive_model::utils::Operation;
@@ -31,39 +32,39 @@ use std::path::PathBuf;
 #[openapi(tag = "users")]
 #[post("/user", data = "<user_in>")]
 async fn create_user(
-    user_in: Form<UserInCreate<'_>>,
+    user_in: Form<UserInCreateType<'_>>,
     storage: &State<Storage>,
-) -> Result<Json<UserOut>, AppError> {
+) -> Result<Json<UserOutType>, AppError> {
     let connection = &mut db::establish_connection();
     let user = users_services::create_user(connection, storage, user_in.into_inner()).await?;
-    Ok(Json(UserOut::from(user)))
+    Ok(Json(UserOutType::from(user)))
 }
 
 /// Get current user
 #[openapi(tag = "users")]
 #[get("/me")]
-fn get_me(user: User) -> Json<UserOut> {
-    Json(UserOut::from(user))
+fn get_me(user: User) -> Json<UserOutType> {
+    Json(UserOutType::from(user))
 }
 
 /// Update current user
 #[openapi(tag = "users")]
 #[put("/me", data = "<user_in>")]
 async fn change_me(
-    user_in: Form<UserInChange<'_>>,
+    user_in: Form<UserInChangeType<'_>>,
     storage: &State<Storage>,
     user: User,
-) -> Result<Json<UserOut>, AppError> {
+) -> Result<Json<UserOutType>, AppError> {
     let connection = &mut db::establish_connection();
     let user = users_services::change_user(connection, storage, user, user_in.into_inner()).await?;
-    Ok(Json(UserOut::from(user)))
+    Ok(Json(UserOutType::from(user)))
 }
 
 /// Update current user password
 #[openapi(tag = "users")]
 #[patch("/me_password", format = "json", data = "<change_password>")]
 fn change_me_password(
-    change_password: Json<ChangePassword>,
+    change_password: Json<ChangePasswordType>,
     user: User,
     cookies_jar: &CookieJar<'_>,
 ) -> Result<(), AppError> {
@@ -82,11 +83,11 @@ fn change_me_password(
 #[openapi(tag = "users")]
 #[post("/sign_in", format = "json", data = "<credentials>")]
 fn sign_in(
-    credentials: Json<Credentials>,
+    credentials: Json<CredentialsType>,
     cookies_jar: &CookieJar<'_>,
     ip_address: SocketAddr,
     user_agent: UserAgent,
-) -> Result<Json<Session>, AppError> {
+) -> Result<Json<SessionType>, AppError> {
     if cookies::has_session_id(cookies_jar) {
         return Err(AppError::BadRequestError);
     }
@@ -132,7 +133,10 @@ fn sign_out(user: User, cookies_jar: &CookieJar<'_>) -> Result<(), AppError> {
 /// Get user sessions
 #[openapi(tag = "users")]
 #[get("/sessions")]
-fn get_sessions(user: User, cookies_jar: &CookieJar<'_>) -> Result<Json<Vec<Session>>, AppError> {
+fn get_sessions(
+    user: User,
+    cookies_jar: &CookieJar<'_>,
+) -> Result<Json<Vec<SessionType>>, AppError> {
     let session_id = match cookies::get_session_id(cookies_jar) {
         Some(session_id) => session_id,
         None => return Err(AppError::BadRequestError),
@@ -142,7 +146,7 @@ fn get_sessions(user: User, cookies_jar: &CookieJar<'_>) -> Result<Json<Vec<Sess
     let session_types = sessions
         .into_iter()
         .map(|session| session_services::session_to_session_type(&session, session_id))
-        .collect::<Vec<Session>>();
+        .collect::<Vec<SessionType>>();
     Ok(Json(session_types))
 }
 

@@ -1,7 +1,7 @@
 use crate::errors::AppError;
 use crate::models::{Session, User};
 use crate::schema::sessions;
-use crate::types::{Device, Product, Session as SessionType, OS};
+use crate::types::{DeviceType, OSType, ProductType, SessionType};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use ipnetwork::IpNetwork;
@@ -83,9 +83,9 @@ pub fn deactivate_user_session(
     )
 }
 
-impl From<UserAgentDevice<'_>> for Device {
+impl From<UserAgentDevice<'_>> for DeviceType {
     fn from(value: UserAgentDevice) -> Self {
-        Device {
+        DeviceType {
             name: value.name.and_then(|name| Some(name.into_owned())),
             brand: value.brand.and_then(|brand| Some(brand.into_owned())),
             model: value.model.and_then(|model| Some(model.into_owned())),
@@ -93,9 +93,9 @@ impl From<UserAgentDevice<'_>> for Device {
     }
 }
 
-impl From<UserAgentOS<'_>> for OS {
+impl From<UserAgentOS<'_>> for OSType {
     fn from(value: UserAgentOS<'_>) -> Self {
-        OS {
+        OSType {
             name: value.name.and_then(|name| Some(name.into_owned())),
             major: value.major.and_then(|major| Some(major.into_owned())),
             minor: value.minor.and_then(|minor| Some(minor.into_owned())),
@@ -107,9 +107,9 @@ impl From<UserAgentOS<'_>> for OS {
     }
 }
 
-impl From<UserAgentProduct<'_>> for Product {
+impl From<UserAgentProduct<'_>> for ProductType {
     fn from(value: UserAgentProduct<'_>) -> Self {
-        Product {
+        ProductType {
             name: value.name.and_then(|name| Some(name.into_owned())),
             major: value.major.and_then(|major| Some(major.into_owned())),
             minor: value.minor.and_then(|minor| Some(minor.into_owned())),
@@ -127,8 +127,8 @@ pub fn session_to_session_type(session: &Session, active_session_id: i32) -> Ses
         is_current: session.id == active_session_id,
         created_at: session.created_at,
         ip_address: format!("{}", session.ip_address.ip()),
-        device: Device::from(ua_parser.parse_device(&session.user_agent)),
-        os: OS::from(ua_parser.parse_os(&session.user_agent)),
-        product: Product::from(ua_parser.parse_product(&session.user_agent)),
+        device: DeviceType::from(ua_parser.parse_device(&session.user_agent)),
+        os: OSType::from(ua_parser.parse_os(&session.user_agent)),
+        product: ProductType::from(ua_parser.parse_product(&session.user_agent)),
     }
 }

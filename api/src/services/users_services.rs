@@ -5,7 +5,9 @@ use crate::models::{Session, User};
 use crate::schema::users;
 use crate::services::session_services;
 use crate::storage::Storage;
-use crate::types::{ChangePassword, Credentials, UserInChange, UserInCreate, UserOut};
+use crate::types::{
+    ChangePasswordType, CredentialsType, UserInChangeType, UserInCreateType, UserOutType,
+};
 use crate::utils;
 use argon2::{password_hash::PasswordHash, Argon2, PasswordHasher, PasswordVerifier};
 use diesel::pg::PgConnection;
@@ -16,7 +18,7 @@ use ipnetwork::IpNetwork;
 pub async fn create_user(
     connection: &mut PgConnection,
     storage: &Storage,
-    mut user_in: UserInCreate<'_>,
+    mut user_in: UserInCreateType<'_>,
 ) -> Result<User, AppError> {
     let exist_user = find_exist_user(connection, Some(&user_in.username), Some(&user_in.email))?;
     if let Some(exist_user) = exist_user {
@@ -69,7 +71,7 @@ pub async fn change_user(
     connection: &mut PgConnection,
     storage: &Storage,
     user: User,
-    mut user_in: UserInChange<'_>,
+    mut user_in: UserInChangeType<'_>,
 ) -> Result<User, AppError> {
     let username = if user_in.username != user.username {
         Some(user_in.username.as_str())
@@ -122,7 +124,7 @@ pub async fn change_user(
 pub fn change_user_password(
     connection: &mut PgConnection,
     user: &User,
-    change_password: ChangePassword,
+    change_password: ChangePasswordType,
 ) -> Result<(), AppError> {
     if !verify_password(&change_password.old_password, &user.password) {
         return Err(AppError::ValidationError(String::from(
@@ -146,7 +148,7 @@ pub fn change_user_password(
 
 pub fn sign_in(
     connection: &mut PgConnection,
-    credentials: Credentials,
+    credentials: CredentialsType,
     ip_address: &IpNetwork,
     user_agent: &str,
 ) -> Result<Session, AppError> {
@@ -228,9 +230,9 @@ pub fn verify_password(password: &str, hash: &str) -> bool {
         .is_ok()
 }
 
-impl From<User> for UserOut {
+impl From<User> for UserOutType {
     fn from(value: User) -> Self {
-        UserOut {
+        UserOutType {
             id: value.id,
             username: value.username,
             email: value.email,

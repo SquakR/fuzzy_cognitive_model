@@ -10,7 +10,7 @@ use schemars::{Map, Set};
 /// Type of user (expert or researcher)
 #[derive(Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct UserOut {
+pub struct UserOutType {
     /// User identifier
     pub id: i32,
     /// User nickname
@@ -33,7 +33,7 @@ pub struct UserOut {
 
 /// Type of user (expert or researcher) to create
 #[derive(FromForm)]
-pub struct UserInCreate<'r> {
+pub struct UserInCreateType<'r> {
     /// User nickname
     pub username: String,
     /// User password
@@ -55,7 +55,7 @@ pub struct UserInCreate<'r> {
 
 /// Type of user (expert or researcher) to change
 #[derive(FromForm)]
-pub struct UserInChange<'r> {
+pub struct UserInChangeType<'r> {
     /// User nickname
     pub username: String,
     /// User email
@@ -78,7 +78,7 @@ pub struct UserInChange<'r> {
 /// User device
 #[derive(Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct Device {
+pub struct DeviceType {
     /// Device name
     pub name: Option<String>,
     /// Device brand
@@ -90,7 +90,7 @@ pub struct Device {
 /// User operation system
 #[derive(Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct OS {
+pub struct OSType {
     /// Operation system name
     pub name: Option<String>,
     /// Operation system major version
@@ -106,7 +106,7 @@ pub struct OS {
 /// User product
 #[derive(Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct Product {
+pub struct ProductType {
     /// Product name
     pub name: Option<String>,
     /// Product major version
@@ -120,7 +120,7 @@ pub struct Product {
 /// User session
 #[derive(Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct Session {
+pub struct SessionType {
     /// Session identifier
     pub id: i32,
     /// Is session current
@@ -130,17 +130,17 @@ pub struct Session {
     /// User ip address
     pub ip_address: String,
     /// User device
-    pub device: Device,
+    pub device: DeviceType,
     /// User operation system
-    pub os: OS,
+    pub os: OSType,
     /// User product
-    pub product: Product,
+    pub product: ProductType,
 }
 
 /// User credentials
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct Credentials {
+pub struct CredentialsType {
     /// User nickname
     pub username: String,
     /// User password
@@ -150,7 +150,7 @@ pub struct Credentials {
 /// Change password type
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct ChangePassword {
+pub struct ChangePasswordType {
     /// Old user password
     pub old_password: String,
     /// New user password
@@ -197,9 +197,9 @@ macro_rules! user_json_schema {
     }};
 }
 
-impl<'r> JsonSchema for UserInCreate<'r> {
+impl<'r> JsonSchema for UserInCreateType<'r> {
     fn schema_name() -> String {
-        String::from("UserInCreate")
+        String::from("UserInCreateType")
     }
     fn json_schema(_: &mut SchemaGenerator) -> Schema {
         user_json_schema!(
@@ -253,9 +253,9 @@ impl<'r> JsonSchema for UserInCreate<'r> {
     }
 }
 
-impl<'r> JsonSchema for UserInChange<'r> {
+impl<'r> JsonSchema for UserInChangeType<'r> {
     fn schema_name() -> String {
-        String::from("UserInUpdate")
+        String::from("UserInUpdateType")
     }
     fn json_schema(_: &mut SchemaGenerator) -> Schema {
         user_json_schema!(
