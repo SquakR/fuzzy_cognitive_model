@@ -10,7 +10,7 @@ use fuzzy_cognitive_model::services::session_services;
 use fuzzy_cognitive_model::services::users_services;
 use fuzzy_cognitive_model::storage::Storage;
 use fuzzy_cognitive_model::types::{
-    ChangePassword, Credentials, Session, UserInChange, UserInCreate,
+    ChangePassword, Credentials, Session, UserInChange, UserInCreate, UserOut,
 };
 use fuzzy_cognitive_model::utils;
 use fuzzy_cognitive_model::utils::Operation;
@@ -33,17 +33,17 @@ use std::path::PathBuf;
 async fn create_user(
     user_in: Form<UserInCreate<'_>>,
     storage: &State<Storage>,
-) -> Result<Json<User>, AppError> {
+) -> Result<Json<UserOut>, AppError> {
     let connection = &mut db::establish_connection();
     let user = users_services::create_user(connection, storage, user_in.into_inner()).await?;
-    Ok(Json(user))
+    Ok(Json(UserOut::from(user)))
 }
 
 /// Get current user
 #[openapi(tag = "users")]
 #[get("/me")]
-fn get_me(user: User) -> Json<User> {
-    Json(user)
+fn get_me(user: User) -> Json<UserOut> {
+    Json(UserOut::from(user))
 }
 
 /// Update current user
@@ -53,10 +53,10 @@ async fn change_me(
     user_in: Form<UserInChange<'_>>,
     storage: &State<Storage>,
     user: User,
-) -> Result<Json<User>, AppError> {
+) -> Result<Json<UserOut>, AppError> {
     let connection = &mut db::establish_connection();
     let user = users_services::change_user(connection, storage, user, user_in.into_inner()).await?;
-    Ok(Json(user))
+    Ok(Json(UserOut::from(user)))
 }
 
 /// Update current user password

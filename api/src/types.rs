@@ -7,6 +7,30 @@ use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Metadata, ObjectValidation, Schema, SchemaObject};
 use schemars::{Map, Set};
 
+/// Type of user (expert or researcher)
+#[derive(Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UserOut {
+    /// User identifier
+    pub id: i32,
+    /// User nickname
+    pub username: String,
+    /// User email
+    pub email: String,
+    /// User name
+    pub first_name: String,
+    /// User second name or patronymic
+    pub second_name: Option<String>,
+    /// User last name
+    pub last_name: String,
+    /// User avatar
+    pub avatar: Option<String>,
+    /// User creation time
+    pub created_at: DateTime<Utc>,
+    /// User update time
+    pub updated_at: DateTime<Utc>,
+}
+
 /// Type of user (expert or researcher) to create
 #[derive(FromForm)]
 pub struct UserInCreate<'r> {

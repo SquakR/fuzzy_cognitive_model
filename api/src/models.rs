@@ -3,20 +3,15 @@ use crate::schema::users;
 use chrono::{DateTime, Utc};
 use diesel::{Identifiable, Queryable};
 use ipnetwork::IpNetwork;
-use rocket::serde::Serialize;
-use rocket_okapi::okapi::schemars;
-use rocket_okapi::JsonSchema;
 
 /// Fuzzy cognitive model user (expert or researcher)
-#[derive(Queryable, Identifiable, Serialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
+#[derive(Queryable, Identifiable)]
 pub struct User {
-    /// User identifier in the database
+    /// User identifier
     pub id: i32,
     /// User nickname
     pub username: String,
     /// Hashed password
-    #[serde(skip_serializing)]
     pub password: String,
     /// User email
     pub email: String,

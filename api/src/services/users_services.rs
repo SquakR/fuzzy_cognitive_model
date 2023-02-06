@@ -5,7 +5,7 @@ use crate::models::{Session, User};
 use crate::schema::users;
 use crate::services::session_services;
 use crate::storage::Storage;
-use crate::types::{ChangePassword, Credentials, UserInChange, UserInCreate};
+use crate::types::{ChangePassword, Credentials, UserInChange, UserInCreate, UserOut};
 use crate::utils;
 use argon2::{password_hash::PasswordHash, Argon2, PasswordHasher, PasswordVerifier};
 use diesel::pg::PgConnection;
@@ -226,4 +226,20 @@ pub fn verify_password(password: &str, hash: &str) -> bool {
     Argon2::default()
         .verify_password(password.as_bytes(), &PasswordHash::new(hash).unwrap())
         .is_ok()
+}
+
+impl From<User> for UserOut {
+    fn from(value: User) -> Self {
+        UserOut {
+            id: value.id,
+            username: value.username,
+            email: value.email,
+            first_name: value.first_name,
+            second_name: value.second_name,
+            last_name: value.last_name,
+            avatar: value.avatar,
+            created_at: value.created_at,
+            updated_at: value.updated_at,
+        }
+    }
 }
