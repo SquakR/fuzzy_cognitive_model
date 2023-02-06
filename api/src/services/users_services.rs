@@ -11,6 +11,7 @@ use argon2::{password_hash::PasswordHash, Argon2, PasswordHasher, PasswordVerifi
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
+use ipnetwork::IpNetwork;
 
 pub async fn create_user(
     connection: &mut PgConnection,
@@ -146,6 +147,8 @@ pub fn change_user_password(
 pub fn sign_in(
     connection: &mut PgConnection,
     credentials: Credentials,
+    ip_address: &IpNetwork,
+    user_agent: &str,
 ) -> Result<Session, AppError> {
     let user_result = find_user_by_username(connection, &credentials.username);
     let user = match user_result {
@@ -161,7 +164,7 @@ pub fn sign_in(
             "Incorrect username or password.",
         )));
     }
-    session_services::create_session(connection, user.id)
+    session_services::create_session(connection, user.id, ip_address, user_agent)
 }
 
 pub fn sign_out(

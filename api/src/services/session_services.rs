@@ -1,14 +1,28 @@
 use crate::errors::AppError;
 use crate::models::{Session, User};
 use crate::schema::sessions;
-use crate::types::Session as SessionType;
+use crate::types::{Device, Product, Session as SessionType, OS};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use ipnetwork::IpNetwork;
+use std::env;
+use user_agent_parser::{
+    Device as UserAgentDevice, Product as UserAgentProduct, UserAgentParser, OS as UserAgentOS,
+};
 
-pub fn create_session(connection: &mut PgConnection, user_id: i32) -> Result<Session, AppError> {
+pub fn create_session(
+    connection: &mut PgConnection,
+    user_id: i32,
+    ip_address: &IpNetwork,
+    user_agent: &str,
+) -> Result<Session, AppError> {
     AppError::update_result(
         diesel::insert_into(sessions::table)
-            .values(sessions::user_id.eq(user_id))
+            .values((
+                sessions::user_id.eq(user_id),
+                sessions::ip_address.eq(ip_address),
+                sessions::user_agent.eq(user_agent),
+            ))
             .get_result::<Session>(connection),
     )
 }
@@ -69,11 +83,52 @@ pub fn deactivate_user_session(
     )
 }
 
+impl From<UserAgentDevice<'_>> for Device {
+    fn from(value: UserAgentDevice) -> Self {
+        Device {
+            name: value.name.and_then(|name| Some(name.into_owned())),
+            brand: value.brand.and_then(|brand| Some(brand.into_owned())),
+            model: value.model.and_then(|model| Some(model.into_owned())),
+        }
+    }
+}
+
+impl From<UserAgentOS<'_>> for OS {
+    fn from(value: UserAgentOS<'_>) -> Self {
+        OS {
+            name: value.name.and_then(|name| Some(name.into_owned())),
+            major: value.major.and_then(|major| Some(major.into_owned())),
+            minor: value.minor.and_then(|minor| Some(minor.into_owned())),
+            patch: value.patch.and_then(|patch| Some(patch.into_owned())),
+            patch_minor: value
+                .patch_minor
+                .and_then(|patch_minor| Some(patch_minor.into_owned())),
+        }
+    }
+}
+
+impl From<UserAgentProduct<'_>> for Product {
+    fn from(value: UserAgentProduct<'_>) -> Self {
+        Product {
+            name: value.name.and_then(|name| Some(name.into_owned())),
+            major: value.major.and_then(|major| Some(major.into_owned())),
+            minor: value.minor.and_then(|minor| Some(minor.into_owned())),
+            patch: value.patch.and_then(|patch| Some(patch.into_owned())),
+        }
+    }
+}
+
 pub fn session_to_session_type(session: &Session, active_session_id: i32) -> SessionType {
+    let ua_parser =
+        UserAgentParser::from_path(env::current_dir().unwrap().join("user_agent_regexes.yaml"))
+            .unwrap();
     SessionType {
         id: session.id,
         is_current: session.id == active_session_id,
         created_at: session.created_at,
-        updated_at: session.updated_at,
+        ip_address: format!("{}", session.ip_address.ip()),
+        device: Device::from(ua_parser.parse_device(&session.user_agent)),
+        os: OS::from(ua_parser.parse_os(&session.user_agent)),
+        product: Product::from(ua_parser.parse_product(&session.user_agent)),
     }
 }

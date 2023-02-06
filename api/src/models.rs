@@ -2,6 +2,7 @@ use crate::schema::sessions;
 use crate::schema::users;
 use chrono::{DateTime, Utc};
 use diesel::{Identifiable, Queryable};
+use ipnetwork::IpNetwork;
 use rocket::serde::Serialize;
 use rocket_okapi::okapi::schemars;
 use rocket_okapi::JsonSchema;
@@ -37,14 +38,11 @@ pub struct User {
 #[derive(Queryable, Identifiable)]
 #[diesel(belongs_to(User))]
 pub struct Session {
-    /// Session identifier
     pub id: i32,
-    /// Is session active
     pub is_active: bool,
-    /// User identifier
     pub user_id: i32,
-    /// Session creation time
+    pub ip_address: IpNetwork,
+    pub user_agent: String,
     pub created_at: DateTime<Utc>,
-    /// Session update time
     pub updated_at: DateTime<Utc>,
 }

@@ -51,6 +51,48 @@ pub struct UserInChange<'r> {
     pub reset_avatar: bool,
 }
 
+/// User device
+#[derive(Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Device {
+    /// Device name
+    pub name: Option<String>,
+    /// Device brand
+    pub brand: Option<String>,
+    /// Device model
+    pub model: Option<String>,
+}
+
+/// User operation system
+#[derive(Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct OS {
+    /// Operation system name
+    pub name: Option<String>,
+    /// Operation system major version
+    pub major: Option<String>,
+    /// Operation system minor version
+    pub minor: Option<String>,
+    /// Operation system patch version
+    pub patch: Option<String>,
+    /// Operation system patch minor version
+    pub patch_minor: Option<String>,
+}
+
+/// User product
+#[derive(Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Product {
+    /// Product name
+    pub name: Option<String>,
+    /// Product major version
+    pub major: Option<String>,
+    /// Product minor version
+    pub minor: Option<String>,
+    /// Product patch version
+    pub patch: Option<String>,
+}
+
 /// User session
 #[derive(Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -61,8 +103,14 @@ pub struct Session {
     pub is_current: bool,
     /// Session creation time
     pub created_at: DateTime<Utc>,
-    /// Session update time
-    pub updated_at: DateTime<Utc>,
+    /// User ip address
+    pub ip_address: String,
+    /// User device
+    pub device: Device,
+    /// User operation system
+    pub os: OS,
+    /// User product
+    pub product: Product,
 }
 
 /// User credentials

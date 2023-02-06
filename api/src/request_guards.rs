@@ -40,3 +40,26 @@ impl<'r> OpenApiFromRequest<'r> for User {
         Ok(RequestHeaderInput::None)
     }
 }
+
+pub struct UserAgent(pub String);
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for UserAgent {
+    type Error = ();
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        match request.headers().get_one("User-Agent") {
+            Some(user_agent) => Outcome::Success(UserAgent(user_agent.to_owned())),
+            None => Outcome::Failure((Status::BadRequest, ())),
+        }
+    }
+}
+
+impl<'r> OpenApiFromRequest<'r> for UserAgent {
+    fn from_request_input(
+        _gen: &mut OpenApiGenerator,
+        _name: String,
+        _required: bool,
+    ) -> RocketOkapiResult<RequestHeaderInput> {
+        Ok(RequestHeaderInput::None)
+    }
+}

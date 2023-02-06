@@ -5,6 +5,7 @@ use fuzzy_cognitive_model::cookies;
 use fuzzy_cognitive_model::db;
 use fuzzy_cognitive_model::errors::AppError;
 use fuzzy_cognitive_model::models::User;
+use fuzzy_cognitive_model::request_guards::UserAgent;
 use fuzzy_cognitive_model::services::session_services;
 use fuzzy_cognitive_model::services::users_services;
 use fuzzy_cognitive_model::storage::Storage;
@@ -13,6 +14,7 @@ use fuzzy_cognitive_model::types::{
 };
 use fuzzy_cognitive_model::utils;
 use fuzzy_cognitive_model::utils::Operation;
+use ipnetwork::IpNetwork;
 use rocket::form::Form;
 use rocket::fs::NamedFile;
 use rocket::http::CookieJar;
@@ -22,6 +24,7 @@ use rocket_cors::AllowedOrigins;
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
 use rocket_okapi::{openapi, openapi_routes, openapi_spec};
+use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 
 /// Create new user
@@ -81,12 +84,23 @@ fn change_me_password(
 fn sign_in(
     credentials: Json<Credentials>,
     cookies_jar: &CookieJar<'_>,
+    ip_address: SocketAddr,
+    user_agent: UserAgent,
 ) -> Result<Json<Session>, AppError> {
     if cookies::has_session_id(cookies_jar) {
         return Err(AppError::BadRequestError);
     }
     let connection = &mut db::establish_connection();
-    let session = users_services::sign_in(connection, credentials.into_inner())?;
+    let ip_address = match ip_address {
+        SocketAddr::V4(v4) => IpNetwork::from(IpAddr::V4(v4.ip().clone())),
+        SocketAddr::V6(v6) => IpNetwork::from(IpAddr::V6(v6.ip().clone())),
+    };
+    let session = users_services::sign_in(
+        connection,
+        credentials.into_inner(),
+        &ip_address,
+        &user_agent.0,
+    )?;
     cookies::add_session_id(cookies_jar, session.id);
     let session_type = session_services::session_to_session_type(&session, session.id);
     Ok(Json(session_type))

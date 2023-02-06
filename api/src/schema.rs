@@ -5,6 +5,8 @@ diesel::table! {
         id -> Int4,
         is_active -> Bool,
         user_id -> Int4,
+        ip_address -> Cidr,
+        user_agent -> Text,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }
