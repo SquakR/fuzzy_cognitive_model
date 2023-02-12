@@ -23,3 +23,5 @@ uuid = { version = "1.3.0", features = ["v4", "fast-rng", "macro-diagnostics"] }
 chrono = { version = "0.4.23", features = ["serde"] }
 ipnetwork = "0.20.0"
 user-agent-parser = "0.3.4"
+tokio = { version = "1", features = ["full"] }
+lettre = { version = "0.10.0-beta.2", default-features = false, features = ["smtp-transport", "tokio1-rustls-tls", "hostname", "r2d2", "builder"] }
