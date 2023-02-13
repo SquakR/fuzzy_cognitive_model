@@ -1,4 +1,6 @@
+use hmac::{Hmac, Mac};
 use okapi::openapi3::{OpenApi, RefOr};
+use sha2::Sha256;
 use std::env;
 
 pub fn get_env(key: &str) -> String {
@@ -25,4 +27,9 @@ pub fn patch_wrong_content_type(spec: &mut OpenApi, key: &str, operation: Operat
         }
         _ => unreachable!(),
     }
+}
+
+pub fn get_jwt_key() -> Hmac<Sha256> {
+    let secret_key = get_env("SECRET_KEY");
+    Hmac::new_from_slice(secret_key.as_bytes()).unwrap()
 }

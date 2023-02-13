@@ -17,9 +17,9 @@ CREATE TABLE email_confirmations (
     user_id INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id),
     email VARCHAR(255) NOT NULL UNIQUE,
+    is_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    is_confirmed BOOLEAN NOT NULL DEFAULT FALSE
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 SELECT diesel_manage_updated_at('users');
 SELECT diesel_manage_updated_at('email_confirmations')

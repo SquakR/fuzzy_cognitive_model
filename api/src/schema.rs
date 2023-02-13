@@ -5,9 +5,20 @@ diesel::table! {
         id -> Int4,
         user_id -> Int4,
         email -> Varchar,
+        is_confirmed -> Bool,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
-        is_confirmed -> Bool,
+    }
+}
+
+diesel::table! {
+    password_resets (id) {
+        id -> Int4,
+        user_id -> Int4,
+        is_reset -> Bool,
+        is_valid -> Bool,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -40,10 +51,12 @@ diesel::table! {
 }
 
 diesel::joinable!(email_confirmations -> users (user_id));
+diesel::joinable!(password_resets -> users (user_id));
 diesel::joinable!(sessions -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     email_confirmations,
+    password_resets,
     sessions,
     users,
 );

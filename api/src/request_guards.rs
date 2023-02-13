@@ -24,7 +24,7 @@ impl<'r> FromRequest<'r> for User {
         };
         let user = users_services::find_user_by_session(connection, &session);
         if !session.is_active {
-            let _sessions = session_services::deactivate_all_user_sessions(connection, &user);
+            let _sessions = session_services::deactivate_all_user_sessions(connection, user.id);
             return Outcome::Failure((Status::BadRequest, ()));
         }
         Outcome::Success(user)

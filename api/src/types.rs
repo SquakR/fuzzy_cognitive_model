@@ -159,6 +159,16 @@ pub struct ChangePasswordType {
     pub new_password: String,
 }
 
+/// Reset password type
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ResetPasswordType {
+    /// Reset password token
+    pub token: String,
+    /// New user password
+    pub new_password: String,
+}
+
 macro_rules! user_json_schema {
     ($properties:expr, $description:expr) => {{
         let mut properties = Map::new();

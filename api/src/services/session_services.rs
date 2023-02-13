@@ -52,11 +52,11 @@ pub fn find_session_by_id(
 
 pub fn deactivate_all_user_sessions(
     connection: &mut PgConnection,
-    user: &User,
+    user_id: i32,
 ) -> Result<Vec<Session>, AppError> {
     AppError::update_result(
         diesel::update(sessions::table)
-            .filter(sessions::user_id.eq(user.id))
+            .filter(sessions::user_id.eq(user_id))
             .filter(sessions::is_active.eq(true))
             .set(sessions::is_active.eq(false))
             .get_results::<Session>(connection),
@@ -70,7 +70,7 @@ pub fn deactivate_user_session(
 ) -> Result<Session, AppError> {
     let session = find_session_by_id(connection, session_id)?;
     if !session.is_active {
-        deactivate_all_user_sessions(connection, user)?;
+        deactivate_all_user_sessions(connection, user.id)?;
         return Err(AppError::BadRequestError);
     }
     if session.user_id != user.id {

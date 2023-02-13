@@ -6,9 +6,7 @@ use crate::services::users_services;
 use crate::utils;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
-use hmac::{Hmac, Mac};
 use jwt::{SignWithKey, VerifyWithKey};
-use sha2::Sha256;
 use std::collections::BTreeMap;
 
 pub fn create_email_confirmation(
@@ -29,7 +27,7 @@ pub async fn send_email_confirmation_email(
     email_confirmation: &EmailConfirmation,
 ) -> Result<(), AppError> {
     let domain = utils::get_env("DOMAIN");
-    let key = get_key();
+    let key = utils::get_jwt_key();
     let mut claims = BTreeMap::new();
     claims.insert("email_confirmation_id", email_confirmation.id);
     let token = claims.sign_with_key(&key).unwrap();
@@ -46,7 +44,7 @@ pub async fn send_email_confirmation_email(
 }
 
 pub fn confirm_email(connection: &mut PgConnection, token: &str) -> Result<User, AppError> {
-    let key = get_key();
+    let key = utils::get_jwt_key();
     let claims: BTreeMap<String, i32> = match token.verify_with_key(&key) {
         Ok(claims) => claims,
         Err(_) => return Err(AppError::ValidationError(String::from("Invalid token."))),
@@ -59,12 +57,7 @@ pub fn confirm_email(connection: &mut PgConnection, token: &str) -> Result<User,
         )));
     }
     let user = users_services::find_user_by_id(connection, email_confirmation.user_id)?;
-    if user.is_email_confirmed {
-        return Err(AppError::ValidationError(String::from(
-            "The link is not active.",
-        )));
-    }
-    if user.email != email_confirmation.email {
+    if user.is_email_confirmed || user.email != email_confirmation.email {
         return Err(AppError::ValidationError(String::from(
             "The link is not active.",
         )));
@@ -94,9 +87,4 @@ fn confirm_email_confirmation(
             .set(email_confirmations::is_confirmed.eq(true))
             .get_result::<EmailConfirmation>(connection),
     )
-}
-
-fn get_key() -> Hmac<Sha256> {
-    let secret_key = utils::get_env("SECRET_KEY");
-    Hmac::new_from_slice(secret_key.as_bytes()).unwrap()
 }

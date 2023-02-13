@@ -7,12 +7,13 @@ use fuzzy_cognitive_model::errors::AppError;
 use fuzzy_cognitive_model::models::User;
 use fuzzy_cognitive_model::request_guards::UserAgent;
 use fuzzy_cognitive_model::services::email_confirmation_services;
+use fuzzy_cognitive_model::services::password_services;
 use fuzzy_cognitive_model::services::session_services;
 use fuzzy_cognitive_model::services::users_services;
 use fuzzy_cognitive_model::storage::Storage;
 use fuzzy_cognitive_model::types::{
-    ChangePasswordType, CredentialsType, SessionType, UserInChangeType, UserInCreateType,
-    UserOutType,
+    ChangePasswordType, CredentialsType, ResetPasswordType, SessionType, UserInChangeType,
+    UserInCreateType, UserOutType,
 };
 use fuzzy_cognitive_model::utils;
 use fuzzy_cognitive_model::utils::Operation;
@@ -83,10 +84,32 @@ fn change_me_password(
         None => return Err(AppError::BadRequestError),
     };
     let connection = &mut db::establish_connection();
-    users_services::change_user_password(connection, &user, change_password.into_inner())?;
+    password_services::change_user_password(connection, &user, change_password.into_inner())?;
     users_services::sign_out(connection, &user, session_id)?;
     cookies::remove_session_id(cookies_jar);
     Ok(())
+}
+
+/// Request user password reset
+#[openapi(tag = "users")]
+#[post("/request_password_reset/<email>")]
+async fn request_password_reset(email: &str, cookies_jar: &CookieJar<'_>) -> Result<(), AppError> {
+    if cookies::get_session_id(cookies_jar).is_some() {
+        return Err(AppError::ValidationError(String::from(
+            "Unable to reset password with active session.",
+        )));
+    }
+    let connection = &mut db::establish_connection();
+    password_services::request_password_reset(connection, email).await?;
+    Ok(())
+}
+
+/// Reset user password
+#[openapi(tag = "users")]
+#[patch("/reset_password", format = "json", data = "<reset_password>")]
+fn reset_password(reset_password: Json<ResetPasswordType>) -> Result<(), AppError> {
+    let connection = &mut db::establish_connection();
+    password_services::reset_password(connection, reset_password.into_inner())
 }
 
 /// Create new session
@@ -219,6 +242,8 @@ fn rocket() -> _ {
                 get_me,
                 change_me,
                 change_me_password,
+                request_password_reset,
+                reset_password,
                 sign_in,
                 sign_out_multiple,
                 sign_out,

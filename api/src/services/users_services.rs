@@ -4,13 +4,10 @@ use crate::errors::AppError;
 use crate::models::{Session, User};
 use crate::schema::users;
 use crate::services::email_confirmation_services;
+use crate::services::password_services;
 use crate::services::session_services;
 use crate::storage::Storage;
-use crate::types::{
-    ChangePasswordType, CredentialsType, UserInChangeType, UserInCreateType, UserOutType,
-};
-use crate::utils;
-use argon2::{password_hash::PasswordHash, Argon2, PasswordHasher, PasswordVerifier};
+use crate::types::{CredentialsType, UserInChangeType, UserInCreateType, UserOutType};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
@@ -39,7 +36,7 @@ pub async fn create_user(
         diesel::insert_into(users::table)
             .values((
                 users::username.eq(user_in.username),
-                users::password.eq(hash_password(&user_in.password)),
+                users::password.eq(password_services::hash_password(&user_in.password)),
                 users::email.eq(user_in.email),
                 users::first_name.eq(user_in.first_name),
                 users::second_name.eq(user_in.second_name),
@@ -65,6 +62,14 @@ pub fn find_user_by_username(
     AppError::update_result(
         users::table
             .filter(users::username.eq(username))
+            .first::<User>(connection),
+    )
+}
+
+pub fn find_user_by_email(connection: &mut PgConnection, email: &str) -> Result<User, AppError> {
+    AppError::update_result(
+        users::table
+            .filter(users::email.eq(email))
             .first::<User>(connection),
     )
 }
@@ -151,31 +156,6 @@ pub async fn change_user(
     Ok(user)
 }
 
-pub fn change_user_password(
-    connection: &mut PgConnection,
-    user: &User,
-    change_password: ChangePasswordType,
-) -> Result<(), AppError> {
-    if !verify_password(&change_password.old_password, &user.password) {
-        return Err(AppError::ValidationError(String::from(
-            "Incorrect old password.",
-        )));
-    }
-    let new_password_hash = hash_password(&change_password.new_password);
-    if new_password_hash == user.password {
-        return Err(AppError::ValidationError(String::from(
-            "The new password must not be the same as the old one.",
-        )));
-    }
-    AppError::update_result(
-        diesel::update(users::table)
-            .filter(users::id.eq(&user.id))
-            .set(users::password.eq(new_password_hash))
-            .execute(connection),
-    )?;
-    Ok(())
-}
-
 pub fn sign_in(
     connection: &mut PgConnection,
     credentials: CredentialsType,
@@ -191,7 +171,7 @@ pub fn sign_in(
             )))
         }
     };
-    if !verify_password(&credentials.password, &user.password) {
+    if !password_services::verify_password(&credentials.password, &user.password) {
         return Err(AppError::ValidationError(String::from(
             "Incorrect username or password.",
         )));
@@ -244,20 +224,6 @@ fn get_exist_user_app_error(exist_user: User, username: &str, email: &str) -> Ap
         return AppError::ValidationError(String::from("A user with this email already exists."));
     }
     unreachable!();
-}
-
-fn hash_password(password: &str) -> String {
-    let salt = utils::get_env("PASSWORD_SALT");
-    Argon2::default()
-        .hash_password(password.as_bytes(), &salt)
-        .unwrap()
-        .to_string()
-}
-
-fn verify_password(password: &str, hash: &str) -> bool {
-    Argon2::default()
-        .verify_password(password.as_bytes(), &PasswordHash::new(hash).unwrap())
-        .is_ok()
 }
 
 impl From<User> for UserOutType {

@@ -1,4 +1,5 @@
 use crate::schema::email_confirmations;
+use crate::schema::password_resets;
 use crate::schema::sessions;
 use crate::schema::users;
 use chrono::{DateTime, Utc};
@@ -26,12 +27,22 @@ pub struct EmailConfirmation {
     pub id: i32,
     pub user_id: i32,
     pub email: String,
+    pub is_confirmed: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-    pub is_confirmed: bool,
 }
 
-/// User session
+#[derive(Queryable, Identifiable)]
+#[diesel(belongs_to(User))]
+pub struct PasswordReset {
+    pub id: i32,
+    pub user_id: i32,
+    pub is_reset: bool,
+    pub is_valid: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
 #[derive(Queryable, Identifiable)]
 #[diesel(belongs_to(User))]
 pub struct Session {
