@@ -6,6 +6,7 @@ use fuzzy_cognitive_model::db;
 use fuzzy_cognitive_model::errors::AppError;
 use fuzzy_cognitive_model::models::User;
 use fuzzy_cognitive_model::request_guards::UserAgent;
+use fuzzy_cognitive_model::services::email_confirmation_services;
 use fuzzy_cognitive_model::services::session_services;
 use fuzzy_cognitive_model::services::users_services;
 use fuzzy_cognitive_model::storage::Storage;
@@ -37,6 +38,15 @@ async fn create_user(
 ) -> Result<Json<UserOutType>, AppError> {
     let connection = &mut db::establish_connection();
     let user = users_services::create_user(connection, storage, user_in.into_inner()).await?;
+    Ok(Json(UserOutType::from(user)))
+}
+
+/// Confirm user email
+#[openapi(tag = "users")]
+#[patch("/confirm_email/<token>")]
+fn confirm_email(token: &str) -> Result<Json<UserOutType>, AppError> {
+    let connection = &mut db::establish_connection();
+    let user = email_confirmation_services::confirm_email(connection, token)?;
     Ok(Json(UserOutType::from(user)))
 }
 
@@ -205,6 +215,7 @@ fn rocket() -> _ {
             "/api/v1",
             get_routes!(
                 create_user,
+                confirm_email,
                 get_me,
                 change_me,
                 change_me_password,

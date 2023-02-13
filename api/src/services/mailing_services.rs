@@ -1,4 +1,5 @@
 use crate::{errors::AppError, utils};
+use lettre::message::header;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 
@@ -28,6 +29,7 @@ async fn send_email_smtp(
     body: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let email = Message::builder()
+        .header(header::ContentType::TEXT_HTML)
         .from(from.parse()?)
         .to(to.parse()?)
         .subject(subject)

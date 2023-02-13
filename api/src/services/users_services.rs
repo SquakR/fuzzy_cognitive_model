@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use crate::errors::AppError;
 use crate::models::{Session, User};
 use crate::schema::users;
+use crate::services::email_confirmation_services;
 use crate::services::session_services;
 use crate::storage::Storage;
 use crate::types::{
@@ -34,7 +35,7 @@ pub async fn create_user(
             avatar = Some(storage.add_user_avatar(avatar_file).await?);
         }
     }
-    AppError::update_result(
+    let user = AppError::update_result(
         diesel::insert_into(users::table)
             .values((
                 users::username.eq(user_in.username),
@@ -46,7 +47,15 @@ pub async fn create_user(
                 users::avatar.eq(avatar.and_then(|p| Some(p.to_str().unwrap().to_owned()))),
             ))
             .get_result::<User>(connection),
-    )
+    )?;
+    let email_confirmation =
+        email_confirmation_services::create_email_confirmation(connection, &user)?;
+    email_confirmation_services::send_email_confirmation_email(&email_confirmation).await?;
+    Ok(user)
+}
+
+pub fn find_user_by_id(connection: &mut PgConnection, user_id: i32) -> Result<User, AppError> {
+    AppError::update_result(users::table.find(user_id).first::<User>(connection))
 }
 
 pub fn find_user_by_username(
@@ -65,6 +74,15 @@ pub fn find_user_by_session(connection: &mut PgConnection, session: &Session) ->
         .filter(users::id.eq(session.user_id))
         .first::<User>(connection)
         .unwrap()
+}
+
+pub fn confirm_user_email(connection: &mut PgConnection, user: User) -> Result<User, AppError> {
+    AppError::update_result(
+        diesel::update(users::table)
+            .filter(users::id.eq(user.id))
+            .set(users::is_email_confirmed.eq(true))
+            .get_result::<User>(connection),
+    )
 }
 
 pub async fn change_user(
@@ -106,19 +124,31 @@ pub async fn change_user(
         }
         avatar
     };
-    AppError::update_result(
+    let is_email_confirmed = if email.is_none() {
+        user.is_email_confirmed
+    } else {
+        false
+    };
+    let user = AppError::update_result(
         diesel::update(users::table)
             .filter(users::id.eq(&user.id))
             .set((
-                users::username.eq(user_in.username),
-                users::email.eq(user_in.email),
-                users::first_name.eq(user_in.first_name),
-                users::second_name.eq(user_in.second_name),
-                users::last_name.eq(user_in.last_name),
+                users::username.eq(&user_in.username),
+                users::email.eq(&user_in.email),
+                users::is_email_confirmed.eq(is_email_confirmed),
+                users::first_name.eq(&user_in.first_name),
+                users::second_name.eq(&user_in.second_name),
+                users::last_name.eq(&user_in.last_name),
                 users::avatar.eq(avatar.and_then(|p| Some(p.to_str().unwrap().to_owned()))),
             ))
             .get_result::<User>(connection),
-    )
+    )?;
+    if email.is_some() {
+        let email_confirmation =
+            email_confirmation_services::create_email_confirmation(connection, &user)?;
+        email_confirmation_services::send_email_confirmation_email(&email_confirmation).await?;
+    }
+    Ok(user)
 }
 
 pub fn change_user_password(
@@ -177,7 +207,7 @@ pub fn sign_out(
     session_services::deactivate_user_session(connection, user, session_id)
 }
 
-pub fn find_exist_user(
+fn find_exist_user(
     connection: &mut PgConnection,
     username: Option<&str>,
     email: Option<&str>,
@@ -204,7 +234,7 @@ pub fn find_exist_user(
     Ok(None)
 }
 
-pub fn get_exist_user_app_error(exist_user: User, username: &str, email: &str) -> AppError {
+fn get_exist_user_app_error(exist_user: User, username: &str, email: &str) -> AppError {
     if exist_user.username == username {
         return AppError::ValidationError(String::from(
             "A user with this username already exists.",
@@ -216,7 +246,7 @@ pub fn get_exist_user_app_error(exist_user: User, username: &str, email: &str) -
     unreachable!();
 }
 
-pub fn hash_password(password: &str) -> String {
+fn hash_password(password: &str) -> String {
     let salt = utils::get_env("PASSWORD_SALT");
     Argon2::default()
         .hash_password(password.as_bytes(), &salt)
@@ -224,7 +254,7 @@ pub fn hash_password(password: &str) -> String {
         .to_string()
 }
 
-pub fn verify_password(password: &str, hash: &str) -> bool {
+fn verify_password(password: &str, hash: &str) -> bool {
     Argon2::default()
         .verify_password(password.as_bytes(), &PasswordHash::new(hash).unwrap())
         .is_ok()
@@ -236,6 +266,7 @@ impl From<User> for UserOutType {
             id: value.id,
             username: value.username,
             email: value.email,
+            is_email_confirmed: value.is_email_confirmed,
             first_name: value.first_name,
             second_name: value.second_name,
             last_name: value.last_name,

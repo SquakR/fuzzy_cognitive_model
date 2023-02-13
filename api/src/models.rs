@@ -1,32 +1,34 @@
+use crate::schema::email_confirmations;
 use crate::schema::sessions;
 use crate::schema::users;
 use chrono::{DateTime, Utc};
 use diesel::{Identifiable, Queryable};
 use ipnetwork::IpNetwork;
 
-/// Fuzzy cognitive model user (expert or researcher)
 #[derive(Queryable, Identifiable)]
 pub struct User {
-    /// User identifier
     pub id: i32,
-    /// User nickname
     pub username: String,
-    /// Hashed password
     pub password: String,
-    /// User email
     pub email: String,
-    /// User name
+    pub is_email_confirmed: bool,
     pub first_name: String,
-    /// User second name or patronymic
     pub second_name: Option<String>,
-    /// User last name
     pub last_name: String,
-    /// User avatar
     pub avatar: Option<String>,
-    /// User creation time
     pub created_at: DateTime<Utc>,
-    /// User update time
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Queryable, Identifiable)]
+#[diesel(belongs_to(User))]
+pub struct EmailConfirmation {
+    pub id: i32,
+    pub user_id: i32,
+    pub email: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub is_confirmed: bool,
 }
 
 /// User session

@@ -17,6 +17,8 @@ pub struct UserOutType {
     pub username: String,
     /// User email
     pub email: String,
+    /// Is user email confirmed
+    pub is_email_confirmed: bool,
     /// User name
     pub first_name: String,
     /// User second name or patronymic

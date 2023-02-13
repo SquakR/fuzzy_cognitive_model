@@ -25,3 +25,6 @@ ipnetwork = "0.20.0"
 user-agent-parser = "0.3.4"
 tokio = { version = "1", features = ["full"] }
 lettre = { version = "0.10.0-beta.2", default-features = false, features = ["smtp-transport", "tokio1-rustls-tls", "hostname", "r2d2", "builder"] }
+hmac = "0.12.1"
+sha2 = "0.10.6"
+jwt = "0.16.0"
