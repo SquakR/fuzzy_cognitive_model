@@ -7,6 +7,7 @@ pub async fn send_message(to_email: &str, subject: &str, body: &str) -> Result<(
     let smtp_host = utils::get_env("SMTP_HOST");
     let smtp_login = utils::get_env("SMTP_LOGIN");
     let smtp_password = utils::get_env("SMTP_PASSWORD");
+    let smtp_name = utils::get_env("SMTP_NAME");
 
     let smtp_credentials = Credentials::new(smtp_login.clone(), smtp_password);
     let mailer_builder = match AsyncSmtpTransport::<Tokio1Executor>::relay(smtp_host.as_str()) {
@@ -14,7 +15,14 @@ pub async fn send_message(to_email: &str, subject: &str, body: &str) -> Result<(
         Err(_) => return Err(AppError::InternalServerError),
     };
     let mailer = mailer_builder.credentials(smtp_credentials).build();
-    let send_result = send_email_smtp(&mailer, smtp_login.as_str(), to_email, subject, body).await;
+    let send_result = send_email_smtp(
+        &mailer,
+        &format!("{} <{}>", smtp_name, smtp_login),
+        to_email,
+        subject,
+        body,
+    )
+    .await;
     if send_result.is_err() {
         return Err(AppError::InternalServerError);
     }
