@@ -12,8 +12,8 @@ use fuzzy_cognitive_model::services::session_services;
 use fuzzy_cognitive_model::services::users_services;
 use fuzzy_cognitive_model::storage::Storage;
 use fuzzy_cognitive_model::types::{
-    ChangePasswordType, CredentialsType, ResetPasswordType, SessionType, UserInChangeType,
-    UserInCreateType, UserOutType,
+    ChangeLanguageType, ChangePasswordType, CredentialsType, ResetPasswordType, SessionType,
+    UserInChangeType, UserInCreateType, UserOutType,
 };
 use fuzzy_cognitive_model::utils;
 use fuzzy_cognitive_model::utils::Operation;
@@ -58,7 +58,7 @@ fn get_me(user: User) -> Json<UserOutType> {
     Json(UserOutType::from(user))
 }
 
-/// Update current user
+/// Change current user
 #[openapi(tag = "users")]
 #[put("/me", data = "<user_in>")]
 async fn change_me(
@@ -71,7 +71,23 @@ async fn change_me(
     Ok(Json(UserOutType::from(user)))
 }
 
-/// Update current user password
+/// Change current user language
+#[openapi(tag = "users")]
+#[patch("/me_language", format = "json", data = "<change_language>")]
+fn change_me_language(
+    change_language: Json<ChangeLanguageType>,
+    user: User,
+) -> Result<Json<UserOutType>, AppError> {
+    let connection = &mut db::establish_connection();
+    let user = users_services::change_user_language(
+        connection,
+        user,
+        change_language.language.as_deref(),
+    )?;
+    Ok(Json(UserOutType::from(user)))
+}
+
+/// Change current user password
 #[openapi(tag = "users")]
 #[patch("/me_password", format = "json", data = "<change_password>")]
 fn change_me_password(
@@ -241,6 +257,7 @@ fn rocket() -> _ {
                 confirm_email,
                 get_me,
                 change_me,
+                change_me_language,
                 change_me_password,
                 request_password_reset,
                 reset_password,

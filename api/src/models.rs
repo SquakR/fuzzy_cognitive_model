@@ -17,6 +17,7 @@ pub struct User {
     pub second_name: Option<String>,
     pub last_name: String,
     pub avatar: Option<String>,
+    pub language: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

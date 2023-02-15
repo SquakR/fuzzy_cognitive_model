@@ -42,6 +42,9 @@ pub async fn create_user(
                 users::second_name.eq(user_in.second_name),
                 users::last_name.eq(user_in.last_name),
                 users::avatar.eq(avatar.and_then(|p| Some(p.to_str().unwrap().to_owned()))),
+                users::language.eq(user_in
+                    .language
+                    .and_then(|l| if l == "" { None } else { Some(l) })),
             ))
             .get_result::<User>(connection),
     )?;
@@ -156,6 +159,31 @@ pub async fn change_user(
     Ok(user)
 }
 
+pub fn change_user_language(
+    connection: &mut PgConnection,
+    user: User,
+    language: Option<&str>,
+) -> Result<User, AppError> {
+    let mut create = true;
+    if let Some(user_language) = &user.language {
+        if let Some(new_language) = language {
+            if user_language == new_language {
+                create = false;
+            }
+        }
+    }
+    if create {
+        AppError::update_result(
+            diesel::update(users::table)
+                .filter(users::id.eq(&user.id))
+                .set(users::language.eq(language))
+                .get_result::<User>(connection),
+        )
+    } else {
+        Ok(user)
+    }
+}
+
 pub fn sign_in(
     connection: &mut PgConnection,
     credentials: CredentialsType,
@@ -237,6 +265,7 @@ impl From<User> for UserOutType {
             second_name: value.second_name,
             last_name: value.last_name,
             avatar: value.avatar,
+            language: value.language,
             created_at: value.created_at,
             updated_at: value.updated_at,
         }

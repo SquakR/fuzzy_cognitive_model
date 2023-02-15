@@ -27,6 +27,8 @@ pub struct UserOutType {
     pub last_name: String,
     /// User avatar
     pub avatar: Option<String>,
+    /// User preferred language
+    pub language: Option<String>,
     /// User creation time
     pub created_at: DateTime<Utc>,
     /// User update time
@@ -53,6 +55,8 @@ pub struct UserInCreateType<'r> {
     pub last_name: String,
     /// User avatar
     pub avatar: Option<TempFile<'r>>,
+    /// User preferred language
+    pub language: Option<String>,
 }
 
 /// Type of user (expert or researcher) to change
@@ -149,7 +153,15 @@ pub struct CredentialsType {
     pub password: String,
 }
 
-/// Change password type
+/// Change user preferred language
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ChangeLanguageType {
+    /// New user preferred language
+    pub language: Option<String>,
+}
+
+/// Change user password type
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ChangePasswordType {
@@ -159,7 +171,7 @@ pub struct ChangePasswordType {
     pub new_password: String,
 }
 
-/// Reset password type
+/// Reset user password type
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ResetPasswordType {
@@ -259,6 +271,13 @@ impl<'r> JsonSchema for UserInCreateType<'r> {
                     false,
                     Some(String::from("binary"))
                 ),
+                (
+                    "language",
+                    InstanceType::String,
+                    "User preferred language",
+                    false,
+                    None
+                )
             ],
             "Type of user (expert or researcher) to create"
         )
