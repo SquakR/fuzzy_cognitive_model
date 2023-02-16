@@ -15,21 +15,27 @@ use rocket_okapi::Result as RocketOkapiResult;
 impl<'r> FromRequest<'r> for User {
     type Error = ();
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let connection = &mut db::establish_connection();
-        let session_id = match cookies::get_session_id(request.cookies()) {
-            Some(session_id) => session_id,
-            None => return Outcome::Failure((Status::Unauthorized, ())),
-        };
-        let session = match session_services::find_session_by_id(connection, session_id) {
-            Ok(value) => value,
-            Err(_) => return Outcome::Failure((Status::BadRequest, ())),
-        };
-        let user = users_services::find_user_by_session(connection, &session);
-        if !session.is_active {
-            let _sessions = session_services::deactivate_all_user_sessions(connection, user.id);
-            return Outcome::Failure((Status::BadRequest, ()));
+        let user_result = request.local_cache(|| {
+            let connection = &mut db::establish_connection();
+            let session_id = match cookies::get_session_id(request.cookies()) {
+                Some(session_id) => session_id,
+                None => return Err(Status::Unauthorized),
+            };
+            let session = match session_services::find_session_by_id(connection, session_id) {
+                Ok(value) => value,
+                Err(_) => return Err(Status::BadRequest),
+            };
+            let user = users_services::find_user_by_session(connection, &session);
+            if !session.is_active {
+                let _sessions = session_services::deactivate_all_user_sessions(connection, user.id);
+                return Err(Status::BadRequest);
+            }
+            Ok(user)
+        });
+        match user_result {
+            Ok(user) => Outcome::Success(user.clone()),
+            Err(status) => Outcome::Failure((status.clone(), ())),
         }
-        Outcome::Success(user)
     }
 }
 
@@ -72,13 +78,12 @@ pub struct AcceptLanguage(pub Vec<LanguageIdentifier>);
 impl<'r> FromRequest<'r> for AcceptLanguage {
     type Error = ();
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let result = RocketAcceptLanguage::from_request(request).await;
-        match result {
+        match request.guard::<RocketAcceptLanguage>().await {
             Outcome::Success(accept_language) => {
                 Outcome::Success(AcceptLanguage(accept_language.accept_language))
             }
-            Outcome::Forward(forward) => Outcome::Forward(forward),
             Outcome::Failure(failure) => Outcome::Failure(failure),
+            Outcome::Forward(forward) => Outcome::Forward(forward),
         }
     }
 }
@@ -89,23 +94,146 @@ impl<'r> OpenApiFromRequest<'r> for AcceptLanguage {
         _name: String,
         required: bool,
     ) -> RocketOkapiResult<RequestHeaderInput> {
-        let schema = gen.json_schema::<String>();
-        Ok(RequestHeaderInput::Parameter(Parameter {
-            name: "Accept-Language".to_owned(),
-            location: "header".to_owned(),
-            description: None,
-            required,
-            deprecated: false,
-            allow_empty_value: false,
-            value: ParameterValue::Schema {
-                style: None,
-                explode: None,
-                allow_reserved: false,
-                schema,
-                example: None,
-                examples: None,
-            },
-            extensions: Object::default(),
-        }))
+        add_accept_language_header(gen, required)
     }
+}
+
+pub trait BaseLocale {
+    fn get_locale(&self) -> &str;
+}
+
+pub struct Locale(pub String);
+
+impl Locale {
+    pub fn new(accept_language: &AcceptLanguage) -> Locale {
+        let available_locales = [
+            ("en-US", "en-US"),
+            ("en", "en-US"),
+            ("ru-RU", "ru-RU"),
+            ("ru", "ru-RU"),
+        ];
+        let mut locale = String::from("en-US");
+        'outer: for identifier_locale in accept_language.0.iter().map(|i| i.to_string()) {
+            for available_locale in available_locales {
+                if identifier_locale == available_locale.0 {
+                    locale = available_locale.1.to_owned();
+                    break 'outer;
+                }
+            }
+        }
+        Locale(locale)
+    }
+}
+
+impl BaseLocale for Locale {
+    fn get_locale(&self) -> &str {
+        &self.0
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Locale {
+    type Error = ();
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        match request.guard::<AcceptLanguage>().await {
+            Outcome::Success(accept_language) => Outcome::Success(Locale::new(&accept_language)),
+            Outcome::Failure(failure) => Outcome::Failure(failure),
+            Outcome::Forward(forward) => Outcome::Forward(forward),
+        }
+    }
+}
+
+impl<'r> OpenApiFromRequest<'r> for Locale {
+    fn from_request_input(
+        gen: &mut OpenApiGenerator,
+        _name: String,
+        required: bool,
+    ) -> RocketOkapiResult<RequestHeaderInput> {
+        add_accept_language_header(gen, required)
+    }
+}
+
+pub struct UserLocale(pub String);
+
+impl UserLocale {
+    pub fn new(user: &User, accept_language: &AcceptLanguage) -> UserLocale {
+        let available_locales = [
+            ("en-US", "en-US"),
+            ("en", "en-US"),
+            ("ru-RU", "ru-RU"),
+            ("ru", "ru-RU"),
+        ];
+        let mut locale = String::from("en-US");
+        if let Some(language) = &user.language {
+            locale = language.to_owned();
+        } else {
+            'outer: for identifier_locale in accept_language.0.iter().map(|i| i.to_string()) {
+                for available_locale in available_locales {
+                    if identifier_locale == available_locale.0 {
+                        locale = available_locale.1.to_owned();
+                        break 'outer;
+                    }
+                }
+            }
+        }
+        UserLocale(locale)
+    }
+}
+
+impl BaseLocale for UserLocale {
+    fn get_locale(&self) -> &str {
+        &self.0
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for UserLocale {
+    type Error = ();
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let user = match request.guard::<User>().await {
+            Outcome::Success(user) => user,
+            Outcome::Failure(failure) => return Outcome::Failure(failure),
+            Outcome::Forward(forward) => return Outcome::Forward(forward),
+        };
+        let accept_language = match request.guard::<AcceptLanguage>().await {
+            Outcome::Success(accept_language) => accept_language,
+            Outcome::Failure(failure) => return Outcome::Failure(failure),
+            Outcome::Forward(forward) => return Outcome::Forward(forward),
+        };
+        Outcome::Success(UserLocale::new(&user, &accept_language))
+    }
+}
+
+impl<'r> OpenApiFromRequest<'r> for UserLocale {
+    fn from_request_input(
+        gen: &mut OpenApiGenerator,
+        _name: String,
+        required: bool,
+    ) -> RocketOkapiResult<RequestHeaderInput> {
+        add_accept_language_header(gen, required)
+    }
+}
+
+fn add_accept_language_header(
+    gen: &mut OpenApiGenerator,
+    required: bool,
+) -> RocketOkapiResult<RequestHeaderInput> {
+    let schema = gen.json_schema::<String>();
+    Ok(RequestHeaderInput::Parameter(Parameter {
+        name: "Accept-Language".to_owned(),
+        location: "header".to_owned(),
+        description: None,
+        required,
+        deprecated: false,
+        allow_empty_value: false,
+        value: ParameterValue::Schema {
+            style: None,
+            explode: None,
+            allow_reserved: false,
+            schema,
+            example: None,
+            examples: None,
+        },
+        extensions: Object::default(),
+    }))
 }

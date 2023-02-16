@@ -6,7 +6,7 @@ use chrono::{DateTime, Utc};
 use diesel::{Identifiable, Queryable};
 use ipnetwork::IpNetwork;
 
-#[derive(Queryable, Identifiable)]
+#[derive(Queryable, Identifiable, Clone)]
 pub struct User {
     pub id: i32,
     pub username: String,

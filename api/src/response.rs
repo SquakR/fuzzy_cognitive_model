@@ -1,3 +1,4 @@
+use crate::request_guards::{BaseLocale, Locale};
 use diesel::result::Error as DieselError;
 use okapi::openapi3::Responses;
 use rocket::http::hyper::header;
@@ -50,13 +51,13 @@ impl<T> ToServiceResult<T> for Result<T, DieselError> {
     }
 }
 
-pub struct PathResult<T> {
+pub struct PathResult<T, L: BaseLocale> {
     pub service_result: ServiceResult<T>,
-    pub locale: String,
+    pub locale: L,
 }
 
-impl<T> PathResult<T> {
-    pub fn new(service_result: ServiceResult<T>, locale: String) -> PathResult<T> {
+impl<T, L: BaseLocale> PathResult<T, L> {
+    pub fn new(service_result: ServiceResult<T>, locale: L) -> PathResult<T, L> {
         PathResult {
             service_result,
             locale,
@@ -64,46 +65,60 @@ impl<T> PathResult<T> {
     }
 }
 
-impl<'r, T: Responder<'r, 'static>> Responder<'r, 'static> for PathResult<T> {
+impl<'r, R: Responder<'r, 'static>, L: BaseLocale> Responder<'r, 'static> for PathResult<R, L> {
     fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
         match self.service_result {
             Ok(value) => value.respond_to(req),
             Err(app_error) => match app_error {
                 AppError::ValidationError(get_message) => {
-                    let mut response = get_message(&self.locale).respond_to(req)?;
+                    let mut response = get_message(self.locale.get_locale()).respond_to(req)?;
                     response.set_status(Status::BadRequest);
-                    response
-                        .set_header(Header::new(header::CONTENT_LANGUAGE.as_str(), self.locale));
+                    response.set_header(Header::new(
+                        header::CONTENT_LANGUAGE.as_str(),
+                        self.locale.get_locale().to_owned(),
+                    ));
                     return Ok(response);
                 }
                 AppError::DieselError(diesel_error, not_found_key) => match diesel_error {
-                    DieselError::NotFound => PathResult::<()>::new(
+                    DieselError::NotFound => PathResult::<(), Locale>::new(
                         Err(AppError::NotFoundError(not_found_key.unwrap())),
-                        self.locale,
+                        Locale(self.locale.get_locale().to_owned()),
                     )
                     .respond_to(req),
-                    _ => PathResult::<()>::new(Err(AppError::InternalServerError), self.locale)
-                        .respond_to(req),
+                    _ => PathResult::<(), Locale>::new(
+                        Err(AppError::InternalServerError),
+                        Locale(self.locale.get_locale().to_owned()),
+                    )
+                    .respond_to(req),
                 },
                 AppError::ForbiddenError(forbidden_key) => {
-                    let mut response = t!(&forbidden_key, locale = &self.locale).respond_to(req)?;
+                    let mut response =
+                        t!(&forbidden_key, locale = self.locale.get_locale()).respond_to(req)?;
                     response.set_status(Status::Forbidden);
-                    response
-                        .set_header(Header::new(header::CONTENT_LANGUAGE.as_str(), self.locale));
+                    response.set_header(Header::new(
+                        header::CONTENT_LANGUAGE.as_str(),
+                        self.locale.get_locale().to_owned(),
+                    ));
                     return Ok(response);
                 }
                 AppError::NotFoundError(not_found_key) => {
-                    let mut response = t!(&not_found_key, locale = &self.locale).respond_to(req)?;
+                    let mut response =
+                        t!(&not_found_key, locale = self.locale.get_locale()).respond_to(req)?;
                     response.set_status(Status::NotFound);
-                    response
-                        .set_header(Header::new(header::CONTENT_LANGUAGE.as_str(), self.locale));
+                    response.set_header(Header::new(
+                        header::CONTENT_LANGUAGE.as_str(),
+                        self.locale.get_locale().to_owned(),
+                    ));
                     return Ok(response);
                 }
                 AppError::InternalServerError => {
                     let mut response =
-                        t!("internal_server_error", locale = &self.locale).respond_to(req)?;
-                    response
-                        .set_header(Header::new(header::CONTENT_LANGUAGE.as_str(), self.locale));
+                        t!("internal_server_error", locale = self.locale.get_locale())
+                            .respond_to(req)?;
+                    response.set_header(Header::new(
+                        header::CONTENT_LANGUAGE.as_str(),
+                        self.locale.get_locale().to_owned(),
+                    ));
                     response.set_status(Status::BadRequest);
                     return Ok(response);
                 }
@@ -112,7 +127,7 @@ impl<'r, T: Responder<'r, 'static>> Responder<'r, 'static> for PathResult<T> {
     }
 }
 
-impl<T> OpenApiResponderInner for PathResult<T> {
+impl<T, L: BaseLocale> OpenApiResponderInner for PathResult<T, L> {
     fn responses(gen: &mut OpenApiGenerator) -> RocketOkapiResult<Responses> {
         let ok_responses = <String>::responses(gen)?;
         let err_responses = <Status>::responses(gen)?;

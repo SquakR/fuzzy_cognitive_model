@@ -5,9 +5,8 @@ extern crate rust_i18n;
 use dotenvy::dotenv;
 use fuzzy_cognitive_model::cookies;
 use fuzzy_cognitive_model::db;
-use fuzzy_cognitive_model::locale;
 use fuzzy_cognitive_model::models::User;
-use fuzzy_cognitive_model::request_guards::{AcceptLanguage, UserAgent};
+use fuzzy_cognitive_model::request_guards::{AcceptLanguage, Locale, UserAgent, UserLocale};
 use fuzzy_cognitive_model::response::{AppError, PathResult};
 use fuzzy_cognitive_model::services::email_confirmation_services;
 use fuzzy_cognitive_model::services::password_services;
@@ -43,9 +42,8 @@ async fn create_user(
     user_in: Form<UserInCreateType<'_>>,
     cookies_jar: &CookieJar<'_>,
     storage: &State<Storage>,
-    accept_language: AcceptLanguage,
-) -> PathResult<Json<UserOutType>> {
-    let locale = locale::get_locale(None, &accept_language);
+    locale: Locale,
+) -> PathResult<Json<UserOutType>, Locale> {
     if cookies::get_session_id(cookies_jar).is_some() {
         return PathResult::new(
             Err(AppError::ValidationError(Box::new(|locale| {
@@ -65,22 +63,24 @@ async fn create_user(
 /// Confirm user email
 #[openapi(tag = "users")]
 #[patch("/confirm_email/<token>")]
-fn confirm_email(token: &str, accept_language: AcceptLanguage) -> PathResult<Json<UserOutType>> {
-    let mut locale = locale::get_locale(None, &accept_language);
+fn confirm_email(
+    token: &str,
+    accept_language: AcceptLanguage,
+    locale: Locale,
+) -> PathResult<Json<UserOutType>, UserLocale> {
     let connection = &mut db::establish_connection();
     let user = match email_confirmation_services::confirm_email(connection, token) {
         Ok(user) => user,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
+        Err(app_error) => return PathResult::new(Err(app_error), UserLocale(locale.0.to_owned())),
     };
-    locale = locale::get_locale(Some(&user), &accept_language);
+    let locale = UserLocale::new(&user, &accept_language);
     PathResult::new(Ok(Json(UserOutType::from(user))), locale)
 }
 
 /// Get current user
 #[openapi(tag = "users")]
 #[get("/me")]
-fn get_me(user: User, accept_language: AcceptLanguage) -> PathResult<Json<UserOutType>> {
-    let locale = locale::get_locale(Some(&user), &accept_language);
+fn get_me(user: User, locale: UserLocale) -> PathResult<Json<UserOutType>, UserLocale> {
     PathResult::new(Ok(Json(UserOutType::from(user))), locale)
 }
 
@@ -91,9 +91,8 @@ async fn change_me(
     user_in: Form<UserInChangeType<'_>>,
     storage: &State<Storage>,
     user: User,
-    accept_language: AcceptLanguage,
-) -> PathResult<Json<UserOutType>> {
-    let locale = locale::get_locale(Some(&user), &accept_language);
+    locale: UserLocale,
+) -> PathResult<Json<UserOutType>, UserLocale> {
     let connection = &mut db::establish_connection();
     let user =
         match users_services::change_user(connection, storage, user, user_in.into_inner()).await {
@@ -109,9 +108,8 @@ async fn change_me(
 fn change_me_language(
     change_language: Json<ChangeLanguageType>,
     user: User,
-    accept_language: AcceptLanguage,
-) -> PathResult<Json<UserOutType>> {
-    let locale = locale::get_locale(Some(&user), &accept_language);
+    locale: UserLocale,
+) -> PathResult<Json<UserOutType>, UserLocale> {
     let connection = &mut db::establish_connection();
     let user = match users_services::change_user_language(
         connection,
@@ -129,11 +127,10 @@ fn change_me_language(
 #[patch("/me_password", format = "json", data = "<change_password>")]
 fn change_me_password(
     change_password: Json<ChangePasswordType>,
-    user: User,
     cookies_jar: &CookieJar<'_>,
-    accept_language: AcceptLanguage,
-) -> PathResult<()> {
-    let locale = locale::get_locale(Some(&user), &accept_language);
+    user: User,
+    locale: UserLocale,
+) -> PathResult<(), UserLocale> {
     let session_id = match cookies::get_session_id(cookies_jar) {
         Some(session_id) => session_id,
         None => return PathResult::new(Err(AppError::InternalServerError), locale),
@@ -157,9 +154,8 @@ fn change_me_password(
 async fn request_password_reset(
     email: &str,
     cookies_jar: &CookieJar<'_>,
-    accept_language: AcceptLanguage,
-) -> PathResult<()> {
-    let locale = locale::get_locale(None, &accept_language);
+    locale: Locale,
+) -> PathResult<(), Locale> {
     if cookies::get_session_id(cookies_jar).is_some() {
         return PathResult::new(
             Err(AppError::ValidationError(Box::new(|locale| {
@@ -180,9 +176,8 @@ async fn request_password_reset(
 #[patch("/reset_password", format = "json", data = "<reset_password>")]
 fn reset_password(
     reset_password: Json<ResetPasswordType>,
-    accept_language: AcceptLanguage,
-) -> PathResult<()> {
-    let locale = locale::get_locale(None, &accept_language);
+    locale: Locale,
+) -> PathResult<(), Locale> {
     let connection = &mut db::establish_connection();
     if let Err(app_error) =
         password_services::reset_password(connection, reset_password.into_inner())
@@ -200,9 +195,8 @@ fn sign_in(
     cookies_jar: &CookieJar<'_>,
     ip_address: SocketAddr,
     user_agent: UserAgent,
-    accept_language: AcceptLanguage,
-) -> PathResult<Json<SessionType>> {
-    let locale = locale::get_locale(None, &accept_language);
+    locale: Locale,
+) -> PathResult<Json<SessionType>, Locale> {
     if cookies::has_session_id(cookies_jar) {
         return PathResult::new(
             Err(AppError::ValidationError(Box::new(|locale| {
@@ -236,9 +230,8 @@ fn sign_in(
 fn sign_out_multiple(
     session_ids: Json<Vec<i32>>,
     user: User,
-    accept_language: AcceptLanguage,
-) -> PathResult<()> {
-    let locale = locale::get_locale(Some(&user), &accept_language);
+    locale: UserLocale,
+) -> PathResult<(), UserLocale> {
     let connection = &mut db::establish_connection();
     for session_id in session_ids.into_inner() {
         if let Err(app_error) = users_services::sign_out(connection, &user, session_id) {
@@ -252,11 +245,10 @@ fn sign_out_multiple(
 #[openapi(tag = "users")]
 #[patch("/sign_out")]
 fn sign_out(
-    user: User,
     cookies_jar: &CookieJar<'_>,
-    accept_language: AcceptLanguage,
-) -> PathResult<()> {
-    let locale = locale::get_locale(Some(&user), &accept_language);
+    user: User,
+    locale: UserLocale,
+) -> PathResult<(), UserLocale> {
     let session_id = match cookies::get_session_id(cookies_jar) {
         Some(session_id) => session_id,
         None => return PathResult::new(Err(AppError::InternalServerError), locale),
@@ -273,11 +265,10 @@ fn sign_out(
 #[openapi(tag = "users")]
 #[get("/sessions")]
 fn get_sessions(
-    user: User,
     cookies_jar: &CookieJar<'_>,
-    accept_language: AcceptLanguage,
-) -> PathResult<Json<Vec<SessionType>>> {
-    let locale = locale::get_locale(Some(&user), &accept_language);
+    user: User,
+    locale: UserLocale,
+) -> PathResult<Json<Vec<SessionType>>, UserLocale> {
     let session_id = match cookies::get_session_id(cookies_jar) {
         Some(session_id) => session_id,
         None => return PathResult::new(Err(AppError::InternalServerError), locale),
@@ -299,11 +290,9 @@ fn get_sessions(
 #[get("/storage/user_avatars/<path..>")]
 async fn get_user_avatar(
     path: PathBuf,
-    user: User,
     storage: &State<Storage>,
-    accept_language: AcceptLanguage,
-) -> PathResult<NamedFile> {
-    let locale = locale::get_locale(Some(&user), &accept_language);
+    locale: UserLocale,
+) -> PathResult<NamedFile, UserLocale> {
     PathResult::new(storage.get_user_avatar(path).await, locale)
 }
 
