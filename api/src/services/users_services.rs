@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use crate::models::{Session, User};
-use crate::response::{AppError, ServiceResult};
+use crate::response::{AppError, ServiceResult, ToAppError, ToServiceResult};
 use crate::schema::users;
 use crate::services::email_confirmation_services;
 use crate::services::password_services;
@@ -32,22 +32,21 @@ pub async fn create_user(
             avatar = Some(storage.add_user_avatar(avatar_file).await?);
         }
     }
-    let user = AppError::update_diesel_result(
-        diesel::insert_into(users::table)
-            .values((
-                users::username.eq(user_in.username),
-                users::password.eq(password_services::hash_password(&user_in.password)),
-                users::email.eq(user_in.email),
-                users::first_name.eq(user_in.first_name),
-                users::second_name.eq(user_in.second_name),
-                users::last_name.eq(user_in.last_name),
-                users::avatar.eq(avatar.and_then(|p| Some(p.to_str().unwrap().to_owned()))),
-                users::language.eq(user_in
-                    .language
-                    .and_then(|l| if l == "" { None } else { Some(l) })),
-            ))
-            .get_result::<User>(connection),
-    )?;
+    let user = diesel::insert_into(users::table)
+        .values((
+            users::username.eq(user_in.username),
+            users::password.eq(password_services::hash_password(&user_in.password)),
+            users::email.eq(user_in.email),
+            users::first_name.eq(user_in.first_name),
+            users::second_name.eq(user_in.second_name),
+            users::last_name.eq(user_in.last_name),
+            users::avatar.eq(avatar.and_then(|p| Some(p.to_str().unwrap().to_owned()))),
+            users::language.eq(user_in
+                .language
+                .and_then(|l| if l == "" { None } else { Some(l) })),
+        ))
+        .get_result::<User>(connection)
+        .to_service_result()?;
     let email_confirmation =
         email_confirmation_services::create_email_confirmation(connection, &user)?;
     email_confirmation_services::send_email_confirmation_email(&email_confirmation).await?;
@@ -55,28 +54,24 @@ pub async fn create_user(
 }
 
 pub fn find_user_by_id(connection: &mut PgConnection, user_id: i32) -> ServiceResult<User> {
-    AppError::update_diesel_result_find(
-        users::table.find(user_id).first::<User>(connection),
-        String::from("user_not_found_error"),
-    )
+    users::table
+        .find(user_id)
+        .first::<User>(connection)
+        .to_service_result_find(String::from("user_not_found_error"))
 }
 
 pub fn find_user_by_username(connection: &mut PgConnection, username: &str) -> ServiceResult<User> {
-    AppError::update_diesel_result_find(
-        users::table
-            .filter(users::username.eq(username))
-            .first::<User>(connection),
-        String::from("user_not_found_error"),
-    )
+    users::table
+        .filter(users::username.eq(username))
+        .first::<User>(connection)
+        .to_service_result_find(String::from("user_not_found_error"))
 }
 
 pub fn find_user_by_email(connection: &mut PgConnection, email: &str) -> ServiceResult<User> {
-    AppError::update_diesel_result_find(
-        users::table
-            .filter(users::email.eq(email))
-            .first::<User>(connection),
-        String::from("user_not_found_error"),
-    )
+    users::table
+        .filter(users::email.eq(email))
+        .first::<User>(connection)
+        .to_service_result_find(String::from("user_not_found_error"))
 }
 
 pub fn find_user_by_session(connection: &mut PgConnection, session: &Session) -> User {
@@ -87,12 +82,11 @@ pub fn find_user_by_session(connection: &mut PgConnection, session: &Session) ->
 }
 
 pub fn confirm_user_email(connection: &mut PgConnection, user: User) -> ServiceResult<User> {
-    AppError::update_diesel_result(
-        diesel::update(users::table)
-            .filter(users::id.eq(user.id))
-            .set(users::is_email_confirmed.eq(true))
-            .get_result::<User>(connection),
-    )
+    diesel::update(users::table)
+        .filter(users::id.eq(user.id))
+        .set(users::is_email_confirmed.eq(true))
+        .get_result::<User>(connection)
+        .to_service_result()
 }
 
 pub async fn change_user(
@@ -139,20 +133,19 @@ pub async fn change_user(
     } else {
         false
     };
-    let user = AppError::update_diesel_result(
-        diesel::update(users::table)
-            .filter(users::id.eq(&user.id))
-            .set((
-                users::username.eq(&user_in.username),
-                users::email.eq(&user_in.email),
-                users::is_email_confirmed.eq(is_email_confirmed),
-                users::first_name.eq(&user_in.first_name),
-                users::second_name.eq(&user_in.second_name),
-                users::last_name.eq(&user_in.last_name),
-                users::avatar.eq(avatar.and_then(|p| Some(p.to_str().unwrap().to_owned()))),
-            ))
-            .get_result::<User>(connection),
-    )?;
+    let user = diesel::update(users::table)
+        .filter(users::id.eq(&user.id))
+        .set((
+            users::username.eq(&user_in.username),
+            users::email.eq(&user_in.email),
+            users::is_email_confirmed.eq(is_email_confirmed),
+            users::first_name.eq(&user_in.first_name),
+            users::second_name.eq(&user_in.second_name),
+            users::last_name.eq(&user_in.last_name),
+            users::avatar.eq(avatar.and_then(|p| Some(p.to_str().unwrap().to_owned()))),
+        ))
+        .get_result::<User>(connection)
+        .to_service_result()?;
     if email.is_some() {
         let email_confirmation =
             email_confirmation_services::create_email_confirmation(connection, &user)?;
@@ -175,12 +168,11 @@ pub fn change_user_language(
         }
     }
     if create {
-        AppError::update_diesel_result(
-            diesel::update(users::table)
-                .filter(users::id.eq(&user.id))
-                .set(users::language.eq(language))
-                .get_result::<User>(connection),
-        )
+        diesel::update(users::table)
+            .filter(users::id.eq(&user.id))
+            .set(users::language.eq(language))
+            .get_result::<User>(connection)
+            .to_service_result()
     } else {
         Ok(user)
     }
@@ -235,7 +227,7 @@ fn find_exist_user(
                 if diesel_error == DieselError::NotFound {
                     Ok(None)
                 } else {
-                    Err(AppError::from_diesel_error(diesel_error, None))
+                    Err(diesel_error.to_app_error(None))
                 }
             }
             Ok(exist_user) => Ok(Some(exist_user)),

@@ -1,5 +1,5 @@
 use crate::models::{Session, User};
-use crate::response::{AppError, ServiceResult};
+use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::sessions;
 use crate::types::{DeviceType, OSType, ProductType, SessionType};
 use diesel::pg::PgConnection;
@@ -17,52 +17,47 @@ pub fn create_session(
     ip_address: &IpNetwork,
     user_agent: &str,
 ) -> ServiceResult<Session> {
-    AppError::update_diesel_result(
-        diesel::insert_into(sessions::table)
-            .values((
-                sessions::user_id.eq(user_id),
-                sessions::ip_address.eq(ip_address),
-                sessions::user_agent.eq(user_agent),
-            ))
-            .get_result::<Session>(connection),
-    )
+    diesel::insert_into(sessions::table)
+        .values((
+            sessions::user_id.eq(user_id),
+            sessions::ip_address.eq(ip_address),
+            sessions::user_agent.eq(user_agent),
+        ))
+        .get_result::<Session>(connection)
+        .to_service_result()
 }
 
 pub fn get_user_active_sessions(
     connection: &mut PgConnection,
     user_id: i32,
 ) -> ServiceResult<Vec<Session>> {
-    AppError::update_diesel_result(
-        sessions::table
-            .filter(sessions::user_id.eq(user_id))
-            .filter(sessions::is_active.eq(true))
-            .get_results::<Session>(connection),
-    )
+    sessions::table
+        .filter(sessions::user_id.eq(user_id))
+        .filter(sessions::is_active.eq(true))
+        .get_results::<Session>(connection)
+        .to_service_result()
 }
 
 pub fn find_session_by_id(
     connection: &mut PgConnection,
     session_id: i32,
 ) -> ServiceResult<Session> {
-    AppError::update_diesel_result_find(
-        sessions::table
-            .find(session_id)
-            .first::<Session>(connection),
-        String::from("session_not_found_error"),
-    )
+    sessions::table
+        .find(session_id)
+        .first::<Session>(connection)
+        .to_service_result_find(String::from("session_not_found_error"))
 }
 
 pub fn deactivate_all_user_sessions(
     connection: &mut PgConnection,
     user_id: i32,
 ) -> ServiceResult<Vec<Session>> {
-    AppError::update_diesel_result(
-        diesel::update(sessions::table)
-            .filter(sessions::user_id.eq(user_id))
-            .filter(sessions::is_active.eq(true))
-            .set(sessions::is_active.eq(false))
-            .get_results::<Session>(connection),
-    )
+    diesel::update(sessions::table)
+        .filter(sessions::user_id.eq(user_id))
+        .filter(sessions::is_active.eq(true))
+        .set(sessions::is_active.eq(false))
+        .get_results::<Session>(connection)
+        .to_service_result()
 }
 
 pub fn deactivate_user_session(
@@ -82,11 +77,10 @@ pub fn deactivate_user_session(
             "other_user_session_forbidden_error",
         )));
     }
-    AppError::update_diesel_result(
-        diesel::update(sessions::table.filter(sessions::id.eq(session_id)))
-            .set(sessions::is_active.eq(false))
-            .get_result::<Session>(connection),
-    )
+    diesel::update(sessions::table.filter(sessions::id.eq(session_id)))
+        .set(sessions::is_active.eq(false))
+        .get_result::<Session>(connection)
+        .to_service_result()
 }
 
 impl From<UserAgentDevice<'_>> for DeviceType {

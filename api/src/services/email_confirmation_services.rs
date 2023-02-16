@@ -1,5 +1,5 @@
 use crate::models::{EmailConfirmation, User};
-use crate::response::{AppError, ServiceResult};
+use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::email_confirmations;
 use crate::services::mailing_services;
 use crate::services::users_services;
@@ -14,14 +14,13 @@ pub fn create_email_confirmation(
     connection: &mut PgConnection,
     user: &User,
 ) -> ServiceResult<EmailConfirmation> {
-    AppError::update_diesel_result(
-        diesel::insert_into(email_confirmations::table)
-            .values((
-                email_confirmations::user_id.eq(user.id),
-                email_confirmations::email.eq(&user.email),
-            ))
-            .get_result::<EmailConfirmation>(connection),
-    )
+    diesel::insert_into(email_confirmations::table)
+        .values((
+            email_confirmations::user_id.eq(user.id),
+            email_confirmations::email.eq(&user.email),
+        ))
+        .get_result::<EmailConfirmation>(connection)
+        .to_service_result()
 }
 
 pub async fn send_email_confirmation_email(
@@ -74,23 +73,20 @@ pub fn confirm_email(connection: &mut PgConnection, token: &str) -> ServiceResul
 fn find_email_confirmation_by_id(
     connection: &mut PgConnection,
     id: i32,
-) -> Result<EmailConfirmation, AppError> {
-    AppError::update_diesel_result_find(
-        email_confirmations::table
-            .find(id)
-            .first::<EmailConfirmation>(connection),
-        String::from("email_confirmation_not_found_error"),
-    )
+) -> ServiceResult<EmailConfirmation> {
+    email_confirmations::table
+        .find(id)
+        .first::<EmailConfirmation>(connection)
+        .to_service_result_find(String::from("email_confirmation_not_found_error"))
 }
 
 fn confirm_email_confirmation(
     connection: &mut PgConnection,
     email_confirmation: EmailConfirmation,
 ) -> Result<EmailConfirmation, AppError> {
-    AppError::update_diesel_result(
-        diesel::update(email_confirmations::table)
-            .filter(email_confirmations::id.eq(email_confirmation.id))
-            .set(email_confirmations::is_confirmed.eq(true))
-            .get_result::<EmailConfirmation>(connection),
-    )
+    diesel::update(email_confirmations::table)
+        .filter(email_confirmations::id.eq(email_confirmation.id))
+        .set(email_confirmations::is_confirmed.eq(true))
+        .get_result::<EmailConfirmation>(connection)
+        .to_service_result()
 }

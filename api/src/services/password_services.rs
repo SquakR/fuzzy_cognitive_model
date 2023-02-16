@@ -1,5 +1,6 @@
 use crate::models::PasswordReset;
 use crate::models::User;
+use crate::response::ToServiceResult;
 use crate::response::{AppError, ServiceResult};
 use crate::schema::password_resets;
 use crate::schema::users;
@@ -71,15 +72,14 @@ pub fn reset_password(
     }
     let new_password_hash = hash_password(&reset_password.new_password);
     set_password(connection, password_reset.user_id, &new_password_hash)?;
-    AppError::update_diesel_result(
-        diesel::update(password_resets::table)
-            .filter(password_resets::id.eq(password_reset.id))
-            .set((
-                password_resets::is_reset.eq(true),
-                password_resets::is_valid.eq(false),
-            ))
-            .execute(connection),
-    )?;
+    diesel::update(password_resets::table)
+        .filter(password_resets::id.eq(password_reset.id))
+        .set((
+            password_resets::is_reset.eq(true),
+            password_resets::is_valid.eq(false),
+        ))
+        .execute(connection)
+        .to_service_result()?;
     session_services::deactivate_all_user_sessions(connection, password_reset.user_id)?;
     Ok(())
 }
@@ -88,18 +88,16 @@ pub fn create_password_reset(
     connection: &mut PgConnection,
     user: &User,
 ) -> ServiceResult<PasswordReset> {
-    AppError::update_diesel_result(
-        diesel::update(password_resets::table)
-            .filter(password_resets::user_id.eq(user.id))
-            .filter(password_resets::is_valid.eq(true))
-            .set(password_resets::is_valid.eq(false))
-            .execute(connection),
-    )?;
-    AppError::update_diesel_result(
-        diesel::insert_into(password_resets::table)
-            .values(password_resets::user_id.eq(user.id))
-            .get_result::<PasswordReset>(connection),
-    )
+    diesel::update(password_resets::table)
+        .filter(password_resets::user_id.eq(user.id))
+        .filter(password_resets::is_valid.eq(true))
+        .set(password_resets::is_valid.eq(false))
+        .execute(connection)
+        .to_service_result()?;
+    diesel::insert_into(password_resets::table)
+        .values(password_resets::user_id.eq(user.id))
+        .get_result::<PasswordReset>(connection)
+        .to_service_result()
 }
 
 pub async fn send_password_reset_email(
@@ -127,12 +125,10 @@ pub fn find_password_reset_by_id(
     connection: &mut PgConnection,
     id: i32,
 ) -> ServiceResult<PasswordReset> {
-    AppError::update_diesel_result_find(
-        password_resets::table
-            .find(id)
-            .first::<PasswordReset>(connection),
-        String::from("password_reset_not_found_error"),
-    )
+    password_resets::table
+        .find(id)
+        .first::<PasswordReset>(connection)
+        .to_service_result_find(String::from("password_reset_not_found_error"))
 }
 
 pub fn hash_password(password: &str) -> String {
@@ -154,10 +150,9 @@ fn set_password(
     user_id: i32,
     new_password_hash: &str,
 ) -> ServiceResult<usize> {
-    AppError::update_diesel_result(
-        diesel::update(users::table)
-            .filter(users::id.eq(user_id))
-            .set(users::password.eq(new_password_hash))
-            .execute(connection),
-    )
+    diesel::update(users::table)
+        .filter(users::id.eq(user_id))
+        .set(users::password.eq(new_password_hash))
+        .execute(connection)
+        .to_service_result()
 }

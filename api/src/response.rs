@@ -20,24 +20,33 @@ pub enum AppError {
     InternalServerError,
 }
 
-impl AppError {
-    pub fn update_diesel_result<T>(result: Result<T, DieselError>) -> Result<T, AppError> {
-        match result {
+pub trait ToAppError {
+    fn to_app_error(self, not_found_key: Option<String>) -> AppError;
+}
+
+impl ToAppError for DieselError {
+    fn to_app_error(self, not_found_key: Option<String>) -> AppError {
+        AppError::DieselError(self, not_found_key)
+    }
+}
+
+pub trait ToServiceResult<T> {
+    fn to_service_result(self) -> ServiceResult<T>;
+    fn to_service_result_find(self, not_found_key: String) -> ServiceResult<T>;
+}
+
+impl<T> ToServiceResult<T> for Result<T, DieselError> {
+    fn to_service_result(self) -> ServiceResult<T> {
+        match self {
             Ok(v) => Ok(v),
-            Err(err) => Err(AppError::from_diesel_error(err, None)),
+            Err(err) => Err(err.to_app_error(None)),
         }
     }
-    pub fn update_diesel_result_find<T>(
-        result: Result<T, DieselError>,
-        not_found_key: String,
-    ) -> Result<T, AppError> {
-        match result {
+    fn to_service_result_find(self, not_found_key: String) -> ServiceResult<T> {
+        match self {
             Ok(v) => Ok(v),
-            Err(err) => Err(AppError::from_diesel_error(err, Some(not_found_key))),
+            Err(err) => Err(err.to_app_error(Some(not_found_key))),
         }
-    }
-    pub fn from_diesel_error(diesel_error: DieselError, not_found_key: Option<String>) -> AppError {
-        AppError::DieselError(diesel_error, not_found_key)
     }
 }
 
