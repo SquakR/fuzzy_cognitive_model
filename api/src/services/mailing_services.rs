@@ -1,9 +1,10 @@
-use crate::{errors::AppError, utils};
+use crate::response::{AppError, ServiceResult};
+use crate::utils;
 use lettre::message::header;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 
-pub async fn send_message(to_email: &str, subject: &str, body: &str) -> Result<(), AppError> {
+pub async fn send_message(to_email: &str, subject: &str, body: &str) -> ServiceResult<()> {
     let smtp_host = utils::get_env("SMTP_HOST");
     let smtp_login = utils::get_env("SMTP_LOGIN");
     let smtp_password = utils::get_env("SMTP_PASSWORD");

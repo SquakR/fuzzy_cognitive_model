@@ -28,3 +28,10 @@ lettre = { version = "0.10.0-beta.2", default-features = false, features = ["smt
 hmac = "0.12.1"
 sha2 = "0.10.6"
 jwt = "0.16.0"
+rocket-accept-language = "0.8.2"
+once_cell = "1.10.0"
+rust-i18n = "1.1.1"
+
+[package.metadata.i18n]
+available-locales = ["en-US", "ru-RU"]
+default-locale = "en-US"

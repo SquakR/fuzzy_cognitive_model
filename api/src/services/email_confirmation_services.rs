@@ -1,5 +1,5 @@
-use crate::errors::AppError;
 use crate::models::{EmailConfirmation, User};
+use crate::response::{AppError, ServiceResult};
 use crate::schema::email_confirmations;
 use crate::services::mailing_services;
 use crate::services::users_services;
@@ -7,13 +7,14 @@ use crate::utils;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use jwt::{SignWithKey, VerifyWithKey};
+use rust_i18n::t;
 use std::collections::BTreeMap;
 
 pub fn create_email_confirmation(
     connection: &mut PgConnection,
     user: &User,
-) -> Result<EmailConfirmation, AppError> {
-    AppError::update_result(
+) -> ServiceResult<EmailConfirmation> {
+    AppError::update_diesel_result(
         diesel::insert_into(email_confirmations::table)
             .values((
                 email_confirmations::user_id.eq(user.id),
@@ -25,7 +26,7 @@ pub fn create_email_confirmation(
 
 pub async fn send_email_confirmation_email(
     email_confirmation: &EmailConfirmation,
-) -> Result<(), AppError> {
+) -> ServiceResult<()> {
     let domain = utils::get_env("DOMAIN");
     let key = utils::get_jwt_key();
     let mut claims = BTreeMap::new();
@@ -43,24 +44,28 @@ pub async fn send_email_confirmation_email(
     mailing_services::send_message(&email_confirmation.email, "Email confirmation", &body).await
 }
 
-pub fn confirm_email(connection: &mut PgConnection, token: &str) -> Result<User, AppError> {
+pub fn confirm_email(connection: &mut PgConnection, token: &str) -> ServiceResult<User> {
     let key = utils::get_jwt_key();
     let claims: BTreeMap<String, i32> = match token.verify_with_key(&key) {
         Ok(claims) => claims,
-        Err(_) => return Err(AppError::ValidationError(String::from("Invalid token."))),
+        Err(_) => {
+            return Err(AppError::ValidationError(Box::new(|locale| {
+                t!("invalid_token_error", locale = locale)
+            })));
+        }
     };
     let email_confirmation =
         find_email_confirmation_by_id(connection, claims["email_confirmation_id"])?;
     if email_confirmation.is_confirmed {
-        return Err(AppError::ValidationError(String::from(
-            "The link is not active.",
-        )));
+        return Err(AppError::ValidationError(Box::new(|locale| {
+            t!("link_is_not_active_error", locale = locale)
+        })));
     }
     let user = users_services::find_user_by_id(connection, email_confirmation.user_id)?;
     if user.is_email_confirmed || user.email != email_confirmation.email {
-        return Err(AppError::ValidationError(String::from(
-            "The link is not active.",
-        )));
+        return Err(AppError::ValidationError(Box::new(|locale| {
+            t!("link_is_not_active_error", locale = locale)
+        })));
     }
     confirm_email_confirmation(connection, email_confirmation)?;
     users_services::confirm_user_email(connection, user)
@@ -70,10 +75,11 @@ fn find_email_confirmation_by_id(
     connection: &mut PgConnection,
     id: i32,
 ) -> Result<EmailConfirmation, AppError> {
-    AppError::update_result(
+    AppError::update_diesel_result_find(
         email_confirmations::table
             .find(id)
             .first::<EmailConfirmation>(connection),
+        String::from("email_confirmation_not_found_error"),
     )
 }
 
@@ -81,7 +87,7 @@ fn confirm_email_confirmation(
     connection: &mut PgConnection,
     email_confirmation: EmailConfirmation,
 ) -> Result<EmailConfirmation, AppError> {
-    AppError::update_result(
+    AppError::update_diesel_result(
         diesel::update(email_confirmations::table)
             .filter(email_confirmations::id.eq(email_confirmation.id))
             .set(email_confirmations::is_confirmed.eq(true))

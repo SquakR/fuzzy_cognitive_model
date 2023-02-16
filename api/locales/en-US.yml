@@ -1,0 +1,28 @@
+internal_server_error: "Critical error on the server side."
+
+user_not_found_error: "User record not found."
+email_confirmation_not_found_error: "Email confirmation record not found."
+password_reset_not_found_error: "Password reset record not found."
+session_not_found_error: "Session record not found."
+file_not_found_error: "File not found."
+
+invalid_token_error: "Invalid token."
+link_is_not_active_error: "The link is not active."
+
+incorrect_old_password_error: "Incorrect old password."
+passwords_equal_error: "The new password must not be the same as the old one."
+reset_password_email_confirmation_error: "Resetting the password is not possible because email not confirmed."
+
+session_is_not_active_error: "The session is not active."
+other_user_session_forbidden_error: "It is forbidden to change the session of another user."
+
+invalid_file_type_expected_error: "Invalid file type, expected: [%{expected}]."
+invalid_file_type_expected_but_got_error: "Invalid file type, expected: [%{expected}], but got %{got}."
+
+sign_in_credentials_error: "Incorrect username or password."
+user_with_username_already_exists_error: "A user with this username already exists."
+user_with_email_already_exists_error: "A user with this email already exists."
+
+create_user_active_session_error: "Unable to create user with active session."
+reset_password_active_session_error: "Unable to reset password with active session."
+sign_in_active_session_error: "Unable to sign in with active session."

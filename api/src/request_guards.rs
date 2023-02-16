@@ -3,8 +3,10 @@ use crate::db;
 use crate::models::User;
 use crate::services::session_services;
 use crate::services::users_services;
+use okapi::openapi3::{Object, Parameter, ParameterValue};
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome, Request};
+use rocket_accept_language::{AcceptLanguage as RocketAcceptLanguage, LanguageIdentifier};
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 use rocket_okapi::Result as RocketOkapiResult;
@@ -61,5 +63,49 @@ impl<'r> OpenApiFromRequest<'r> for UserAgent {
         _required: bool,
     ) -> RocketOkapiResult<RequestHeaderInput> {
         Ok(RequestHeaderInput::None)
+    }
+}
+
+pub struct AcceptLanguage(pub Vec<LanguageIdentifier>);
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for AcceptLanguage {
+    type Error = ();
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let result = RocketAcceptLanguage::from_request(request).await;
+        match result {
+            Outcome::Success(accept_language) => {
+                Outcome::Success(AcceptLanguage(accept_language.accept_language))
+            }
+            Outcome::Forward(forward) => Outcome::Forward(forward),
+            Outcome::Failure(failure) => Outcome::Failure(failure),
+        }
+    }
+}
+
+impl<'r> OpenApiFromRequest<'r> for AcceptLanguage {
+    fn from_request_input(
+        gen: &mut OpenApiGenerator,
+        _name: String,
+        required: bool,
+    ) -> RocketOkapiResult<RequestHeaderInput> {
+        let schema = gen.json_schema::<String>();
+        Ok(RequestHeaderInput::Parameter(Parameter {
+            name: "Accept-Language".to_owned(),
+            location: "header".to_owned(),
+            description: None,
+            required,
+            deprecated: false,
+            allow_empty_value: false,
+            value: ParameterValue::Schema {
+                style: None,
+                explode: None,
+                allow_reserved: false,
+                schema,
+                example: None,
+                examples: None,
+            },
+            extensions: Object::default(),
+        }))
     }
 }

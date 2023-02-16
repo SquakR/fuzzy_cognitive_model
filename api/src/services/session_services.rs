@@ -1,10 +1,11 @@
-use crate::errors::AppError;
 use crate::models::{Session, User};
+use crate::response::{AppError, ServiceResult};
 use crate::schema::sessions;
 use crate::types::{DeviceType, OSType, ProductType, SessionType};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use ipnetwork::IpNetwork;
+use rust_i18n::t;
 use std::env;
 use user_agent_parser::{
     Device as UserAgentDevice, Product as UserAgentProduct, UserAgentParser, OS as UserAgentOS,
@@ -15,8 +16,8 @@ pub fn create_session(
     user_id: i32,
     ip_address: &IpNetwork,
     user_agent: &str,
-) -> Result<Session, AppError> {
-    AppError::update_result(
+) -> ServiceResult<Session> {
+    AppError::update_diesel_result(
         diesel::insert_into(sessions::table)
             .values((
                 sessions::user_id.eq(user_id),
@@ -30,8 +31,8 @@ pub fn create_session(
 pub fn get_user_active_sessions(
     connection: &mut PgConnection,
     user_id: i32,
-) -> Result<Vec<Session>, AppError> {
-    AppError::update_result(
+) -> ServiceResult<Vec<Session>> {
+    AppError::update_diesel_result(
         sessions::table
             .filter(sessions::user_id.eq(user_id))
             .filter(sessions::is_active.eq(true))
@@ -42,19 +43,20 @@ pub fn get_user_active_sessions(
 pub fn find_session_by_id(
     connection: &mut PgConnection,
     session_id: i32,
-) -> Result<Session, AppError> {
-    AppError::update_result(
+) -> ServiceResult<Session> {
+    AppError::update_diesel_result_find(
         sessions::table
             .find(session_id)
             .first::<Session>(connection),
+        String::from("session_not_found_error"),
     )
 }
 
 pub fn deactivate_all_user_sessions(
     connection: &mut PgConnection,
     user_id: i32,
-) -> Result<Vec<Session>, AppError> {
-    AppError::update_result(
+) -> ServiceResult<Vec<Session>> {
+    AppError::update_diesel_result(
         diesel::update(sessions::table)
             .filter(sessions::user_id.eq(user_id))
             .filter(sessions::is_active.eq(true))
@@ -67,16 +69,20 @@ pub fn deactivate_user_session(
     connection: &mut PgConnection,
     user: &User,
     session_id: i32,
-) -> Result<Session, AppError> {
+) -> ServiceResult<Session> {
     let session = find_session_by_id(connection, session_id)?;
     if !session.is_active {
         deactivate_all_user_sessions(connection, user.id)?;
-        return Err(AppError::BadRequestError);
+        return Err(AppError::ValidationError(Box::new(|locale| {
+            t!("session_is_not_active_error", locale = locale)
+        })));
     }
     if session.user_id != user.id {
-        return Err(AppError::BadRequestError);
+        return Err(AppError::ForbiddenError(String::from(
+            "other_user_session_forbidden_error",
+        )));
     }
-    AppError::update_result(
+    AppError::update_diesel_result(
         diesel::update(sessions::table.filter(sessions::id.eq(session_id)))
             .set(sessions::is_active.eq(false))
             .get_result::<Session>(connection),
@@ -84,23 +90,35 @@ pub fn deactivate_user_session(
 }
 
 impl From<UserAgentDevice<'_>> for DeviceType {
-    fn from(value: UserAgentDevice) -> Self {
+    fn from(user_agent_device: UserAgentDevice) -> Self {
         DeviceType {
-            name: value.name.and_then(|name| Some(name.into_owned())),
-            brand: value.brand.and_then(|brand| Some(brand.into_owned())),
-            model: value.model.and_then(|model| Some(model.into_owned())),
+            name: user_agent_device
+                .name
+                .and_then(|name| Some(name.into_owned())),
+            brand: user_agent_device
+                .brand
+                .and_then(|brand| Some(brand.into_owned())),
+            model: user_agent_device
+                .model
+                .and_then(|model| Some(model.into_owned())),
         }
     }
 }
 
 impl From<UserAgentOS<'_>> for OSType {
-    fn from(value: UserAgentOS<'_>) -> Self {
+    fn from(user_agent_os: UserAgentOS<'_>) -> Self {
         OSType {
-            name: value.name.and_then(|name| Some(name.into_owned())),
-            major: value.major.and_then(|major| Some(major.into_owned())),
-            minor: value.minor.and_then(|minor| Some(minor.into_owned())),
-            patch: value.patch.and_then(|patch| Some(patch.into_owned())),
-            patch_minor: value
+            name: user_agent_os.name.and_then(|name| Some(name.into_owned())),
+            major: user_agent_os
+                .major
+                .and_then(|major| Some(major.into_owned())),
+            minor: user_agent_os
+                .minor
+                .and_then(|minor| Some(minor.into_owned())),
+            patch: user_agent_os
+                .patch
+                .and_then(|patch| Some(patch.into_owned())),
+            patch_minor: user_agent_os
                 .patch_minor
                 .and_then(|patch_minor| Some(patch_minor.into_owned())),
         }
@@ -108,12 +126,20 @@ impl From<UserAgentOS<'_>> for OSType {
 }
 
 impl From<UserAgentProduct<'_>> for ProductType {
-    fn from(value: UserAgentProduct<'_>) -> Self {
+    fn from(user_agent_product: UserAgentProduct<'_>) -> Self {
         ProductType {
-            name: value.name.and_then(|name| Some(name.into_owned())),
-            major: value.major.and_then(|major| Some(major.into_owned())),
-            minor: value.minor.and_then(|minor| Some(minor.into_owned())),
-            patch: value.patch.and_then(|patch| Some(patch.into_owned())),
+            name: user_agent_product
+                .name
+                .and_then(|name| Some(name.into_owned())),
+            major: user_agent_product
+                .major
+                .and_then(|major| Some(major.into_owned())),
+            minor: user_agent_product
+                .minor
+                .and_then(|minor| Some(minor.into_owned())),
+            patch: user_agent_product
+                .patch
+                .and_then(|patch| Some(patch.into_owned())),
         }
     }
 }

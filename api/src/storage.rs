@@ -1,4 +1,4 @@
-use crate::errors::AppError;
+use crate::response::{AppError, ServiceResult};
 use path_slash::PathBufExt as _;
 use rocket::fs::NamedFile;
 use rocket::fs::TempFile;
@@ -20,12 +20,12 @@ pub struct SubStorage {
 }
 
 impl Storage {
-    pub async fn add_user_avatar(&self, avatar_file: TempFile<'_>) -> Result<PathBuf, AppError> {
+    pub async fn add_user_avatar(&self, avatar_file: TempFile<'_>) -> ServiceResult<PathBuf> {
         self.user_avatars_storage
             .add_file(self.path.as_path(), avatar_file)
             .await
     }
-    pub async fn get_user_avatar(&self, avatar_path: PathBuf) -> Result<NamedFile, AppError> {
+    pub async fn get_user_avatar(&self, avatar_path: PathBuf) -> ServiceResult<NamedFile> {
         self.user_avatars_storage.get_file(avatar_path).await
     }
     pub fn new() -> Storage {
@@ -50,7 +50,7 @@ impl SubStorage {
         &self,
         storage_path: &Path,
         mut file: TempFile<'_>,
-    ) -> Result<PathBuf, AppError> {
+    ) -> ServiceResult<PathBuf> {
         let name = match file.name() {
             Some(name) => name,
             None => return Err(AppError::InternalServerError),
@@ -58,27 +58,40 @@ impl SubStorage {
         let media_type = match file.content_type() {
             Some(ct) => ct.media_type(),
             None => {
-                return Err(AppError::ValidationError(format!(
-                    "Invalid file type, expected: [{}].",
-                    self.get_expected_extension(),
-                )))
+                let expected = self.get_expected_extension();
+                return Err(AppError::ValidationError(Box::new(move |locale| {
+                    t!(
+                        "invalid_file_type_expected_error",
+                        locale = locale,
+                        expected = &expected
+                    )
+                })));
             }
         };
         let extension = match media_type.extension() {
-            Some(e) => e,
+            Some(e) => e.as_str(),
             None => {
-                return Err(AppError::ValidationError(format!(
-                    "Invalid file type, expected: [{}].",
-                    self.get_expected_extension(),
-                )))
+                let expected = self.get_expected_extension();
+                return Err(AppError::ValidationError(Box::new(move |locale| {
+                    t!(
+                        "invalid_file_type_expected_error",
+                        locale = locale,
+                        expected = &expected
+                    )
+                })));
             }
         };
         if !self.media_types.contains(media_type) {
-            return Err(AppError::ValidationError(format!(
-                "Invalid file type, expected: [{}], but got {}.",
-                self.get_expected_extension(),
-                extension
-            )));
+            let expected = self.get_expected_extension();
+            let got = extension.to_owned();
+            return Err(AppError::ValidationError(Box::new(move |locale| {
+                t!(
+                    "invalid_file_type_expected_error",
+                    locale = locale,
+                    expected = &expected,
+                    got = &got
+                )
+            })));
         }
         let full_path = self
             .path
@@ -94,10 +107,12 @@ impl SubStorage {
                 .unwrap(),
         )))
     }
-    pub async fn get_file(&self, path: PathBuf) -> Result<NamedFile, AppError> {
+    pub async fn get_file(&self, path: PathBuf) -> ServiceResult<NamedFile> {
         match NamedFile::open(self.path.join(path)).await {
             Ok(named_file) => Ok(named_file),
-            Err(_) => Err(AppError::NotFoundError),
+            Err(_) => Err(AppError::NotFoundError(String::from(
+                "file_not_found_error",
+            ))),
         }
     }
     fn new(name: String, storage_path: &Path, media_types: Vec<MediaType>) -> SubStorage {

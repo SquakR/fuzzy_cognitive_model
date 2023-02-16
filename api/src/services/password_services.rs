@@ -1,6 +1,6 @@
-use crate::errors::AppError;
 use crate::models::PasswordReset;
 use crate::models::User;
+use crate::response::{AppError, ServiceResult};
 use crate::schema::password_resets;
 use crate::schema::users;
 use crate::services::mailing_services;
@@ -12,23 +12,24 @@ use argon2::{password_hash::PasswordHash, Argon2, PasswordHasher, PasswordVerifi
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use jwt::{SignWithKey, VerifyWithKey};
+use rust_i18n::t;
 use std::collections::BTreeMap;
 
 pub fn change_user_password(
     connection: &mut PgConnection,
     user: &User,
     change_password: ChangePasswordType,
-) -> Result<(), AppError> {
+) -> ServiceResult<()> {
     if !verify_password(&change_password.old_password, &user.password) {
-        return Err(AppError::ValidationError(String::from(
-            "Incorrect old password.",
-        )));
+        return Err(AppError::ValidationError(Box::new(|locale| {
+            t!("incorrect_old_password_error", locale = locale)
+        })));
     }
     let new_password_hash = hash_password(&change_password.new_password);
     if new_password_hash == user.password {
-        return Err(AppError::ValidationError(String::from(
-            "The new password must not be the same as the old one.",
-        )));
+        return Err(AppError::ValidationError(Box::new(|locale| {
+            t!("passwords_equal_error", locale = locale)
+        })));
     }
     set_password(connection, user.id, &new_password_hash)?;
     Ok(())
@@ -37,12 +38,12 @@ pub fn change_user_password(
 pub async fn request_password_reset(
     connection: &mut PgConnection,
     email: &str,
-) -> Result<PasswordReset, AppError> {
+) -> ServiceResult<PasswordReset> {
     let user = users_services::find_user_by_email(connection, email)?;
     if !user.is_email_confirmed {
-        return Err(AppError::ValidationError(String::from(
-            "Resetting the password is not possible because email not confirmed.",
-        )));
+        return Err(AppError::ValidationError(Box::new(|locale| {
+            t!("reset_password_email_confirmation_error", locale = locale)
+        })));
     }
     let password_reset = create_password_reset(connection, &user)?;
     send_password_reset_email(&user, &password_reset).await?;
@@ -52,21 +53,25 @@ pub async fn request_password_reset(
 pub fn reset_password(
     connection: &mut PgConnection,
     reset_password: ResetPasswordType,
-) -> Result<(), AppError> {
+) -> ServiceResult<()> {
     let key = utils::get_jwt_key();
     let claims: BTreeMap<String, i32> = match reset_password.token.verify_with_key(&key) {
         Ok(claims) => claims,
-        Err(_) => return Err(AppError::ValidationError(String::from("Invalid token."))),
+        Err(_) => {
+            return Err(AppError::ValidationError(Box::new(|locale| {
+                t!("invalid_token_error", locale = locale)
+            })));
+        }
     };
     let password_reset = find_password_reset_by_id(connection, claims["password_reset_id"])?;
     if !password_reset.is_valid {
-        return Err(AppError::ValidationError(String::from(
-            "The link is not active.",
-        )));
+        return Err(AppError::ValidationError(Box::new(|locale| {
+            t!("link_is_not_active_error", locale = locale)
+        })));
     }
     let new_password_hash = hash_password(&reset_password.new_password);
     set_password(connection, password_reset.user_id, &new_password_hash)?;
-    AppError::update_result(
+    AppError::update_diesel_result(
         diesel::update(password_resets::table)
             .filter(password_resets::id.eq(password_reset.id))
             .set((
@@ -82,15 +87,15 @@ pub fn reset_password(
 pub fn create_password_reset(
     connection: &mut PgConnection,
     user: &User,
-) -> Result<PasswordReset, AppError> {
-    AppError::update_result(
+) -> ServiceResult<PasswordReset> {
+    AppError::update_diesel_result(
         diesel::update(password_resets::table)
             .filter(password_resets::user_id.eq(user.id))
             .filter(password_resets::is_valid.eq(true))
             .set(password_resets::is_valid.eq(false))
             .execute(connection),
     )?;
-    AppError::update_result(
+    AppError::update_diesel_result(
         diesel::insert_into(password_resets::table)
             .values(password_resets::user_id.eq(user.id))
             .get_result::<PasswordReset>(connection),
@@ -100,7 +105,7 @@ pub fn create_password_reset(
 pub async fn send_password_reset_email(
     user: &User,
     password_reset: &PasswordReset,
-) -> Result<(), AppError> {
+) -> ServiceResult<()> {
     let domain = utils::get_env("DOMAIN");
     let key = utils::get_jwt_key();
     let mut claims = BTreeMap::new();
@@ -121,11 +126,12 @@ pub async fn send_password_reset_email(
 pub fn find_password_reset_by_id(
     connection: &mut PgConnection,
     id: i32,
-) -> Result<PasswordReset, AppError> {
-    AppError::update_result(
+) -> ServiceResult<PasswordReset> {
+    AppError::update_diesel_result_find(
         password_resets::table
             .find(id)
             .first::<PasswordReset>(connection),
+        String::from("password_reset_not_found_error"),
     )
 }
 
@@ -147,8 +153,8 @@ fn set_password(
     connection: &mut PgConnection,
     user_id: i32,
     new_password_hash: &str,
-) -> Result<usize, AppError> {
-    AppError::update_result(
+) -> ServiceResult<usize> {
+    AppError::update_diesel_result(
         diesel::update(users::table)
             .filter(users::id.eq(user_id))
             .set(users::password.eq(new_password_hash))

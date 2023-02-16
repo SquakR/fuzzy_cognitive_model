@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use crate::errors::AppError;
 use crate::models::{Session, User};
+use crate::response::{AppError, ServiceResult};
 use crate::schema::users;
 use crate::services::email_confirmation_services;
 use crate::services::password_services;
@@ -17,7 +17,7 @@ pub async fn create_user(
     connection: &mut PgConnection,
     storage: &Storage,
     mut user_in: UserInCreateType<'_>,
-) -> Result<User, AppError> {
+) -> ServiceResult<User> {
     let exist_user = find_exist_user(connection, Some(&user_in.username), Some(&user_in.email))?;
     if let Some(exist_user) = exist_user {
         return Err(get_exist_user_app_error(
@@ -32,7 +32,7 @@ pub async fn create_user(
             avatar = Some(storage.add_user_avatar(avatar_file).await?);
         }
     }
-    let user = AppError::update_result(
+    let user = AppError::update_diesel_result(
         diesel::insert_into(users::table)
             .values((
                 users::username.eq(user_in.username),
@@ -54,26 +54,28 @@ pub async fn create_user(
     Ok(user)
 }
 
-pub fn find_user_by_id(connection: &mut PgConnection, user_id: i32) -> Result<User, AppError> {
-    AppError::update_result(users::table.find(user_id).first::<User>(connection))
-}
-
-pub fn find_user_by_username(
-    connection: &mut PgConnection,
-    username: &str,
-) -> Result<User, AppError> {
-    AppError::update_result(
-        users::table
-            .filter(users::username.eq(username))
-            .first::<User>(connection),
+pub fn find_user_by_id(connection: &mut PgConnection, user_id: i32) -> ServiceResult<User> {
+    AppError::update_diesel_result_find(
+        users::table.find(user_id).first::<User>(connection),
+        String::from("user_not_found_error"),
     )
 }
 
-pub fn find_user_by_email(connection: &mut PgConnection, email: &str) -> Result<User, AppError> {
-    AppError::update_result(
+pub fn find_user_by_username(connection: &mut PgConnection, username: &str) -> ServiceResult<User> {
+    AppError::update_diesel_result_find(
+        users::table
+            .filter(users::username.eq(username))
+            .first::<User>(connection),
+        String::from("user_not_found_error"),
+    )
+}
+
+pub fn find_user_by_email(connection: &mut PgConnection, email: &str) -> ServiceResult<User> {
+    AppError::update_diesel_result_find(
         users::table
             .filter(users::email.eq(email))
             .first::<User>(connection),
+        String::from("user_not_found_error"),
     )
 }
 
@@ -84,8 +86,8 @@ pub fn find_user_by_session(connection: &mut PgConnection, session: &Session) ->
         .unwrap()
 }
 
-pub fn confirm_user_email(connection: &mut PgConnection, user: User) -> Result<User, AppError> {
-    AppError::update_result(
+pub fn confirm_user_email(connection: &mut PgConnection, user: User) -> ServiceResult<User> {
+    AppError::update_diesel_result(
         diesel::update(users::table)
             .filter(users::id.eq(user.id))
             .set(users::is_email_confirmed.eq(true))
@@ -98,7 +100,7 @@ pub async fn change_user(
     storage: &Storage,
     user: User,
     mut user_in: UserInChangeType<'_>,
-) -> Result<User, AppError> {
+) -> ServiceResult<User> {
     let username = if user_in.username != user.username {
         Some(user_in.username.as_str())
     } else {
@@ -137,7 +139,7 @@ pub async fn change_user(
     } else {
         false
     };
-    let user = AppError::update_result(
+    let user = AppError::update_diesel_result(
         diesel::update(users::table)
             .filter(users::id.eq(&user.id))
             .set((
@@ -163,7 +165,7 @@ pub fn change_user_language(
     connection: &mut PgConnection,
     user: User,
     language: Option<&str>,
-) -> Result<User, AppError> {
+) -> ServiceResult<User> {
     let mut create = true;
     if let Some(user_language) = &user.language {
         if let Some(new_language) = language {
@@ -173,7 +175,7 @@ pub fn change_user_language(
         }
     }
     if create {
-        AppError::update_result(
+        AppError::update_diesel_result(
             diesel::update(users::table)
                 .filter(users::id.eq(&user.id))
                 .set(users::language.eq(language))
@@ -189,20 +191,20 @@ pub fn sign_in(
     credentials: CredentialsType,
     ip_address: &IpNetwork,
     user_agent: &str,
-) -> Result<Session, AppError> {
+) -> ServiceResult<Session> {
     let user_result = find_user_by_username(connection, &credentials.username);
     let user = match user_result {
         Ok(user) => user,
         Err(_) => {
-            return Err(AppError::ValidationError(String::from(
-                "Incorrect username or password.",
-            )))
+            return Err(AppError::ValidationError(Box::new(|locale| {
+                t!("sign_in_credentials_error", locale = locale)
+            })));
         }
     };
     if !password_services::verify_password(&credentials.password, &user.password) {
-        return Err(AppError::ValidationError(String::from(
-            "Incorrect username or password.",
-        )));
+        return Err(AppError::ValidationError(Box::new(|locale| {
+            t!("sign_in_credentials_error", locale = locale)
+        })));
     }
     session_services::create_session(connection, user.id, ip_address, user_agent)
 }
@@ -211,7 +213,7 @@ pub fn sign_out(
     connection: &mut PgConnection,
     user: &User,
     session_id: i32,
-) -> Result<Session, AppError> {
+) -> ServiceResult<Session> {
     session_services::deactivate_user_session(connection, user, session_id)
 }
 
@@ -219,7 +221,7 @@ fn find_exist_user(
     connection: &mut PgConnection,
     username: Option<&str>,
     email: Option<&str>,
-) -> Result<Option<User>, AppError> {
+) -> ServiceResult<Option<User>> {
     if username.is_some() || email.is_some() {
         let mut query = users::table.into_boxed();
         if let Some(username) = username {
@@ -233,7 +235,7 @@ fn find_exist_user(
                 if diesel_error == DieselError::NotFound {
                     Ok(None)
                 } else {
-                    Err(AppError::from_diesel_error(diesel_error))
+                    Err(AppError::from_diesel_error(diesel_error, None))
                 }
             }
             Ok(exist_user) => Ok(Some(exist_user)),
@@ -244,30 +246,32 @@ fn find_exist_user(
 
 fn get_exist_user_app_error(exist_user: User, username: &str, email: &str) -> AppError {
     if exist_user.username == username {
-        return AppError::ValidationError(String::from(
-            "A user with this username already exists.",
-        ));
+        return AppError::ValidationError(Box::new(|locale| {
+            t!("user_with_username_already_exists_error", locale = locale)
+        }));
     }
     if exist_user.email == email {
-        return AppError::ValidationError(String::from("A user with this email already exists."));
+        return AppError::ValidationError(Box::new(|locale| {
+            t!("user_with_email_already_exists_error", locale = locale)
+        }));
     }
     unreachable!();
 }
 
 impl From<User> for UserOutType {
-    fn from(value: User) -> Self {
+    fn from(user: User) -> Self {
         UserOutType {
-            id: value.id,
-            username: value.username,
-            email: value.email,
-            is_email_confirmed: value.is_email_confirmed,
-            first_name: value.first_name,
-            second_name: value.second_name,
-            last_name: value.last_name,
-            avatar: value.avatar,
-            language: value.language,
-            created_at: value.created_at,
-            updated_at: value.updated_at,
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            is_email_confirmed: user.is_email_confirmed,
+            first_name: user.first_name,
+            second_name: user.second_name,
+            last_name: user.last_name,
+            avatar: user.avatar,
+            language: user.language,
+            created_at: user.created_at,
+            updated_at: user.updated_at,
         }
     }
 }
