@@ -1,3 +1,5 @@
+bad_request_error: "Неверный запрос."
+unauthorized_error: "Для выполнения действия требуется авторизация."
 internal_server_error: "Критическая ошибка на стороне сервера."
 
 user_not_found_error: "Не найдена запись пользователя."

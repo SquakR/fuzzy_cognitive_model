@@ -1,16 +1,18 @@
+use crate::request_guards::AcceptLanguage;
 use crate::request_guards::{BaseLocale, Locale};
 use diesel::result::Error as DieselError;
 use okapi::openapi3::Responses;
+use rocket::catcher::BoxFuture;
 use rocket::http::hyper::header;
-use rocket::http::Header;
-use rocket::http::Status;
-use rocket::request::Request;
+use rocket::http::{Header, Status};
+use rocket::request::{FromRequest, Outcome, Request};
+use rocket::response::Response;
 use rocket::response::{self, Responder};
+use rocket_accept_language::AcceptLanguage as RocketAcceptLanguage;
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::response::OpenApiResponderInner;
 use rocket_okapi::Result as RocketOkapiResult;
 use rust_i18n::t;
-
 pub type ServiceResult<T> = Result<T, AppError>;
 
 pub enum AppError {
@@ -133,4 +135,40 @@ impl<T, L: BaseLocale> OpenApiResponderInner for PathResult<T, L> {
         let err_responses = <Status>::responses(gen)?;
         rocket_okapi::util::produce_any_responses(ok_responses, err_responses)
     }
+}
+
+pub fn handle_bad_request_error<'r>(status: Status, req: &'r Request<'_>) -> BoxFuture<'r> {
+    Box::pin(async move { get_response(status, req, "bad_request_error").await })
+}
+
+pub fn handle_unauthorized_error<'r>(status: Status, req: &'r Request<'_>) -> BoxFuture<'r> {
+    Box::pin(async move { get_response(status, req, "unauthorized_error").await })
+}
+
+pub fn handle_internal_server_error<'r>(status: Status, req: &'r Request<'_>) -> BoxFuture<'r> {
+    Box::pin(async move { get_response(status, req, "internal_server_error").await })
+}
+
+async fn get_request_locale<'r>(req: &'r Request<'_>) -> Locale {
+    match RocketAcceptLanguage::from_request(req).await {
+        Outcome::Success(accept_language) => {
+            Locale::new(&AcceptLanguage(accept_language.accept_language))
+        }
+        _ => Locale(String::from("en-US")),
+    }
+}
+
+async fn get_response<'r>(
+    status: Status,
+    req: &'r Request<'_>,
+    key: &str,
+) -> Result<Response<'r>, Status> {
+    let locale = get_request_locale(req).await;
+    let message = t!(key, locale = &locale.get_locale());
+    let mut response = (status, message).respond_to(req).unwrap();
+    response.set_header(Header::new(
+        header::CONTENT_LANGUAGE.as_str(),
+        locale.get_locale().to_owned(),
+    ));
+    Ok(response)
 }

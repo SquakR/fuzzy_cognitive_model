@@ -1,3 +1,5 @@
+bad_request_error: "Bad request."
+unauthorized_error: "Authorization is required to perform the action."
 internal_server_error: "Critical error on the server side."
 
 user_not_found_error: "User record not found."

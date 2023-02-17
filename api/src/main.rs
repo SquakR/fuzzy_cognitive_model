@@ -7,7 +7,7 @@ use fuzzy_cognitive_model::cookies;
 use fuzzy_cognitive_model::db;
 use fuzzy_cognitive_model::models::User;
 use fuzzy_cognitive_model::request_guards::{AcceptLanguage, Locale, UserAgent, UserLocale};
-use fuzzy_cognitive_model::response::{AppError, PathResult};
+use fuzzy_cognitive_model::response::{self, AppError, PathResult};
 use fuzzy_cognitive_model::services::email_confirmation_services;
 use fuzzy_cognitive_model::services::password_services;
 use fuzzy_cognitive_model::services::session_services;
@@ -20,6 +20,7 @@ use fuzzy_cognitive_model::types::{
 use fuzzy_cognitive_model::utils;
 use fuzzy_cognitive_model::utils::Operation;
 use ipnetwork::IpNetwork;
+use rocket::catcher::Catcher;
 use rocket::form::Form;
 use rocket::fs::NamedFile;
 use rocket::http::CookieJar;
@@ -65,7 +66,7 @@ async fn create_user(
 #[patch("/confirm_email/<token>")]
 fn confirm_email(
     token: &str,
-    accept_language: AcceptLanguage,
+    accept_language: &AcceptLanguage,
     locale: Locale,
 ) -> PathResult<Json<UserOutType>, UserLocale> {
     let connection = &mut db::establish_connection();
@@ -73,7 +74,7 @@ fn confirm_email(
         Ok(user) => user,
         Err(app_error) => return PathResult::new(Err(app_error), UserLocale(locale.0.to_owned())),
     };
-    let locale = UserLocale::new(&user, &accept_language);
+    let locale = UserLocale::new(&user, accept_language);
     PathResult::new(Ok(Json(UserOutType::from(user))), locale)
 }
 
@@ -351,6 +352,14 @@ fn rocket() -> _ {
                 get_sessions,
                 get_user_avatar
             ),
+        )
+        .register(
+            "/api/v1",
+            vec![
+                Catcher::new(400, response::handle_bad_request_error),
+                Catcher::new(401, response::handle_unauthorized_error),
+                Catcher::new(500, response::handle_internal_server_error),
+            ],
         )
         .mount("/api/v1/docs", make_swagger_ui(&get_docs()))
         .attach(cors)

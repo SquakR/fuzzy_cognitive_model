@@ -75,20 +75,20 @@ impl<'r> OpenApiFromRequest<'r> for UserAgent {
 pub struct AcceptLanguage(pub Vec<LanguageIdentifier>);
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for AcceptLanguage {
+impl<'r> FromRequest<'r> for &'r AcceptLanguage {
     type Error = ();
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        match request.guard::<RocketAcceptLanguage>().await {
-            Outcome::Success(accept_language) => {
-                Outcome::Success(AcceptLanguage(accept_language.accept_language))
-            }
+        match request.guard::<&RocketAcceptLanguage>().await {
+            Outcome::Success(accept_language) => Outcome::Success(
+                request.local_cache(|| AcceptLanguage(accept_language.accept_language.clone())),
+            ),
             Outcome::Failure(failure) => Outcome::Failure(failure),
             Outcome::Forward(forward) => Outcome::Forward(forward),
         }
     }
 }
 
-impl<'r> OpenApiFromRequest<'r> for AcceptLanguage {
+impl<'r> OpenApiFromRequest<'r> for &'r AcceptLanguage {
     fn from_request_input(
         gen: &mut OpenApiGenerator,
         _name: String,
@@ -135,8 +135,8 @@ impl BaseLocale for Locale {
 impl<'r> FromRequest<'r> for Locale {
     type Error = ();
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        match request.guard::<AcceptLanguage>().await {
-            Outcome::Success(accept_language) => Outcome::Success(Locale::new(&accept_language)),
+        match request.guard::<&AcceptLanguage>().await {
+            Outcome::Success(accept_language) => Outcome::Success(Locale::new(accept_language)),
             Outcome::Failure(failure) => Outcome::Failure(failure),
             Outcome::Forward(forward) => Outcome::Forward(forward),
         }
@@ -195,7 +195,7 @@ impl<'r> FromRequest<'r> for UserLocale {
             Outcome::Failure(failure) => return Outcome::Failure(failure),
             Outcome::Forward(forward) => return Outcome::Forward(forward),
         };
-        let accept_language = match request.guard::<AcceptLanguage>().await {
+        let accept_language = match request.guard::<&AcceptLanguage>().await {
             Outcome::Success(accept_language) => accept_language,
             Outcome::Failure(failure) => return Outcome::Failure(failure),
             Outcome::Forward(forward) => return Outcome::Forward(forward),
