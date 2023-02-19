@@ -1,5 +1,5 @@
-use crate::request_guards::AcceptLanguage;
-use crate::request_guards::{BaseLocale, Locale};
+use crate::request::AcceptLanguage;
+use crate::request::{BaseLocale, Locale};
 use diesel::result::Error as DieselError;
 use okapi::openapi3::Responses;
 use rocket::catcher::BoxFuture;

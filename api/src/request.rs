@@ -2,7 +2,7 @@ use crate::cookies;
 use crate::db;
 use crate::models::User;
 use crate::services::session_services;
-use crate::services::users_services;
+use crate::services::user_services;
 use okapi::openapi3::{Object, Parameter, ParameterValue};
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome, Request};
@@ -25,7 +25,7 @@ impl<'r> FromRequest<'r> for User {
                 Ok(value) => value,
                 Err(_) => return Err(Status::BadRequest),
             };
-            let user = users_services::find_user_by_session(connection, &session);
+            let user = user_services::find_user_by_session(connection, &session);
             if !session.is_active {
                 let _sessions = session_services::deactivate_all_user_sessions(connection, user.id);
                 return Err(Status::BadRequest);

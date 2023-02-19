@@ -6,7 +6,7 @@ use crate::schema::password_resets;
 use crate::schema::users;
 use crate::services::mailing_services;
 use crate::services::session_services;
-use crate::services::users_services;
+use crate::services::user_services;
 use crate::types::{ChangePasswordType, ResetPasswordType};
 use crate::utils;
 use argon2::{password_hash::PasswordHash, Argon2, PasswordHasher, PasswordVerifier};
@@ -40,7 +40,7 @@ pub async fn request_password_reset(
     connection: &mut PgConnection,
     email: &str,
 ) -> ServiceResult<PasswordReset> {
-    let user = users_services::find_user_by_email(connection, email)?;
+    let user = user_services::find_user_by_email(connection, email)?;
     if !user.is_email_confirmed {
         return Err(AppError::ValidationError(Box::new(|locale| {
             t!("reset_password_email_confirmation_error", locale = locale)

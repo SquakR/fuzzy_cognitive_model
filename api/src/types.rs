@@ -181,6 +181,27 @@ pub struct ResetPasswordType {
     pub new_password: String,
 }
 
+/// Pagination input type
+#[derive(Deserialize)]
+pub struct PaginationInType {
+    /// Search query
+    pub search: Option<String>,
+    /// Limit
+    pub limit: Option<u16>,
+    /// Offset
+    pub offset: Option<u16>,
+}
+
+/// Pagination output type
+#[derive(Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PaginationOutType<T> {
+    /// Pagination data
+    pub data: Vec<T>,
+    /// Total count of records
+    pub total_count: i64,
+}
+
 macro_rules! user_json_schema {
     ($properties:expr, $description:expr) => {{
         let mut properties = Map::new();

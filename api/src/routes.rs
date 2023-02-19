@@ -1,4 +1,4 @@
-mod users_routes;
+mod user_routes;
 use okapi::openapi3::{OpenApi, RefOr};
 use rocket::{Build, Rocket};
 use rocket_okapi::settings::OpenApiSettings;
@@ -46,19 +46,20 @@ impl MountRoutes for Rocket<Build> {
         self.mount(
             base,
             get_routes!(
-                users_routes::create_user,
-                users_routes::confirm_email,
-                users_routes::get_me,
-                users_routes::change_me,
-                users_routes::change_me_language,
-                users_routes::change_me_password,
-                users_routes::request_password_reset,
-                users_routes::reset_password,
-                users_routes::sign_in,
-                users_routes::sign_out_multiple,
-                users_routes::sign_out,
-                users_routes::get_sessions,
-                users_routes::get_user_avatar
+                user_routes::get_users,
+                user_routes::create_user,
+                user_routes::confirm_email,
+                user_routes::get_me,
+                user_routes::change_me,
+                user_routes::change_me_language,
+                user_routes::change_me_password,
+                user_routes::request_password_reset,
+                user_routes::reset_password,
+                user_routes::sign_in,
+                user_routes::sign_out_multiple,
+                user_routes::sign_out,
+                user_routes::get_sessions,
+                user_routes::get_user_avatar
             ),
         )
     }

@@ -1,16 +1,16 @@
 use crate::cookies;
 use crate::db;
 use crate::models::User;
-use crate::request_guards::{AcceptLanguage, Locale, UserAgent, UserLocale};
+use crate::request::{AcceptLanguage, Locale, UserAgent, UserLocale};
 use crate::response::{AppError, PathResult};
 use crate::services::email_confirmation_services;
 use crate::services::password_services;
 use crate::services::session_services;
-use crate::services::users_services;
+use crate::services::user_services;
 use crate::storage::Storage;
 use crate::types::{
-    ChangeLanguageType, ChangePasswordType, CredentialsType, ResetPasswordType, SessionType,
-    UserInChangeType, UserInCreateType, UserOutType,
+    ChangeLanguageType, ChangePasswordType, CredentialsType, PaginationInType, PaginationOutType,
+    ResetPasswordType, SessionType, UserInChangeType, UserInCreateType, UserOutType,
 };
 use ipnetwork::IpNetwork;
 use rocket::form::Form;
@@ -22,6 +22,28 @@ use rocket_okapi::openapi;
 use rust_i18n::t;
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
+
+/// Get users
+#[openapi(tag = "users")]
+#[get("/users?<search>&<limit>&<offset>")]
+pub fn get_users(
+    search: Option<&str>,
+    limit: Option<u16>,
+    offset: Option<u16>,
+    locale: UserLocale,
+) -> PathResult<Json<PaginationOutType<UserOutType>>, UserLocale> {
+    let connection = &mut db::establish_connection();
+    let pagination_in = PaginationInType {
+        search: search.map(|s| s.to_owned()),
+        limit,
+        offset,
+    };
+    let pagination_out = match user_services::paginate_users(connection, pagination_in) {
+        Ok(pagination_out) => pagination_out,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(Ok(Json(pagination_out)), locale)
+}
 
 /// Create new user
 #[openapi(tag = "users")]
@@ -41,7 +63,7 @@ pub async fn create_user(
         );
     }
     let connection = &mut db::establish_connection();
-    let user = match users_services::create_user(connection, storage, user_in.into_inner()).await {
+    let user = match user_services::create_user(connection, storage, user_in.into_inner()).await {
         Ok(user) => user,
         Err(app_error) => return PathResult::new(Err(app_error), locale),
     };
@@ -83,7 +105,7 @@ pub async fn change_me(
 ) -> PathResult<Json<UserOutType>, UserLocale> {
     let connection = &mut db::establish_connection();
     let user =
-        match users_services::change_user(connection, storage, user, user_in.into_inner()).await {
+        match user_services::change_user(connection, storage, user, user_in.into_inner()).await {
             Ok(user) => user,
             Err(app_error) => return PathResult::new(Err(app_error), locale),
         };
@@ -99,7 +121,7 @@ pub fn change_me_language(
     locale: UserLocale,
 ) -> PathResult<Json<UserOutType>, UserLocale> {
     let connection = &mut db::establish_connection();
-    let user = match users_services::change_user_language(
+    let user = match user_services::change_user_language(
         connection,
         user,
         change_language.language.as_deref(),
@@ -129,7 +151,7 @@ pub fn change_me_password(
     {
         return PathResult::new(Err(app_error), locale);
     }
-    if let Err(app_error) = users_services::sign_out(connection, &user, session_id) {
+    if let Err(app_error) = user_services::sign_out(connection, &user, session_id) {
         return PathResult::new(Err(app_error), locale);
     }
     cookies::remove_session_id(cookies_jar);
@@ -198,7 +220,7 @@ pub fn sign_in(
         SocketAddr::V4(v4) => IpNetwork::from(IpAddr::V4(v4.ip().clone())),
         SocketAddr::V6(v6) => IpNetwork::from(IpAddr::V6(v6.ip().clone())),
     };
-    let session = match users_services::sign_in(
+    let session = match user_services::sign_in(
         connection,
         credentials.into_inner(),
         &ip_address,
@@ -222,7 +244,7 @@ pub fn sign_out_multiple(
 ) -> PathResult<(), UserLocale> {
     let connection = &mut db::establish_connection();
     for session_id in session_ids.into_inner() {
-        if let Err(app_error) = users_services::sign_out(connection, &user, session_id) {
+        if let Err(app_error) = user_services::sign_out(connection, &user, session_id) {
             return PathResult::new(Err(app_error), locale);
         }
     }
@@ -242,7 +264,7 @@ pub fn sign_out(
         None => return PathResult::new(Err(AppError::InternalServerError), locale),
     };
     let connection = &mut db::establish_connection();
-    if let Err(app_error) = users_services::sign_out(connection, &user, session_id) {
+    if let Err(app_error) = user_services::sign_out(connection, &user, session_id) {
         return PathResult::new(Err(app_error), locale);
     }
     cookies::remove_session_id(cookies_jar);

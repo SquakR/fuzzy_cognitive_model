@@ -2,7 +2,7 @@ use crate::models::{EmailConfirmation, User};
 use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::email_confirmations;
 use crate::services::mailing_services;
-use crate::services::users_services;
+use crate::services::user_services;
 use crate::utils;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
@@ -60,14 +60,14 @@ pub fn confirm_email(connection: &mut PgConnection, token: &str) -> ServiceResul
             t!("link_is_not_active_error", locale = locale)
         })));
     }
-    let user = users_services::find_user_by_id(connection, email_confirmation.user_id)?;
+    let user = user_services::find_user_by_id(connection, email_confirmation.user_id)?;
     if user.is_email_confirmed || user.email != email_confirmation.email {
         return Err(AppError::ValidationError(Box::new(|locale| {
             t!("link_is_not_active_error", locale = locale)
         })));
     }
     confirm_email_confirmation(connection, email_confirmation)?;
-    users_services::confirm_user_email(connection, user)
+    user_services::confirm_user_email(connection, user)
 }
 
 fn find_email_confirmation_by_id(

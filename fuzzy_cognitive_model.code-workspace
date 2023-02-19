@@ -53,6 +53,7 @@
       "Hasher",
       "hmac",
       "hoverable",
+      "ilike",
       "intlify",
       "ipnetwork",
       "lettre",
@@ -62,6 +63,7 @@
       "pinia",
       "regexes",
       "schemars",
+      "SUBSTR",
       "Timestamptz",
       "unplugin",
       "vueuse"
