@@ -34,6 +34,7 @@ pub fn get_user_active_sessions(
     sessions::table
         .filter(sessions::user_id.eq(user_id))
         .filter(sessions::is_active.eq(true))
+        .order(sessions::created_at.asc())
         .get_results::<Session>(connection)
         .to_service_result()
 }
