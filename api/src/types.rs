@@ -202,6 +202,42 @@ pub struct PaginationOutType<T> {
     pub total_count: i64,
 }
 
+/// Type of project
+#[derive(Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectOutType {
+    /// Project identifier
+    pub id: i32,
+    /// Project name
+    pub name: String,
+    /// Project description
+    pub description: String,
+    /// Project creator
+    pub creator: UserOutType,
+    /// Is project public
+    pub is_public: bool,
+    /// Is project archived
+    pub is_archived: bool,
+    /// Project creation time
+    pub created_at: DateTime<Utc>,
+    /// Project update time
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Type of project to create
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectInCreateType {
+    /// Project name
+    pub name: String,
+    /// Project description
+    pub description: String,
+    /// Is project public
+    pub is_public: bool,
+    /// Is project archived
+    pub is_archived: bool,
+}
+
 macro_rules! user_json_schema {
     ($properties:expr, $description:expr) => {{
         let mut properties = Map::new();
