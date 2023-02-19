@@ -31,10 +31,26 @@ diesel::table! {
 }
 
 diesel::table! {
+    plugins (name) {
+        name -> Varchar,
+        description -> Text,
+    }
+}
+
+diesel::table! {
     project_permissions (id) {
         id -> Int4,
         permission_key -> Varchar,
         user_project_id -> Int4,
+    }
+}
+
+diesel::table! {
+    project_plugins (id) {
+        id -> Int4,
+        project_id -> Int4,
+        plugin_name -> Varchar,
+        created_at -> Timestamptz,
     }
 }
 
@@ -68,6 +84,7 @@ diesel::table! {
         id -> Int4,
         user_id -> Int4,
         project_id -> Int4,
+        is_confirmed -> Bool,
         created_at -> Timestamptz,
     }
 }
@@ -93,6 +110,8 @@ diesel::joinable!(email_confirmations -> users (user_id));
 diesel::joinable!(password_resets -> users (user_id));
 diesel::joinable!(project_permissions -> permissions (permission_key));
 diesel::joinable!(project_permissions -> user_projects (user_project_id));
+diesel::joinable!(project_plugins -> plugins (plugin_name));
+diesel::joinable!(project_plugins -> projects (project_id));
 diesel::joinable!(projects -> users (created_by_id));
 diesel::joinable!(sessions -> users (user_id));
 diesel::joinable!(user_projects -> projects (project_id));
@@ -102,7 +121,9 @@ diesel::allow_tables_to_appear_in_same_query!(
     email_confirmations,
     password_resets,
     permissions,
+    plugins,
     project_permissions,
+    project_plugins,
     projects,
     sessions,
     user_projects,

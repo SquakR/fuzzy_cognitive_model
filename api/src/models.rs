@@ -1,7 +1,9 @@
 use crate::schema::email_confirmations;
 use crate::schema::password_resets;
 use crate::schema::permissions;
+use crate::schema::plugins;
 use crate::schema::project_permissions;
+use crate::schema::project_plugins;
 use crate::schema::projects;
 use crate::schema::sessions;
 use crate::schema::user_projects;
@@ -80,6 +82,7 @@ pub struct UserProject {
     pub id: i32,
     pub user_id: i32,
     pub project_id: i32,
+    pub is_confirmed: bool,
     pub created_at: DateTime<Utc>,
 }
 
@@ -96,4 +99,21 @@ pub struct ProjectPermission {
     pub id: i32,
     pub permission_key: String,
     pub user_project_id: i32,
+}
+
+#[derive(Queryable, Identifiable)]
+#[diesel(primary_key(name))]
+pub struct Plugin {
+    pub name: String,
+    pub description: String,
+}
+
+#[derive(Queryable, Identifiable)]
+#[diesel(belongs_to(Project))]
+#[diesel(belongs_to(Plugin))]
+pub struct ProjectPlugin {
+    pub id: i32,
+    pub project_id: i32,
+    pub plugin_name: String,
+    pub created_at: DateTime<Utc>,
 }

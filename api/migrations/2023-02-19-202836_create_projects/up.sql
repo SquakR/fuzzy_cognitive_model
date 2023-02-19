@@ -16,6 +16,7 @@ CREATE TABLE user_projects (
   FOREIGN KEY (user_id) REFERENCES users(id),
   project_id INTEGER NOT NULL,
   FOREIGN KEY (project_id) REFERENCES projects(id),
+  is_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 CREATE TABLE permissions (
@@ -29,5 +30,17 @@ CREATE TABLE project_permissions (
   FOREIGN KEY (permission_key) REFERENCES permissions(key),
   user_project_id INTEGER NOT NULL,
   FOREIGN KEY (user_project_id) REFERENCES user_projects(id)
+);
+CREATE TABLE plugins (
+  name VARCHAR(255) NOT NULL PRIMARY KEY,
+  description TEXT NOT NULL
+);
+CREATE TABLE project_plugins (
+  id SERIAL PRIMARY KEY,
+  project_id INTEGER NOT NULL,
+  FOREIGN KEY (project_id) REFERENCES projects(id),
+  plugin_name VARCHAR(255) NOT NULL,
+  FOREIGN KEY (plugin_name) REFERENCES plugins(name),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 SELECT diesel_manage_updated_at('projects');
