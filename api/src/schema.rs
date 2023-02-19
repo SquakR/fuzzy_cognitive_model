@@ -25,7 +25,6 @@ diesel::table! {
 diesel::table! {
     permissions (key) {
         key -> Varchar,
-        name -> Varchar,
         description -> Text,
     }
 }

@@ -21,7 +21,6 @@ CREATE TABLE user_projects (
 );
 CREATE TABLE permissions (
   key VARCHAR(255) PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
   description TEXT NOT NULL
 );
 CREATE TABLE project_permissions (

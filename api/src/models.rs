@@ -90,7 +90,6 @@ pub struct UserProject {
 #[diesel(primary_key(key))]
 pub struct Permission {
     pub key: String,
-    pub name: String,
     pub description: String,
 }
 
