@@ -23,6 +23,35 @@ diesel::table! {
 }
 
 diesel::table! {
+    permissions (key) {
+        key -> Varchar,
+        name -> Varchar,
+        description -> Text,
+    }
+}
+
+diesel::table! {
+    project_permissions (id) {
+        id -> Int4,
+        permission_key -> Varchar,
+        user_project_id -> Int4,
+    }
+}
+
+diesel::table! {
+    projects (id) {
+        id -> Int4,
+        name -> Varchar,
+        description -> Text,
+        created_by_id -> Int4,
+        is_public -> Bool,
+        is_archived -> Bool,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     sessions (id) {
         id -> Int4,
         is_active -> Bool,
@@ -31,6 +60,15 @@ diesel::table! {
         user_agent -> Text,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    user_projects (id) {
+        id -> Int4,
+        user_id -> Int4,
+        project_id -> Int4,
+        created_at -> Timestamptz,
     }
 }
 
@@ -53,11 +91,20 @@ diesel::table! {
 
 diesel::joinable!(email_confirmations -> users (user_id));
 diesel::joinable!(password_resets -> users (user_id));
+diesel::joinable!(project_permissions -> permissions (permission_key));
+diesel::joinable!(project_permissions -> user_projects (user_project_id));
+diesel::joinable!(projects -> users (created_by_id));
 diesel::joinable!(sessions -> users (user_id));
+diesel::joinable!(user_projects -> projects (project_id));
+diesel::joinable!(user_projects -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     email_confirmations,
     password_resets,
+    permissions,
+    project_permissions,
+    projects,
     sessions,
+    user_projects,
     users,
 );
