@@ -5,7 +5,6 @@ use crate::types::{DeviceType, OSType, ProductType, SessionType};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use ipnetwork::IpNetwork;
-use rust_i18n::t;
 use std::env;
 use user_agent_parser::{
     Device as UserAgentDevice, Product as UserAgentProduct, UserAgentParser, OS as UserAgentOS,

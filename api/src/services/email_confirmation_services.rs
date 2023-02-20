@@ -7,7 +7,6 @@ use crate::utils;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use jwt::{SignWithKey, VerifyWithKey};
-use rust_i18n::t;
 use std::collections::BTreeMap;
 
 pub fn create_email_confirmation(

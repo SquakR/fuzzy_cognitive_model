@@ -2,11 +2,11 @@ use crate::schema::email_confirmations;
 use crate::schema::password_resets;
 use crate::schema::permissions;
 use crate::schema::plugins;
-use crate::schema::project_permissions;
 use crate::schema::project_plugins;
+use crate::schema::project_users;
 use crate::schema::projects;
 use crate::schema::sessions;
-use crate::schema::user_projects;
+use crate::schema::user_permissions;
 use crate::schema::users;
 use chrono::{DateTime, Utc};
 use diesel::{Identifiable, Queryable};
@@ -78,10 +78,10 @@ pub struct Project {
 #[derive(Queryable, Identifiable)]
 #[diesel(belongs_to(User))]
 #[diesel(belongs_to(Project))]
-pub struct UserProject {
+pub struct ProjectUser {
     pub id: i32,
-    pub user_id: i32,
     pub project_id: i32,
+    pub user_id: i32,
     pub is_confirmed: bool,
     pub created_at: DateTime<Utc>,
 }
@@ -94,10 +94,10 @@ pub struct Permission {
 }
 
 #[derive(Queryable, Identifiable)]
-pub struct ProjectPermission {
+pub struct UserPermission {
     pub id: i32,
     pub permission_key: String,
-    pub user_project_id: i32,
+    pub project_user_id: i32,
 }
 
 #[derive(Queryable, Identifiable)]

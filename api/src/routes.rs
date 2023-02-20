@@ -61,7 +61,8 @@ impl MountRoutes for Rocket<Build> {
                 user_routes::sign_out,
                 user_routes::get_sessions,
                 user_routes::get_user_avatar,
-                project_routes::create_project
+                project_routes::create_project,
+                project_routes::invite_user
             ),
         )
     }

@@ -13,7 +13,6 @@ use argon2::{password_hash::PasswordHash, Argon2, PasswordHasher, PasswordVerifi
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use jwt::{SignWithKey, VerifyWithKey};
-use rust_i18n::t;
 use std::collections::BTreeMap;
 
 pub fn change_user_password(

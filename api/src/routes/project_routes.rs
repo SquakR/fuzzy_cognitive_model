@@ -3,7 +3,7 @@ use crate::models::User;
 use crate::request::UserLocale;
 use crate::response::PathResult;
 use crate::services::project_services;
-use crate::types::{ProjectInCreateType, ProjectOutType};
+use crate::types::{ProjectInCreateType, ProjectOutType, UserInvitationType};
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
 
@@ -25,4 +25,20 @@ pub fn create_project(
         Ok(Json(ProjectOutType::from((project, connection)))),
         locale,
     )
+}
+
+#[openapi(tag = "projects")]
+#[post("/project_user", format = "json", data = "<invitation>")]
+pub fn invite_user(
+    invitation: Json<UserInvitationType>,
+    user: User,
+    locale: UserLocale,
+) -> PathResult<(), UserLocale> {
+    let connection = &mut db::establish_connection();
+    if let Err(app_error) =
+        project_services::invite_user(connection, &user, invitation.into_inner())
+    {
+        return PathResult::new(Err(app_error), locale);
+    }
+    PathResult::new(Ok(()), locale)
 }

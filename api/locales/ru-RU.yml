@@ -7,6 +7,7 @@ email_confirmation_not_found_error: "Не найдена запись подтв
 password_reset_not_found_error: "Не найдена запись сброса пароля."
 session_not_found_error: "Не найдена запись сессии."
 file_not_found_error: "Не найден файл."
+project_not_found_error: "Не найдена запись проекта."
 
 invalid_token_error: "Невалидный токен."
 link_is_not_active_error: "Ссылка не является активной."
@@ -28,3 +29,6 @@ user_with_email_already_exists_error: "Пользователь с таким em
 create_user_active_session_error: "Невозможно создать пользователя с активной сессией."
 reset_password_active_session_error: "Невозможно сбросить пароль с активной сессией."
 sign_in_active_session_error: "Невозможно войти с активной сессией."
+
+project_invite_user_forbidden_error: "Недостаточно прав для приглашения пользователя в проект."
+project_invite_user_already_exist: "Невозможно пригласить пользователя, т.к. он уже является участником проекта или был приглашен в проект."

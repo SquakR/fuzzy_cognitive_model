@@ -238,6 +238,16 @@ pub struct ProjectInCreateType {
     pub is_archived: bool,
 }
 
+/// User invitation type
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UserInvitationType {
+    /// Project identifier
+    pub project_id: i32,
+    /// User identifier
+    pub user_id: i32,
+}
+
 macro_rules! user_json_schema {
     ($properties:expr, $description:expr) => {{
         let mut properties = Map::new();
