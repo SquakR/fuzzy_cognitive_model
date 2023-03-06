@@ -248,6 +248,30 @@ pub fn respond_to_invitation(
         .to_service_result()
 }
 
+pub fn leave_project(
+    connection: &mut PgConnection,
+    user: &User,
+    project_id: i32,
+) -> ServiceResult<ProjectUserStatus> {
+    let project_user = find_project_user(connection, project_id, user.id)?;
+    let last_status = find_last_status_by_project_user(connection, project_user.id, user.id)?;
+    match last_status.status {
+        ProjectUserStatusValue::Member => {}
+        _ => {
+            return Err(AppError::ForbiddenError(String::from(
+                "leave_project_error",
+            )))
+        }
+    }
+    diesel::insert_into(project_user_statuses::table)
+        .values((
+            project_user_statuses::project_user_id.eq(project_user.id),
+            project_user_statuses::status.eq(ProjectUserStatusValue::Left),
+        ))
+        .get_result::<ProjectUserStatus>(connection)
+        .to_service_result()
+}
+
 impl From<(Project, &mut PgConnection)> for ProjectOutType {
     fn from((project, connection): (Project, &mut PgConnection)) -> Self {
         ProjectOutType {

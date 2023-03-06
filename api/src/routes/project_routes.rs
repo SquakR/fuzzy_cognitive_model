@@ -84,3 +84,18 @@ pub fn respond_to_invitation(
     }
     PathResult::new(Ok(()), locale)
 }
+
+/// Leave project
+#[openapi(tag = "projects")]
+#[post("/leave_project/<project_id>")]
+pub fn leave_project(
+    project_id: i32,
+    user: User,
+    locale: UserLocale,
+) -> PathResult<(), UserLocale> {
+    let connection = &mut db::establish_connection();
+    if let Err(app_error) = project_services::leave_project(connection, &user, project_id) {
+        return PathResult::new(Err(app_error), locale);
+    }
+    PathResult::new(Ok(()), locale)
+}

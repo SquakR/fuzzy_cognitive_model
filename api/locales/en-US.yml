@@ -39,3 +39,5 @@ invite_user_rejected_error: "Unable to invite user because he recently turned do
 
 cancel_invitation_forbidden_error: "Insufficient permissions to cancel a user's invitation."
 there_is_no_invitation_error: "There is no invitation to the project."
+
+leave_project_error: "Unable to leave the project."
