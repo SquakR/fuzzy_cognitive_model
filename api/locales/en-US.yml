@@ -8,6 +8,7 @@ password_reset_not_found_error: "Password reset record not found."
 session_not_found_error: "Session record not found."
 file_not_found_error: "File not found."
 project_not_found_error: "Project record not found."
+last_status_not_found_error: "Last user status record in project not found."
 
 invalid_token_error: "Invalid token."
 link_is_not_active_error: "The link is not active."
@@ -31,4 +32,6 @@ reset_password_active_session_error: "Unable to reset password with active sessi
 sign_in_active_session_error: "Unable to sign in with active session."
 
 project_invite_user_forbidden_error: "Insufficient permissions to invite a user to the project."
-project_invite_user_already_exist: "Unable to invite user because they are already a member of the project or have been invited to the project."
+project_invite_user_member_error: "Unable to invite user because he is already a member of the project."
+project_invite_user_invited_error: "Unable to invite user because he has already been invited to the project."
+project_invite_user_rejected_error: "Unable to invite user because he recently turned down an invitation to the project."

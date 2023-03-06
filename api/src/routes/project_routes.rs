@@ -27,8 +27,9 @@ pub fn create_project(
     )
 }
 
+/// Invite user to project
 #[openapi(tag = "projects")]
-#[post("/project_user", format = "json", data = "<invitation>")]
+#[post("/invite_user", format = "json", data = "<invitation>")]
 pub fn invite_user(
     invitation: Json<UserInvitationType>,
     user: User,

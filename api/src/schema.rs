@@ -1,5 +1,11 @@
 // @generated automatically by Diesel CLI.
 
+pub mod sql_types {
+    #[derive(diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "project_user_status_value"))]
+    pub struct ProjectUserStatusValue;
+}
+
 diesel::table! {
     email_confirmations (id) {
         id -> Int4,
@@ -46,11 +52,22 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::ProjectUserStatusValue;
+
+    project_user_statuses (id) {
+        id -> Int4,
+        project_user_id -> Int4,
+        status -> ProjectUserStatusValue,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     project_users (id) {
         id -> Int4,
         project_id -> Int4,
         user_id -> Int4,
-        is_confirmed -> Bool,
         created_at -> Timestamptz,
     }
 }
@@ -60,7 +77,6 @@ diesel::table! {
         id -> Int4,
         name -> Varchar,
         description -> Text,
-        created_by_id -> Int4,
         is_public -> Bool,
         is_archived -> Bool,
         created_at -> Timestamptz,
@@ -109,9 +125,9 @@ diesel::joinable!(email_confirmations -> users (user_id));
 diesel::joinable!(password_resets -> users (user_id));
 diesel::joinable!(project_plugins -> plugins (plugin_name));
 diesel::joinable!(project_plugins -> projects (project_id));
+diesel::joinable!(project_user_statuses -> project_users (project_user_id));
 diesel::joinable!(project_users -> projects (project_id));
 diesel::joinable!(project_users -> users (user_id));
-diesel::joinable!(projects -> users (created_by_id));
 diesel::joinable!(sessions -> users (user_id));
 diesel::joinable!(user_permissions -> permissions (permission_key));
 diesel::joinable!(user_permissions -> project_users (project_user_id));
@@ -122,6 +138,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     permissions,
     plugins,
     project_plugins,
+    project_user_statuses,
     project_users,
     projects,
     sessions,

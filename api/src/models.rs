@@ -3,6 +3,7 @@ use crate::schema::password_resets;
 use crate::schema::permissions;
 use crate::schema::plugins;
 use crate::schema::project_plugins;
+use crate::schema::project_user_statuses;
 use crate::schema::project_users;
 use crate::schema::projects;
 use crate::schema::sessions;
@@ -63,12 +64,10 @@ pub struct Session {
 }
 
 #[derive(Queryable, Identifiable)]
-#[diesel(belongs_to(User))]
 pub struct Project {
     pub id: i32,
     pub name: String,
     pub description: String,
-    pub created_by_id: i32,
     pub is_public: bool,
     pub is_archived: bool,
     pub created_at: DateTime<Utc>,
@@ -82,7 +81,26 @@ pub struct ProjectUser {
     pub id: i32,
     pub project_id: i32,
     pub user_id: i32,
-    pub is_confirmed: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, diesel_derive_enum::DbEnum)]
+#[ExistingTypePath = "crate::schema::sql_types::ProjectUserStatusValue"]
+pub enum ProjectUserStatusValue {
+    Creator,
+    Invited,
+    Rejected,
+    Member,
+    Excluded,
+    Left,
+}
+
+#[derive(Queryable, Identifiable)]
+#[diesel(table_name = project_user_statuses, belongs_to(ProjectUser))]
+pub struct ProjectUserStatus {
+    pub id: i32,
+    pub project_user_id: i32,
+    pub status: ProjectUserStatusValue,
     pub created_at: DateTime<Utc>,
 }
 

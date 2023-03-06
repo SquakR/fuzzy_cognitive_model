@@ -1,10 +1,15 @@
-use crate::models::{Project, ProjectUser, User, UserPermission};
-use crate::response::{AppError, ServiceResult, ToServiceResult};
+use crate::models::{
+    Project, ProjectUser, ProjectUserStatus, ProjectUserStatusValue, User, UserPermission,
+};
+use crate::response::AppError;
+use crate::response::{ServiceResult, ToServiceResult};
+use crate::schema::project_user_statuses;
 use crate::schema::project_users;
 use crate::schema::projects;
 use crate::schema::user_permissions;
 use crate::schema::users;
 use crate::types::{ProjectInCreateType, ProjectOutType, UserInvitationType, UserOutType};
+use chrono::{Duration, Utc};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
@@ -13,26 +18,88 @@ pub fn create_project(
     user: &User,
     project_in: ProjectInCreateType,
 ) -> ServiceResult<Project> {
-    diesel::insert_into(projects::table)
+    let project = diesel::insert_into(projects::table)
         .values((
             projects::name.eq(project_in.name),
             projects::description.eq(project_in.description),
-            projects::created_by_id.eq(user.id),
             projects::is_public.eq(project_in.is_public),
             projects::is_archived.eq(project_in.is_archived),
         ))
         .get_result::<Project>(connection)
+        .to_service_result()?;
+    let project_user = diesel::insert_into(project_users::table)
+        .values((
+            project_users::project_id.eq(project.id),
+            project_users::user_id.eq(user.id),
+        ))
+        .get_result::<ProjectUser>(connection)
+        .to_service_result()?;
+    diesel::insert_into(project_user_statuses::table)
+        .values((
+            project_user_statuses::project_user_id.eq(project_user.id),
+            project_user_statuses::status.eq(ProjectUserStatusValue::Creator),
+        ))
+        .execute(connection)
+        .to_service_result()?;
+    Ok(project)
+}
+
+pub fn find_project_creator(connection: &mut PgConnection, project_id: i32) -> User {
+    project_user_statuses::table
+        .inner_join(project_users::table.inner_join(users::table))
+        .select(users::all_columns)
+        .filter(project_users::project_id.eq(project_id))
+        .filter(project_user_statuses::status.eq(ProjectUserStatusValue::Creator))
+        .first::<User>(connection)
+        .unwrap()
+}
+
+pub fn try_find_user_project(
+    connection: &mut PgConnection,
+    project_id: i32,
+    user_id: i32,
+) -> ServiceResult<Option<ProjectUser>> {
+    project_users::table
+        .filter(project_users::project_id.eq(project_id))
+        .filter(project_users::user_id.eq(user_id))
+        .first::<ProjectUser>(connection)
+        .optional()
         .to_service_result()
 }
 
-pub fn find_project_by_id(
+pub fn find_last_status_by_project(
     connection: &mut PgConnection,
     project_id: i32,
-) -> ServiceResult<Project> {
-    projects::table
-        .find(project_id)
-        .first::<Project>(connection)
-        .to_service_result_find(String::from("project_not_found_error"))
+    user_id: i32,
+) -> ServiceResult<ProjectUserStatus> {
+    project_user_statuses::table
+        .inner_join(
+            project_users::table
+                .inner_join(projects::table)
+                .inner_join(users::table),
+        )
+        .select(project_user_statuses::all_columns)
+        .filter(projects::id.eq(project_id))
+        .filter(users::id.eq(user_id))
+        .order(project_user_statuses::created_at.desc())
+        .first::<ProjectUserStatus>(connection)
+        .to_service_result_find(String::from("last_status_not_found_error"))
+}
+
+pub fn try_find_last_status_by_project_user(
+    connection: &mut PgConnection,
+    project_user_id: i32,
+    user_id: i32,
+) -> ServiceResult<Option<ProjectUserStatus>> {
+    project_user_statuses::table
+        .inner_join(project_users::table.inner_join(users::table))
+        .select(project_user_statuses::all_columns)
+        .filter(project_users::id.eq(project_user_id))
+        .filter(users::id.eq(user_id))
+        .order(project_user_statuses::created_at.desc())
+        .first::<ProjectUserStatus>(connection)
+        .optional()
+        .to_service_result()
 }
 
 pub fn invite_user(
@@ -40,62 +107,76 @@ pub fn invite_user(
     user: &User,
     invitation: UserInvitationType,
 ) -> ServiceResult<ProjectUser> {
-    let project = find_project_by_id(connection, invitation.project_id)?;
-    if !has_permission(connection, user, &project, "can_invite_users") {
+    let current_user_last_status =
+        find_last_status_by_project(connection, invitation.project_id, user.id)?;
+    if !has_permission(connection, &current_user_last_status, "can_invite_users") {
         return Err(AppError::ForbiddenError(String::from(
             "project_invite_user_forbidden_error",
         )));
     }
-    if is_project_member(connection, invitation.user_id, invitation.project_id) {
-        return Err(AppError::ValidationError(Box::new(|locale| {
-            t!("project_invite_user_already_exist", locale = locale)
-        })));
-    }
-    diesel::insert_into(project_users::table)
+    let project_user_result =
+        try_find_user_project(connection, invitation.project_id, invitation.user_id)?;
+    let project_user = if let Some(project_user) = project_user_result {
+        let last_status =
+            try_find_last_status_by_project_user(connection, project_user.id, invitation.user_id)?;
+        let error = match last_status {
+            Some(last_status) => match last_status.status {
+                ProjectUserStatusValue::Creator | ProjectUserStatusValue::Member => {
+                    Some("project_invite_user_member_error")
+                }
+                ProjectUserStatusValue::Invited => Some("project_invite_user_invited_error"),
+                ProjectUserStatusValue::Rejected => {
+                    if Utc::now() - last_status.created_at < Duration::days(1) {
+                        Some("project_invite_user_rejected_error")
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            },
+            None => None,
+        };
+        if let Some(error) = error {
+            return Err(AppError::ForbiddenError(error.to_owned()));
+        }
+        project_user
+    } else {
+        diesel::insert_into(project_users::table)
+            .values((
+                project_users::project_id.eq(invitation.project_id),
+                project_users::user_id.eq(invitation.user_id),
+            ))
+            .get_result::<ProjectUser>(connection)
+            .to_service_result()?
+    };
+    diesel::insert_into(project_user_statuses::table)
         .values((
-            project_users::project_id.eq(project.id),
-            project_users::user_id.eq(invitation.user_id),
+            project_user_statuses::project_user_id.eq(project_user.id),
+            project_user_statuses::status.eq(ProjectUserStatusValue::Invited),
         ))
-        .get_result::<ProjectUser>(connection)
-        .to_service_result()
+        .execute(connection)
+        .to_service_result()?;
+    Ok(project_user)
 }
 
 fn has_permission(
     connection: &mut PgConnection,
-    user: &User,
-    project: &Project,
+    last_status: &ProjectUserStatus,
     key: &str,
 ) -> bool {
-    if user.id == project.created_by_id {
-        return true;
-    }
-    let project_user = match project_users::table
-        .filter(project_users::project_id.eq(project.id))
-        .filter(project_users::user_id.eq(user.id))
-        .first::<ProjectUser>(connection)
-    {
-        Ok(project_user) => project_user,
-        Err(_) => return false,
-    };
-    if !project_user.is_confirmed {
-        return false;
+    match last_status.status {
+        ProjectUserStatusValue::Creator => return true,
+        ProjectUserStatusValue::Member => {}
+        _ => return false,
     }
     if let Err(_) = user_permissions::table
         .filter(user_permissions::permission_key.eq(key))
-        .filter(user_permissions::project_user_id.eq(project_user.id))
+        .filter(user_permissions::project_user_id.eq(last_status.project_user_id))
         .first::<UserPermission>(connection)
     {
         return false;
     }
     true
-}
-
-fn is_project_member(connection: &mut PgConnection, user_id: i32, project_id: i32) -> bool {
-    project_users::table
-        .filter(project_users::project_id.eq(project_id))
-        .filter(project_users::user_id.eq(user_id))
-        .first::<ProjectUser>(connection)
-        .is_ok()
 }
 
 impl From<(Project, &mut PgConnection)> for ProjectOutType {
@@ -104,12 +185,7 @@ impl From<(Project, &mut PgConnection)> for ProjectOutType {
             id: project.id,
             name: project.name,
             description: project.description,
-            creator: UserOutType::from(
-                users::table
-                    .find(project.created_by_id)
-                    .first::<User>(connection)
-                    .unwrap(),
-            ),
+            creator: UserOutType::from(find_project_creator(connection, project.id)),
             is_public: project.is_public,
             is_archived: project.is_archived,
             created_at: project.created_at,

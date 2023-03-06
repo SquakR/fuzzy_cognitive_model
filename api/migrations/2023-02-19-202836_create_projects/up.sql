@@ -3,8 +3,6 @@ CREATE TABLE projects (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
-  created_by_id INTEGER NOT NULL,
-  FOREIGN KEY (created_by_id) REFERENCES users(id),
   is_public BOOLEAN NOT NULL DEFAULT FALSE,
   is_archived BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -16,7 +14,21 @@ CREATE TABLE project_users (
   FOREIGN KEY (project_id) REFERENCES projects(id),
   user_id INTEGER NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id),
-  is_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+CREATE TYPE project_user_status_value AS ENUM (
+  'creator',
+  'invited',
+  'rejected',
+  'member',
+  'excluded',
+  'left'
+);
+CREATE TABLE project_user_statuses (
+  id SERIAL PRIMARY KEY,
+  project_user_id INTEGER NOT NULL,
+  FOREIGN KEY (project_user_id) REFERENCES project_users(id),
+  status project_user_status_value NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 CREATE TABLE permissions (
