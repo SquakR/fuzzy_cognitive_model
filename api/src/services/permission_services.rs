@@ -1,36 +1,45 @@
-use crate::models::{ProjectUserStatus, ProjectUserStatusValue, UserPermission};
+use crate::models::{ProjectUserStatusValue, UserPermission};
 use crate::response::ServiceResult;
 use crate::schema::user_permissions;
 use crate::services::project_services;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
+pub fn can_change_project(
+    connection: &mut PgConnection,
+    project_id: i32,
+    user_id: i32,
+) -> ServiceResult<bool> {
+    has_permission(connection, project_id, user_id, "can_change_project")
+}
+
 pub fn can_change_users(
     connection: &mut PgConnection,
     project_id: i32,
     user_id: i32,
 ) -> ServiceResult<bool> {
-    let last_status =
-        project_services::find_last_status_by_project(connection, project_id, user_id)?;
-    Ok(has_permission(connection, &last_status, "can_change_users"))
+    has_permission(connection, project_id, user_id, "can_change_users")
 }
 
 fn has_permission(
     connection: &mut PgConnection,
-    last_status: &ProjectUserStatus,
+    project_id: i32,
+    user_id: i32,
     key: &str,
-) -> bool {
+) -> ServiceResult<bool> {
+    let last_status =
+        project_services::find_last_status_by_project(connection, project_id, user_id)?;
     match last_status.status {
-        ProjectUserStatusValue::Creator => return true,
+        ProjectUserStatusValue::Creator => return Ok(true),
         ProjectUserStatusValue::Member => {}
-        _ => return false,
+        _ => return Ok(false),
     }
     if let Err(_) = user_permissions::table
         .filter(user_permissions::permission_key.eq(key))
         .filter(user_permissions::project_user_id.eq(last_status.project_user_id))
         .first::<UserPermission>(connection)
     {
-        return false;
+        return Ok(false);
     }
-    true
+    Ok(true)
 }

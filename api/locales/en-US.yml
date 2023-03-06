@@ -32,6 +32,8 @@ create_user_active_session_error: "Unable to create user with active session."
 reset_password_active_session_error: "Unable to reset password with active session."
 sign_in_active_session_error: "Unable to sign in with active session."
 
+change_project_forbidden_error: "Insufficient permissions to change the project."
+
 invite_user_forbidden_error: "Insufficient permissions to invite a user to the project."
 invite_user_member_error: "Unable to invite user because he is already a member of the project."
 invite_user_invited_error: "Unable to invite user because he has already been invited to the project."

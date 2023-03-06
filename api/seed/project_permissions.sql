@@ -1,5 +1,10 @@
 INSERT INTO permissions (key, description)
 VALUES (
+    'can_change_project',
+    'The user can change properties of the project'
+  );
+INSERT INTO permissions (key, description)
+VALUES (
     'can_change_users',
     'The user can change other users in the project'
   );

@@ -238,6 +238,22 @@ pub struct ProjectInCreateType {
     pub is_archived: bool,
 }
 
+/// Type of project to change
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectInChangeType {
+    /// Project identifier
+    pub project_id: i32,
+    /// Project name
+    pub name: String,
+    /// Project description
+    pub description: String,
+    /// Is project public
+    pub is_public: bool,
+    /// Is project archived
+    pub is_archived: bool,
+}
+
 /// User invitation to project type
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

@@ -7,8 +7,8 @@ use crate::schema::projects;
 use crate::schema::users;
 use crate::services::permission_services;
 use crate::types::{
-    CancelInvitationType, InvitationResponseType, InvitationType, ProjectInCreateType,
-    ProjectOutType, UserOutType,
+    CancelInvitationType, InvitationResponseType, InvitationType, ProjectInChangeType,
+    ProjectInCreateType, ProjectOutType, UserOutType,
 };
 use chrono::{Duration, Utc};
 use diesel::pg::PgConnection;
@@ -127,6 +127,28 @@ pub fn try_find_last_status_by_project_user(
         .order(project_user_statuses::created_at.desc())
         .first::<ProjectUserStatus>(connection)
         .optional()
+        .to_service_result()
+}
+
+pub fn change_project(
+    connection: &mut PgConnection,
+    user: &User,
+    project_in: ProjectInChangeType,
+) -> ServiceResult<Project> {
+    if !permission_services::can_change_project(connection, project_in.project_id, user.id)? {
+        return Err(AppError::ForbiddenError(String::from(
+            "change_project_forbidden_error",
+        )));
+    }
+    diesel::update(projects::table)
+        .filter(projects::id.eq(&project_in.project_id))
+        .set((
+            projects::name.eq(project_in.name),
+            projects::description.eq(project_in.description),
+            projects::is_public.eq(project_in.is_public),
+            projects::is_archived.eq(project_in.is_archived),
+        ))
+        .get_result::<Project>(connection)
         .to_service_result()
 }
 
