@@ -248,6 +248,16 @@ pub struct UserInvitationType {
     pub user_id: i32,
 }
 
+/// Response to invitation to project type
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct InvitationResponseType {
+    /// Project identifier
+    pub project_id: i32,
+    /// Intention to join project
+    pub join: bool,
+}
+
 macro_rules! user_json_schema {
     ($properties:expr, $description:expr) => {{
         let mut properties = Map::new();

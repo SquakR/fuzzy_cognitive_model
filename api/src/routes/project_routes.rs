@@ -3,7 +3,9 @@ use crate::models::User;
 use crate::request::UserLocale;
 use crate::response::PathResult;
 use crate::services::project_services;
-use crate::types::{ProjectInCreateType, ProjectOutType, UserInvitationType};
+use crate::types::{
+    InvitationResponseType, ProjectInCreateType, ProjectOutType, UserInvitationType,
+};
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
 
@@ -38,6 +40,27 @@ pub fn invite_user(
     let connection = &mut db::establish_connection();
     if let Err(app_error) =
         project_services::invite_user(connection, &user, invitation.into_inner())
+    {
+        return PathResult::new(Err(app_error), locale);
+    }
+    PathResult::new(Ok(()), locale)
+}
+
+/// Respond to invitation to project
+#[openapi(tag = "projects")]
+#[post(
+    "/respond_to_invitation",
+    format = "json",
+    data = "<invitation_response>"
+)]
+pub fn respond_to_invitation(
+    invitation_response: Json<InvitationResponseType>,
+    user: User,
+    locale: UserLocale,
+) -> PathResult<(), UserLocale> {
+    let connection = &mut db::establish_connection();
+    if let Err(app_error) =
+        project_services::respond_to_invitation(connection, &user, invitation_response.into_inner())
     {
         return PathResult::new(Err(app_error), locale);
     }
