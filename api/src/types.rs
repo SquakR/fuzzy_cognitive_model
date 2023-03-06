@@ -238,10 +238,20 @@ pub struct ProjectInCreateType {
     pub is_archived: bool,
 }
 
-/// User invitation type
+/// User invitation to project type
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct UserInvitationType {
+pub struct InvitationType {
+    /// Project identifier
+    pub project_id: i32,
+    /// User identifier
+    pub user_id: i32,
+}
+
+/// Cancellation of user's invitation to project type
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CancelInvitationType {
     /// Project identifier
     pub project_id: i32,
     /// User identifier

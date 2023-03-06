@@ -89,6 +89,7 @@ pub struct ProjectUser {
 pub enum ProjectUserStatusValue {
     Creator,
     Invited,
+    Cancelled,
     Rejected,
     Member,
     Excluded,

@@ -4,7 +4,8 @@ use crate::request::UserLocale;
 use crate::response::PathResult;
 use crate::services::project_services;
 use crate::types::{
-    InvitationResponseType, ProjectInCreateType, ProjectOutType, UserInvitationType,
+    CancelInvitationType, InvitationResponseType, InvitationType, ProjectInCreateType,
+    ProjectOutType,
 };
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
@@ -33,13 +34,30 @@ pub fn create_project(
 #[openapi(tag = "projects")]
 #[post("/invite_user", format = "json", data = "<invitation>")]
 pub fn invite_user(
-    invitation: Json<UserInvitationType>,
+    invitation: Json<InvitationType>,
     user: User,
     locale: UserLocale,
 ) -> PathResult<(), UserLocale> {
     let connection = &mut db::establish_connection();
     if let Err(app_error) =
         project_services::invite_user(connection, &user, invitation.into_inner())
+    {
+        return PathResult::new(Err(app_error), locale);
+    }
+    PathResult::new(Ok(()), locale)
+}
+
+/// Cancel user invitation to project
+#[openapi(tag = "projects")]
+#[post("/cancel_invitation", format = "json", data = "<cancel_invitation>")]
+pub fn cancel_invitation(
+    cancel_invitation: Json<CancelInvitationType>,
+    user: User,
+    locale: UserLocale,
+) -> PathResult<(), UserLocale> {
+    let connection = &mut db::establish_connection();
+    if let Err(app_error) =
+        project_services::cancel_invitation(connection, &user, cancel_invitation.into_inner())
     {
         return PathResult::new(Err(app_error), locale);
     }

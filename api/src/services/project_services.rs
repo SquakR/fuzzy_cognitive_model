@@ -1,15 +1,14 @@
-use crate::models::{
-    Project, ProjectUser, ProjectUserStatus, ProjectUserStatusValue, User, UserPermission,
-};
+use crate::models::{Project, ProjectUser, ProjectUserStatus, ProjectUserStatusValue, User};
 use crate::response::AppError;
 use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::project_user_statuses;
 use crate::schema::project_users;
 use crate::schema::projects;
-use crate::schema::user_permissions;
 use crate::schema::users;
+use crate::services::permission_services;
 use crate::types::{
-    InvitationResponseType, ProjectInCreateType, ProjectOutType, UserInvitationType, UserOutType,
+    CancelInvitationType, InvitationResponseType, InvitationType, ProjectInCreateType,
+    ProjectOutType, UserOutType,
 };
 use chrono::{Duration, Utc};
 use diesel::pg::PgConnection;
@@ -134,11 +133,9 @@ pub fn try_find_last_status_by_project_user(
 pub fn invite_user(
     connection: &mut PgConnection,
     user: &User,
-    invitation: UserInvitationType,
+    invitation: InvitationType,
 ) -> ServiceResult<(ProjectUser, ProjectUserStatus)> {
-    let current_user_last_status =
-        find_last_status_by_project(connection, invitation.project_id, user.id)?;
-    if !has_permission(connection, &current_user_last_status, "can_invite_users") {
+    if !permission_services::can_change_users(connection, invitation.project_id, user.id)? {
         return Err(AppError::ForbiddenError(String::from(
             "invite_user_forbidden_error",
         )));
@@ -188,6 +185,40 @@ pub fn invite_user(
     Ok((project_user, status))
 }
 
+pub fn cancel_invitation(
+    connection: &mut PgConnection,
+    user: &User,
+    cancel_invitation: CancelInvitationType,
+) -> ServiceResult<ProjectUserStatus> {
+    if !permission_services::can_change_users(connection, cancel_invitation.project_id, user.id)? {
+        return Err(AppError::ForbiddenError(String::from(
+            "cancel_invitation_forbidden_error",
+        )));
+    }
+    let project_user = find_project_user(
+        connection,
+        cancel_invitation.project_id,
+        cancel_invitation.user_id,
+    )?;
+    let last_status =
+        find_last_status_by_project_user(connection, project_user.id, cancel_invitation.user_id)?;
+    match last_status.status {
+        ProjectUserStatusValue::Invited => {}
+        _ => {
+            return Err(AppError::ForbiddenError(String::from(
+                "there_is_no_invitation_error",
+            )))
+        }
+    }
+    diesel::insert_into(project_user_statuses::table)
+        .values((
+            project_user_statuses::project_user_id.eq(project_user.id),
+            project_user_statuses::status.eq(ProjectUserStatusValue::Cancelled),
+        ))
+        .get_result::<ProjectUserStatus>(connection)
+        .to_service_result()
+}
+
 pub fn respond_to_invitation(
     connection: &mut PgConnection,
     user: &User,
@@ -215,26 +246,6 @@ pub fn respond_to_invitation(
         ))
         .get_result::<ProjectUserStatus>(connection)
         .to_service_result()
-}
-
-fn has_permission(
-    connection: &mut PgConnection,
-    last_status: &ProjectUserStatus,
-    key: &str,
-) -> bool {
-    match last_status.status {
-        ProjectUserStatusValue::Creator => return true,
-        ProjectUserStatusValue::Member => {}
-        _ => return false,
-    }
-    if let Err(_) = user_permissions::table
-        .filter(user_permissions::permission_key.eq(key))
-        .filter(user_permissions::project_user_id.eq(last_status.project_user_id))
-        .first::<UserPermission>(connection)
-    {
-        return false;
-    }
-    true
 }
 
 impl From<(Project, &mut PgConnection)> for ProjectOutType {

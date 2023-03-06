@@ -19,6 +19,7 @@ CREATE TABLE project_users (
 CREATE TYPE project_user_status_value AS ENUM (
   'creator',
   'invited',
+  'cancelled',
   'rejected',
   'member',
   'excluded',

@@ -37,4 +37,5 @@ invite_user_member_error: "Unable to invite user because he is already a member 
 invite_user_invited_error: "Unable to invite user because he has already been invited to the project."
 invite_user_rejected_error: "Unable to invite user because he recently turned down an invitation to the project."
 
+cancel_invitation_forbidden_error: "Insufficient permissions to cancel a user's invitation."
 there_is_no_invitation_error: "There is no invitation to the project."

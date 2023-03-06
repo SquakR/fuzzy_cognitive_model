@@ -1,12 +1,7 @@
 INSERT INTO permissions (key, description)
 VALUES (
-    'can_invite_users',
-    'The user can invite other users to the project'
-  );
-INSERT INTO permissions (key, description)
-VALUES (
-    'can_delete_users',
-    'The user can delete other users from the project'
+    'can_change_users',
+    'The user can change other users in the project'
   );
 INSERT INTO permissions (key, description)
 VALUES (
