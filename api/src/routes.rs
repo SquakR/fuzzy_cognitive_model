@@ -47,8 +47,8 @@ impl MountRoutes for Rocket<Build> {
         self.mount(
             base,
             get_routes!(
-                user_routes::get_users,
                 user_routes::create_user,
+                user_routes::get_users,
                 user_routes::confirm_email,
                 user_routes::get_me,
                 user_routes::change_me,
@@ -62,6 +62,7 @@ impl MountRoutes for Rocket<Build> {
                 user_routes::get_sessions,
                 user_routes::get_user_avatar,
                 project_routes::create_project,
+                project_routes::get_project_users,
                 project_routes::change_project,
                 project_routes::invite_user,
                 project_routes::cancel_invitation,

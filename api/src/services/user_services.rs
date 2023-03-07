@@ -13,7 +13,7 @@ use crate::types::{
     UserOutType,
 };
 use diesel::dsl::sql;
-use diesel::pg::PgConnection;
+use diesel::pg::{Pg, PgConnection};
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use diesel::sql_types::{Bool, Text};
@@ -87,11 +87,8 @@ pub fn find_user_by_session(connection: &mut PgConnection, session: &Session) ->
         .unwrap()
 }
 
-pub fn paginate_users(
-    connection: &mut PgConnection,
-    pagination: PaginationInType,
-) -> ServiceResult<PaginationOutType<UserOutType>> {
-    let query = match pagination.search {
+pub fn filter_users<'a>(search: &Option<String>) -> users::BoxedQuery<'a, Pg> {
+    match search {
         Some(search) => {
             let like_pattern = format!("{}%", search);
             users::table
@@ -120,8 +117,14 @@ pub fn paginate_users(
                 ).into_boxed()
         }
         None => users::table.into_boxed(),
-    };
-    let (users, total_pages) = query
+    }
+}
+
+pub fn paginate_users(
+    connection: &mut PgConnection,
+    pagination: PaginationInType,
+) -> ServiceResult<PaginationOutType<UserOutType>> {
+    let (users, total_pages) = filter_users(&pagination.search)
         .paginate(pagination.page as i64)
         .per_page(pagination.per_page as i64)
         .load_and_count_pages::<User>(connection)

@@ -12,6 +12,7 @@ use crate::schema::users;
 use chrono::{DateTime, Utc};
 use diesel::{Identifiable, Queryable};
 use ipnetwork::IpNetwork;
+use std::str::FromStr;
 
 #[derive(Queryable, Identifiable, Clone)]
 pub struct User {
@@ -94,6 +95,23 @@ pub enum ProjectUserStatusValue {
     Member,
     Excluded,
     Left,
+}
+
+impl FromStr for ProjectUserStatusValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "creator" => Ok(ProjectUserStatusValue::Creator),
+            "invited" => Ok(ProjectUserStatusValue::Invited),
+            "cancelled" => Ok(ProjectUserStatusValue::Cancelled),
+            "rejected" => Ok(ProjectUserStatusValue::Rejected),
+            "member" => Ok(ProjectUserStatusValue::Member),
+            "excluded" => Ok(ProjectUserStatusValue::Excluded),
+            "left" => Ok(ProjectUserStatusValue::Left),
+            _ => Err(()),
+        }
+    }
 }
 
 #[derive(Queryable, Identifiable)]

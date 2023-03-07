@@ -32,6 +32,9 @@ create_user_active_session_error: "Unable to create user with active session."
 reset_password_active_session_error: "Unable to reset password with active session."
 sign_in_active_session_error: "Unable to sign in with active session."
 
+view_project_forbidden_error: "Insufficient permissions to view the project."
+view_project_users_forbidden_error: "Insufficient permissions to view the project users."
+
 change_project_forbidden_error: "Insufficient permissions to change the project."
 
 delete_project_forbidden_error: "Insufficient permissions to delete the project."

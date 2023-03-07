@@ -1,4 +1,5 @@
 use crate::models::{Project, ProjectUser, ProjectUserStatus, ProjectUserStatusValue, User};
+use crate::pagination::Paginate;
 use crate::response::AppError;
 use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::project_user_statuses;
@@ -7,12 +8,14 @@ use crate::schema::projects;
 use crate::schema::users;
 use crate::services::permission_services;
 use crate::types::{
-    CancelInvitationType, InvitationResponseType, InvitationType, ProjectInChangeType,
-    ProjectInCreateType, ProjectOutType, UserOutType,
+    CancelInvitationType, InvitationResponseType, InvitationType, PaginationInType,
+    PaginationOutType, ProjectInChangeType, ProjectInCreateType, ProjectOutType, UserOutType,
 };
 use chrono::{Duration, Utc};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
+
+use super::user_services;
 
 pub fn create_project(
     connection: &mut PgConnection,
@@ -43,6 +46,16 @@ pub fn create_project(
         .execute(connection)
         .to_service_result()?;
     Ok(project)
+}
+
+pub fn find_project_by_id(
+    connection: &mut PgConnection,
+    project_id: i32,
+) -> ServiceResult<Project> {
+    projects::table
+        .find(project_id)
+        .first::<Project>(connection)
+        .to_service_result_find(String::from("project_not_found_error"))
 }
 
 pub fn find_project_creator(connection: &mut PgConnection, project_id: i32) -> User {
@@ -128,6 +141,80 @@ pub fn try_find_last_status_by_project_user(
         .first::<ProjectUserStatus>(connection)
         .optional()
         .to_service_result()
+}
+
+pub fn is_project_member(
+    connection: &mut PgConnection,
+    user: &User,
+    project_id: i32,
+) -> ServiceResult<bool> {
+    let last_status = find_last_status_by_project(connection, project_id, user.id)?;
+    match last_status.status {
+        ProjectUserStatusValue::Creator | ProjectUserStatusValue::Member => Ok(true),
+        _ => Ok(false),
+    }
+}
+
+pub fn paginate_project_users(
+    connection: &mut PgConnection,
+    user: &User,
+    project_id: i32,
+    statuses: Vec<ProjectUserStatusValue>,
+    pagination: PaginationInType,
+) -> ServiceResult<PaginationOutType<UserOutType>> {
+    let project = find_project_by_id(connection, project_id)?;
+    if !project.is_public && !is_project_member(connection, user, project_id)? {
+        return Err(AppError::ForbiddenError(String::from(
+            "view_project_forbidden_error",
+        )));
+    }
+    let statuses = if statuses.len() > 0 {
+        statuses
+    } else {
+        vec![
+            ProjectUserStatusValue::Creator,
+            ProjectUserStatusValue::Member,
+        ]
+    };
+    let mut query = user_services::filter_users(&pagination.search)
+        .inner_join(
+            project_users::table
+                .inner_join(projects::table)
+                .inner_join(project_user_statuses::table),
+        )
+        .select(users::all_columns)
+        .filter(projects::id.eq(project_id));
+    let mut can_change_users: Option<bool> = None;
+    for status in statuses.iter() {
+        match status {
+            ProjectUserStatusValue::Creator | ProjectUserStatusValue::Member => {}
+            _ => {
+                can_change_users = Some(can_change_users.unwrap_or(
+                    permission_services::can_change_users(connection, project_id, user.id)?,
+                ));
+                if !can_change_users.unwrap() {
+                    return Err(AppError::ForbiddenError(String::from(
+                        "view_project_users_forbidden_error",
+                    )));
+                }
+            }
+        }
+    }
+    if statuses.len() > 0 {
+        query = query.filter(project_user_statuses::status.eq_any(statuses));
+    }
+    let (users, total_pages) = query
+        .paginate(pagination.page as i64)
+        .per_page(pagination.per_page as i64)
+        .load_and_count_pages::<User>(connection)
+        .to_service_result()?;
+    Ok(PaginationOutType {
+        data: users
+            .into_iter()
+            .map(UserOutType::from)
+            .collect::<Vec<UserOutType>>(),
+        total_pages: total_pages as i32,
+    })
 }
 
 pub fn change_project(

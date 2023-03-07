@@ -1,11 +1,11 @@
 use crate::db;
-use crate::models::User;
+use crate::models::{ProjectUserStatusValue, User};
 use crate::request::UserLocale;
 use crate::response::PathResult;
 use crate::services::project_services;
 use crate::types::{
-    CancelInvitationType, InvitationResponseType, InvitationType, ProjectInChangeType,
-    ProjectInCreateType, ProjectOutType,
+    CancelInvitationType, InvitationResponseType, InvitationType, PaginationInType,
+    PaginationOutType, ProjectInChangeType, ProjectInCreateType, ProjectOutType, UserOutType,
 };
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
@@ -28,6 +28,42 @@ pub fn create_project(
         Ok(Json(ProjectOutType::from((project, connection)))),
         locale,
     )
+}
+
+#[openapi(tag = "projects")]
+#[get("/project/<project_id>/users?<statuses>&<search>&<page>&<per_page>")]
+pub fn get_project_users(
+    project_id: i32,
+    statuses: Option<&str>,
+    search: Option<&str>,
+    page: Option<u16>,
+    per_page: Option<u16>,
+    user: User,
+    locale: UserLocale,
+) -> PathResult<Json<PaginationOutType<UserOutType>>, UserLocale> {
+    let statuses = statuses
+        .unwrap_or("")
+        .split(',')
+        .map(|s| s.trim().parse::<ProjectUserStatusValue>())
+        .filter_map(Result::ok)
+        .collect::<Vec<ProjectUserStatusValue>>();
+    let connection = &mut db::establish_connection();
+    let pagination_in = PaginationInType {
+        search: search.map(|s| s.to_owned()),
+        page: page.unwrap_or(1),
+        per_page: per_page.unwrap_or(15),
+    };
+    let pagination_out = match project_services::paginate_project_users(
+        connection,
+        &user,
+        project_id,
+        statuses,
+        pagination_in,
+    ) {
+        Ok(pagination_out) => pagination_out,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(Ok(Json(pagination_out)), locale)
 }
 
 /// Change project
