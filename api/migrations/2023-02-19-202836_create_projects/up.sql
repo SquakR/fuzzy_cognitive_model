@@ -11,9 +11,9 @@ CREATE TABLE projects (
 CREATE TABLE project_users (
   id SERIAL PRIMARY KEY,
   project_id INTEGER NOT NULL,
-  FOREIGN KEY (project_id) REFERENCES projects(id),
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
   user_id INTEGER NOT NULL,
-  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 CREATE TYPE project_user_status_value AS ENUM (
@@ -28,7 +28,7 @@ CREATE TYPE project_user_status_value AS ENUM (
 CREATE TABLE project_user_statuses (
   id SERIAL PRIMARY KEY,
   project_user_id INTEGER NOT NULL,
-  FOREIGN KEY (project_user_id) REFERENCES project_users(id),
+  FOREIGN KEY (project_user_id) REFERENCES project_users(id) ON DELETE CASCADE,
   status project_user_status_value NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
@@ -39,9 +39,9 @@ CREATE TABLE permissions (
 CREATE TABLE user_permissions (
   id SERIAL PRIMARY KEY,
   permission_key VARCHAR(255) NOT NULL,
-  FOREIGN KEY (permission_key) REFERENCES permissions(key),
+  FOREIGN KEY (permission_key) REFERENCES permissions(key) ON DELETE CASCADE,
   project_user_id INTEGER NOT NULL,
-  FOREIGN KEY (project_user_id) REFERENCES project_users(id)
+  FOREIGN KEY (project_user_id) REFERENCES project_users(id) ON DELETE CASCADE
 );
 CREATE TABLE plugins (
   name VARCHAR(255) NOT NULL PRIMARY KEY,
@@ -50,9 +50,9 @@ CREATE TABLE plugins (
 CREATE TABLE project_plugins (
   id SERIAL PRIMARY KEY,
   project_id INTEGER NOT NULL,
-  FOREIGN KEY (project_id) REFERENCES projects(id),
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
   plugin_name VARCHAR(255) NOT NULL,
-  FOREIGN KEY (plugin_name) REFERENCES plugins(name),
+  FOREIGN KEY (plugin_name) REFERENCES plugins(name) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 SELECT diesel_manage_updated_at('projects');

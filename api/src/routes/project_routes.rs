@@ -119,3 +119,18 @@ pub fn leave_project(
     }
     PathResult::new(Ok(()), locale)
 }
+
+/// Delete project
+#[openapi(tag = "projects")]
+#[delete("/project/<project_id>")]
+pub fn delete_project(
+    project_id: i32,
+    user: User,
+    locale: UserLocale,
+) -> PathResult<(), UserLocale> {
+    let connection = &mut db::establish_connection();
+    if let Err(app_error) = project_services::delete_project(connection, &user, project_id) {
+        return PathResult::new(Err(app_error), locale);
+    }
+    PathResult::new(Ok(()), locale)
+}

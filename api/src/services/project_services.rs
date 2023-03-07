@@ -294,6 +294,22 @@ pub fn leave_project(
         .to_service_result()
 }
 
+pub fn delete_project(
+    connection: &mut PgConnection,
+    user: &User,
+    project_id: i32,
+) -> ServiceResult<()> {
+    if !permission_services::can_delete_project(connection, project_id, user.id)? {
+        return Err(AppError::ForbiddenError(String::from(
+            "delete_project_forbidden_error",
+        )));
+    }
+    diesel::delete(projects::table.filter(projects::id.eq(project_id)))
+        .execute(connection)
+        .to_service_result()?;
+    Ok(())
+}
+
 impl From<(Project, &mut PgConnection)> for ProjectOutType {
     fn from((project, connection): (Project, &mut PgConnection)) -> Self {
         ProjectOutType {

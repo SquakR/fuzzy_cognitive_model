@@ -34,6 +34,8 @@ sign_in_active_session_error: "Невозможно войти с активно
 
 change_project_forbidden_error: "Недостаточно прав для изменения проекта."
 
+delete_project_forbidden_error: "Недостаточно прав для удаления проекта."
+
 invite_user_forbidden_error: "Недостаточно прав для приглашения пользователя в проект."
 invite_user_member_error: "Невозможно пригласить пользователя, т.к. он уже является участником проекта."
 invite_user_invited_error: "Невозможно пригласить пользователя, т.к. он уже был приглашен в проект."

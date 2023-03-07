@@ -21,6 +21,14 @@ pub fn can_change_users(
     has_permission(connection, project_id, user_id, "can_change_users")
 }
 
+pub fn can_delete_project(
+    connection: &mut PgConnection,
+    project_id: i32,
+    user_id: i32,
+) -> ServiceResult<bool> {
+    has_permission(connection, project_id, user_id, "can_delete_project")
+}
+
 fn has_permission(
     connection: &mut PgConnection,
     project_id: i32,
