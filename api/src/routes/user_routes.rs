@@ -25,18 +25,18 @@ use std::path::PathBuf;
 
 /// Get users
 #[openapi(tag = "users")]
-#[get("/users?<search>&<limit>&<offset>")]
+#[get("/users?<search>&<page>&<per_page>")]
 pub fn get_users(
     search: Option<&str>,
-    limit: Option<u16>,
-    offset: Option<u16>,
+    page: Option<u16>,
+    per_page: Option<u16>,
     locale: UserLocale,
 ) -> PathResult<Json<PaginationOutType<UserOutType>>, UserLocale> {
     let connection = &mut db::establish_connection();
     let pagination_in = PaginationInType {
         search: search.map(|s| s.to_owned()),
-        limit,
-        offset,
+        page: page.unwrap_or(1),
+        per_page: per_page.unwrap_or(15),
     };
     let pagination_out = match user_services::paginate_users(connection, pagination_in) {
         Ok(pagination_out) => pagination_out,

@@ -5,6 +5,7 @@ extern crate rust_i18n;
 pub mod cookies;
 pub mod db;
 pub mod models;
+pub mod pagination;
 pub mod request;
 pub mod response;
 pub mod routes;

@@ -186,10 +186,10 @@ pub struct ResetPasswordType {
 pub struct PaginationInType {
     /// Search query
     pub search: Option<String>,
-    /// Limit
-    pub limit: Option<u16>,
-    /// Offset
-    pub offset: Option<u16>,
+    /// Page number
+    pub page: u16,
+    /// Number of records per page
+    pub per_page: u16,
 }
 
 /// Pagination output type
@@ -198,8 +198,8 @@ pub struct PaginationInType {
 pub struct PaginationOutType<T> {
     /// Pagination data
     pub data: Vec<T>,
-    /// Total count of records
-    pub total_count: i64,
+    /// Total count of pages
+    pub total_pages: i32,
 }
 
 /// Type of project

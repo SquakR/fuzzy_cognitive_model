@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use crate::models::{Session, User};
+use crate::pagination::Paginate;
 use crate::response::{AppError, ServiceResult, ToAppError, ToServiceResult};
 use crate::schema::users;
 use crate::services::email_confirmation_services;
@@ -12,7 +13,7 @@ use crate::types::{
     UserOutType,
 };
 use diesel::dsl::sql;
-use diesel::pg::{Pg, PgConnection};
+use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use diesel::sql_types::{Bool, Text};
@@ -90,21 +91,47 @@ pub fn paginate_users(
     connection: &mut PgConnection,
     pagination: PaginationInType,
 ) -> ServiceResult<PaginationOutType<UserOutType>> {
-    let total_count = filter_users(&pagination.search)
-        .count()
-        .get_result::<i64>(connection)
+    let query = match pagination.search {
+        Some(search) => {
+            let like_pattern = format!("{}%", search);
+            users::table
+                .or_filter(users::username.ilike(like_pattern.to_owned()))
+                .or_filter(users::email.ilike(like_pattern.to_owned()))
+                .or_filter(users::first_name.ilike(like_pattern.to_owned()))
+                .or_filter(users::second_name.ilike(like_pattern.to_owned()))
+                .or_filter(users::last_name.ilike(like_pattern.to_owned()))
+                .or_filter(
+                    sql::<Bool>("CONCAT(first_name, ' ', last_name) ILIKE ").bind::<Text, _>(like_pattern.to_owned()),
+                )
+                .or_filter(
+                    sql::<Bool>("CONCAT(last_name, ' ', first_name) ILIKE ").bind::<Text, _>(like_pattern.to_owned()),
+                )
+                .or_filter(
+                    sql::<Bool>("CONCAT(first_name, ' ', second_name, ' ', last_name) ILIKE ")
+                        .bind::<Text, _>(like_pattern.to_owned()),
+                )
+                .or_filter(
+                    sql::<Bool>("CONCAT(last_name, ' ', first_name, ' ', second_name) ILIKE ")
+                        .bind::<Text, _>(like_pattern.to_owned()),
+                )
+                .or_filter(
+                    sql::<Bool>("CONCAT(last_name, ' ', SUBSTR(first_name, 1, 1), ' ', SUBSTR(second_name, 1, 1)) ILIKE ")
+                        .bind::<Text, _>(like_pattern.to_owned()),
+                ).into_boxed()
+        }
+        None => users::table.into_boxed(),
+    };
+    let (users, total_pages) = query
+        .paginate(pagination.page as i64)
+        .per_page(pagination.per_page as i64)
+        .load_and_count_pages::<User>(connection)
         .to_service_result()?;
-    let users = filter_users(&pagination.search)
-        .limit(pagination.limit.unwrap_or(15).into())
-        .offset(pagination.offset.unwrap_or(0).into())
-        .get_results::<User>(connection)
-        .to_service_result()?
-        .into_iter()
-        .map(UserOutType::from)
-        .collect::<Vec<UserOutType>>();
     Ok(PaginationOutType {
-        data: users,
-        total_count,
+        data: users
+            .into_iter()
+            .map(UserOutType::from)
+            .collect::<Vec<UserOutType>>(),
+        total_pages: total_pages as i32,
     })
 }
 
@@ -275,39 +302,6 @@ fn get_exist_user_app_error(exist_user: User, username: &str, email: &str) -> Ap
         }));
     }
     unreachable!();
-}
-
-fn filter_users<'a>(search: &Option<String>) -> users::BoxedQuery<'a, Pg> {
-    match search {
-        Some(search) => {
-            let like_pattern = format!("{}%", search);
-            users::table
-                .or_filter(users::username.ilike(like_pattern.to_owned()))
-                .or_filter(users::email.ilike(like_pattern.to_owned()))
-                .or_filter(users::first_name.ilike(like_pattern.to_owned()))
-                .or_filter(users::second_name.ilike(like_pattern.to_owned()))
-                .or_filter(users::last_name.ilike(like_pattern.to_owned()))
-                .or_filter(
-                    sql::<Bool>("CONCAT(first_name, ' ', last_name) ILIKE ").bind::<Text, _>(like_pattern.to_owned()),
-                )
-                .or_filter(
-                    sql::<Bool>("CONCAT(last_name, ' ', first_name) ILIKE ").bind::<Text, _>(like_pattern.to_owned()),
-                )
-                .or_filter(
-                    sql::<Bool>("CONCAT(first_name, ' ', second_name, ' ', last_name) ILIKE ")
-                        .bind::<Text, _>(like_pattern.to_owned()),
-                )
-                .or_filter(
-                    sql::<Bool>("CONCAT(last_name, ' ', first_name, ' ', second_name) ILIKE ")
-                        .bind::<Text, _>(like_pattern.to_owned()),
-                )
-                .or_filter(
-                    sql::<Bool>("CONCAT(last_name, ' ', SUBSTR(first_name, 1, 1), ' ', SUBSTR(second_name, 1, 1)) ILIKE ")
-                        .bind::<Text, _>(like_pattern.to_owned()),
-                ).into_boxed()
-        }
-        None => users::table.into_boxed(),
-    }
 }
 
 impl From<User> for UserOutType {
