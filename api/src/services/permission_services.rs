@@ -1,9 +1,16 @@
-use crate::models::{ProjectUserStatusValue, UserPermission};
-use crate::response::ServiceResult;
-use crate::schema::user_permissions;
+use crate::models::{Permission, ProjectUserPermission, ProjectUserStatusValue};
+use crate::response::{ServiceResult, ToServiceResult};
+use crate::schema::permissions;
+use crate::schema::project_user_permissions;
 use crate::services::project_services;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
+
+pub fn get_all_permissions(connection: &mut PgConnection) -> ServiceResult<Vec<Permission>> {
+    permissions::table
+        .get_results::<Permission>(connection)
+        .to_service_result()
+}
 
 pub fn can_change_project(
     connection: &mut PgConnection,
@@ -19,6 +26,14 @@ pub fn can_change_users(
     user_id: i32,
 ) -> ServiceResult<bool> {
     has_permission(connection, project_id, user_id, "can_change_users")
+}
+
+pub fn can_change_permissions(
+    connection: &mut PgConnection,
+    project_id: i32,
+    user_id: i32,
+) -> ServiceResult<bool> {
+    has_permission(connection, project_id, user_id, "can_change_permissions")
 }
 
 pub fn can_delete_project(
@@ -42,10 +57,10 @@ fn has_permission(
         ProjectUserStatusValue::Member => {}
         _ => return Ok(false),
     }
-    if let Err(_) = user_permissions::table
-        .filter(user_permissions::permission_key.eq(key))
-        .filter(user_permissions::project_user_id.eq(last_status.project_user_id))
-        .first::<UserPermission>(connection)
+    if let Err(_) = project_user_permissions::table
+        .filter(project_user_permissions::permission_key.eq(key))
+        .filter(project_user_permissions::project_user_id.eq(last_status.project_user_id))
+        .first::<ProjectUserPermission>(connection)
     {
         return Ok(false);
     }

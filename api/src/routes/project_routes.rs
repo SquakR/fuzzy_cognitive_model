@@ -25,7 +25,7 @@ pub fn create_project(
         Err(app_error) => return PathResult::new(Err(app_error), locale),
     };
     PathResult::new(
-        Ok(Json(ProjectOutType::from_project(project, connection))),
+        Ok(Json(ProjectOutType::from_project(connection, project))),
         locale,
     )
 }
@@ -81,7 +81,7 @@ pub fn change_project(
         Err(app_error) => return PathResult::new(Err(app_error), locale),
     };
     PathResult::new(
-        Ok(Json(ProjectOutType::from_project(project, connection))),
+        Ok(Json(ProjectOutType::from_project(connection, project))),
         locale,
     )
 }

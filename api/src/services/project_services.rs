@@ -2,6 +2,7 @@ use crate::models::{Project, ProjectUser, ProjectUserStatus, ProjectUserStatusVa
 use crate::pagination::Paginate;
 use crate::response::AppError;
 use crate::response::{ServiceResult, ToServiceResult};
+use crate::schema::project_user_permissions;
 use crate::schema::project_user_statuses;
 use crate::schema::project_users;
 use crate::schema::projects;
@@ -209,7 +210,7 @@ pub fn paginate_project_users(
         .load_and_count_pages::<User>(connection)
         .to_service_result()?;
     Ok(PaginationOutType {
-        data: ProjectUserType::from_users(project.id, users, connection),
+        data: ProjectUserType::from_users(connection, user, project.id, users)?,
         total_pages: total_pages as i32,
     })
 }
@@ -395,7 +396,7 @@ pub fn delete_project(
 }
 
 impl ProjectOutType {
-    pub fn from_project(project: Project, connection: &mut PgConnection) -> Self {
+    pub fn from_project(connection: &mut PgConnection, project: Project) -> Self {
         ProjectOutType {
             id: project.id,
             name: project.name,
@@ -411,33 +412,37 @@ impl ProjectOutType {
 
 impl ProjectUserType {
     pub fn from_users(
+        connection: &mut PgConnection,
+        current_user: &User,
         project_id: i32,
         users: Vec<User>,
-        connection: &mut PgConnection,
-    ) -> Vec<Self> {
-        let user_ids = users.iter().map(|u| u.id);
-        let mut statuses = project_users::table
-            .inner_join(project_user_statuses::table)
-            .select((
-                project_users::user_id,
-                project_user_statuses::status,
-                project_user_statuses::created_at,
-            ))
-            .filter(project_users::project_id.eq(project_id))
-            .filter(project_users::user_id.eq_any(user_ids))
-            .get_results::<(i32, ProjectUserStatusValue, DateTime<Utc>)>(connection)
-            .unwrap();
-
+    ) -> ServiceResult<Vec<Self>> {
+        let can_change_permissions =
+            permission_services::can_change_permissions(connection, project_id, current_user.id)?;
+        let mut statuses =
+            ProjectUserType::get_project_user_statuses(project_id, &users, connection)?;
+        let mut permissions =
+            ProjectUserType::get_project_user_permissions(project_id, &users, connection)?;
         let mut result = Vec::new();
         for user in users {
-            let status_index = statuses
-                .iter()
-                .enumerate()
-                .filter(|(_, (user_id, _, _))| *user_id == user.id)
-                .max_by_key(|(_, (_, _, created_at))| *created_at)
-                .unwrap()
-                .0;
-            let (_, status, _) = statuses.remove(status_index);
+            let status = ProjectUserType::find_last_status(&mut statuses, user.id);
+            let permissions = if can_change_permissions || current_user.id == user.id {
+                let permissions = match status {
+                    ProjectUserStatusValue::Creator => {
+                        permission_services::get_all_permissions(connection)?
+                            .into_iter()
+                            .map(|permission| permission.key)
+                            .collect::<Vec<String>>()
+                    }
+                    ProjectUserStatusValue::Member => {
+                        ProjectUserType::find_user_permissions(&mut permissions, user.id)
+                    }
+                    _ => vec![],
+                };
+                Some(permissions)
+            } else {
+                None
+            };
             result.push(ProjectUserType {
                 id: user.id,
                 username: user.username,
@@ -450,8 +455,71 @@ impl ProjectUserType {
                 language: user.language,
                 created_at: user.created_at,
                 updated_at: user.updated_at,
-                status: status,
+                status,
+                permissions,
             });
+        }
+        Ok(result)
+    }
+    fn get_project_user_statuses(
+        project_id: i32,
+        users: &Vec<User>,
+        connection: &mut PgConnection,
+    ) -> ServiceResult<Vec<(i32, ProjectUserStatusValue, DateTime<Utc>)>> {
+        let user_ids = users.iter().map(|u| u.id);
+        project_users::table
+            .inner_join(project_user_statuses::table)
+            .select((
+                project_users::user_id,
+                project_user_statuses::status,
+                project_user_statuses::created_at,
+            ))
+            .filter(project_users::project_id.eq(project_id))
+            .filter(project_users::user_id.eq_any(user_ids))
+            .get_results::<(i32, ProjectUserStatusValue, DateTime<Utc>)>(connection)
+            .to_service_result()
+    }
+    fn get_project_user_permissions(
+        project_id: i32,
+        users: &Vec<User>,
+        connection: &mut PgConnection,
+    ) -> ServiceResult<Vec<(i32, String)>> {
+        let user_ids = users.iter().map(|u| u.id);
+        project_users::table
+            .inner_join(project_user_permissions::table)
+            .select((
+                project_users::user_id,
+                project_user_permissions::permission_key,
+            ))
+            .filter(project_users::project_id.eq(project_id))
+            .filter(project_users::user_id.eq_any(user_ids))
+            .get_results::<(i32, String)>(connection)
+            .to_service_result()
+    }
+    fn find_last_status(
+        statuses: &mut Vec<(i32, ProjectUserStatusValue, DateTime<Utc>)>,
+        user_id: i32,
+    ) -> ProjectUserStatusValue {
+        let status_index = statuses
+            .iter()
+            .enumerate()
+            .filter(|(_, (id, _, _))| *id == user_id)
+            .max_by_key(|(_, (_, _, created_at))| *created_at)
+            .unwrap()
+            .0;
+        let (_, status, _) = statuses.remove(status_index);
+        status
+    }
+    fn find_user_permissions(permissions: &mut Vec<(i32, String)>, user_id: i32) -> Vec<String> {
+        let permission_indices = permissions
+            .iter()
+            .enumerate()
+            .filter(|(_, (id, _))| *id == user_id)
+            .map(|(i, _)| i)
+            .collect::<Vec<usize>>();
+        let mut result = vec![];
+        for index in permission_indices {
+            result.push(permissions.remove(index).1)
         }
         result
     }

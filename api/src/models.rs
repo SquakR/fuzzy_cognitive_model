@@ -3,11 +3,11 @@ use crate::schema::password_resets;
 use crate::schema::permissions;
 use crate::schema::plugins;
 use crate::schema::project_plugins;
+use crate::schema::project_user_permissions;
 use crate::schema::project_user_statuses;
 use crate::schema::project_users;
 use crate::schema::projects;
 use crate::schema::sessions;
-use crate::schema::user_permissions;
 use crate::schema::users;
 use chrono::{DateTime, Utc};
 use diesel::{Identifiable, Queryable};
@@ -134,7 +134,7 @@ pub struct Permission {
 }
 
 #[derive(Queryable, Identifiable)]
-pub struct UserPermission {
+pub struct ProjectUserPermission {
     pub id: i32,
     pub permission_key: String,
     pub project_user_id: i32,

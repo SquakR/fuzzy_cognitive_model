@@ -36,7 +36,7 @@ CREATE TABLE permissions (
   key VARCHAR(255) PRIMARY KEY,
   description TEXT NOT NULL
 );
-CREATE TABLE user_permissions (
+CREATE TABLE project_user_permissions (
   id SERIAL PRIMARY KEY,
   permission_key VARCHAR(255) NOT NULL,
   FOREIGN KEY (permission_key) REFERENCES permissions(key) ON DELETE CASCADE,

@@ -283,6 +283,8 @@ pub struct ProjectUserType {
     pub updated_at: DateTime<Utc>,
     /// User status in project
     pub status: ProjectUserStatusValue,
+    /// User permissions in project
+    pub permissions: Option<Vec<String>>,
 }
 
 /// User invitation to project type
