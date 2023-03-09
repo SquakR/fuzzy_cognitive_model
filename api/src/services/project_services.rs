@@ -177,14 +177,6 @@ pub fn paginate_project_users(
             ProjectUserStatusValue::Member,
         ]
     };
-    let mut query = user_services::filter_users(&pagination.search)
-        .inner_join(
-            project_users::table
-                .inner_join(projects::table)
-                .inner_join(project_user_statuses::table),
-        )
-        .select(users::all_columns)
-        .filter(projects::id.eq(project_id));
     let mut can_change_users: Option<bool> = None;
     for status in statuses.iter() {
         match status {
@@ -201,16 +193,19 @@ pub fn paginate_project_users(
             }
         }
     }
-    if statuses.len() > 0 {
-        query = query.filter(project_user_statuses::status.eq_any(statuses));
-    }
-    let (users, total_pages) = query
+    let (users, total_pages) = user_services::filter_users(&pagination.search)
+        .inner_join(project_users::table.inner_join(projects::table))
+        .select(users::all_columns)
+        .filter(projects::id.eq(project_id))
         .paginate(pagination.page as i64)
         .per_page(pagination.per_page as i64)
         .load_and_count_pages::<User>(connection)
         .to_service_result()?;
     Ok(PaginationOutType {
-        data: ProjectUserType::from_users(connection, user, project.id, users)?,
+        data: ProjectUserType::from_users(connection, user, project.id, users)?
+            .into_iter()
+            .filter(|u| statuses.contains(&u.status))
+            .collect::<Vec<ProjectUserType>>(),
         total_pages: total_pages as i32,
     })
 }

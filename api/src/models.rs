@@ -87,7 +87,7 @@ pub struct ProjectUser {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, diesel_derive_enum::DbEnum, Serialize, JsonSchema)]
+#[derive(Debug, PartialEq, diesel_derive_enum::DbEnum, Serialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 #[ExistingTypePath = "crate::schema::sql_types::ProjectUserStatusValue"]
 pub enum ProjectUserStatusValue {
