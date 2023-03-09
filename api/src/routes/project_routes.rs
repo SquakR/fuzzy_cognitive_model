@@ -5,7 +5,7 @@ use crate::response::PathResult;
 use crate::services::project_services;
 use crate::types::{
     CancelInvitationType, InvitationResponseType, InvitationType, PaginationInType,
-    PaginationOutType, ProjectInChangeType, ProjectInCreateType, ProjectOutType, UserOutType,
+    PaginationOutType, ProjectInChangeType, ProjectInCreateType, ProjectOutType, ProjectUserType,
 };
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
@@ -25,7 +25,7 @@ pub fn create_project(
         Err(app_error) => return PathResult::new(Err(app_error), locale),
     };
     PathResult::new(
-        Ok(Json(ProjectOutType::from((project, connection)))),
+        Ok(Json(ProjectOutType::from_project(project, connection))),
         locale,
     )
 }
@@ -40,7 +40,7 @@ pub fn get_project_users(
     per_page: Option<u16>,
     user: User,
     locale: UserLocale,
-) -> PathResult<Json<PaginationOutType<UserOutType>>, UserLocale> {
+) -> PathResult<Json<PaginationOutType<ProjectUserType>>, UserLocale> {
     let statuses = statuses
         .unwrap_or("")
         .split(',')
@@ -81,7 +81,7 @@ pub fn change_project(
         Err(app_error) => return PathResult::new(Err(app_error), locale),
     };
     PathResult::new(
-        Ok(Json(ProjectOutType::from((project, connection)))),
+        Ok(Json(ProjectOutType::from_project(project, connection))),
         locale,
     )
 }

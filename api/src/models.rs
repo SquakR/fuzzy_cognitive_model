@@ -12,6 +12,8 @@ use crate::schema::users;
 use chrono::{DateTime, Utc};
 use diesel::{Identifiable, Queryable};
 use ipnetwork::IpNetwork;
+use schemars::JsonSchema;
+use serde::Serialize;
 use std::str::FromStr;
 
 #[derive(Queryable, Identifiable, Clone)]
@@ -85,7 +87,8 @@ pub struct ProjectUser {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, diesel_derive_enum::DbEnum)]
+#[derive(Debug, diesel_derive_enum::DbEnum, Serialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 #[ExistingTypePath = "crate::schema::sql_types::ProjectUserStatusValue"]
 pub enum ProjectUserStatusValue {
     Creator,

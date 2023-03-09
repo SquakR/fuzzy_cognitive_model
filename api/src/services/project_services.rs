@@ -7,15 +7,15 @@ use crate::schema::project_users;
 use crate::schema::projects;
 use crate::schema::users;
 use crate::services::permission_services;
+use crate::services::user_services;
 use crate::types::{
     CancelInvitationType, InvitationResponseType, InvitationType, PaginationInType,
-    PaginationOutType, ProjectInChangeType, ProjectInCreateType, ProjectOutType, UserOutType,
+    PaginationOutType, ProjectInChangeType, ProjectInCreateType, ProjectOutType, ProjectUserType,
+    UserOutType,
 };
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
-
-use super::user_services;
 
 pub fn create_project(
     connection: &mut PgConnection,
@@ -161,7 +161,7 @@ pub fn paginate_project_users(
     project_id: i32,
     statuses: Vec<ProjectUserStatusValue>,
     pagination: PaginationInType,
-) -> ServiceResult<PaginationOutType<UserOutType>> {
+) -> ServiceResult<PaginationOutType<ProjectUserType>> {
     let project = find_project_by_id(connection, project_id)?;
     if !project.is_public && !is_project_member(connection, user, project_id)? {
         return Err(AppError::ForbiddenError(String::from(
@@ -209,10 +209,7 @@ pub fn paginate_project_users(
         .load_and_count_pages::<User>(connection)
         .to_service_result()?;
     Ok(PaginationOutType {
-        data: users
-            .into_iter()
-            .map(UserOutType::from)
-            .collect::<Vec<UserOutType>>(),
+        data: ProjectUserType::from_users(project.id, users, connection),
         total_pages: total_pages as i32,
     })
 }
@@ -397,8 +394,8 @@ pub fn delete_project(
     Ok(())
 }
 
-impl From<(Project, &mut PgConnection)> for ProjectOutType {
-    fn from((project, connection): (Project, &mut PgConnection)) -> Self {
+impl ProjectOutType {
+    pub fn from_project(project: Project, connection: &mut PgConnection) -> Self {
         ProjectOutType {
             id: project.id,
             name: project.name,
@@ -409,5 +406,53 @@ impl From<(Project, &mut PgConnection)> for ProjectOutType {
             created_at: project.created_at,
             updated_at: project.updated_at,
         }
+    }
+}
+
+impl ProjectUserType {
+    pub fn from_users(
+        project_id: i32,
+        users: Vec<User>,
+        connection: &mut PgConnection,
+    ) -> Vec<Self> {
+        let user_ids = users.iter().map(|u| u.id);
+        let mut statuses = project_users::table
+            .inner_join(project_user_statuses::table)
+            .select((
+                project_users::user_id,
+                project_user_statuses::status,
+                project_user_statuses::created_at,
+            ))
+            .filter(project_users::project_id.eq(project_id))
+            .filter(project_users::user_id.eq_any(user_ids))
+            .get_results::<(i32, ProjectUserStatusValue, DateTime<Utc>)>(connection)
+            .unwrap();
+
+        let mut result = Vec::new();
+        for user in users {
+            let status_index = statuses
+                .iter()
+                .enumerate()
+                .filter(|(_, (user_id, _, _))| *user_id == user.id)
+                .max_by_key(|(_, (_, _, created_at))| *created_at)
+                .unwrap()
+                .0;
+            let (_, status, _) = statuses.remove(status_index);
+            result.push(ProjectUserType {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                is_email_confirmed: user.is_email_confirmed,
+                first_name: user.first_name,
+                second_name: user.second_name,
+                last_name: user.last_name,
+                avatar: user.avatar,
+                language: user.language,
+                created_at: user.created_at,
+                updated_at: user.updated_at,
+                status: status,
+            });
+        }
+        result
     }
 }

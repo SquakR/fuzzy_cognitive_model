@@ -1,3 +1,4 @@
+use crate::models::ProjectUserStatusValue;
 use chrono::{DateTime, Utc};
 use rocket::form::FromForm;
 use rocket::fs::TempFile;
@@ -252,6 +253,36 @@ pub struct ProjectInChangeType {
     pub is_public: bool,
     /// Is project archived
     pub is_archived: bool,
+}
+
+/// Type of project user
+#[derive(Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectUserType {
+    /// User identifier
+    pub id: i32,
+    /// User nickname
+    pub username: String,
+    /// User email
+    pub email: String,
+    /// Is user email confirmed
+    pub is_email_confirmed: bool,
+    /// User name
+    pub first_name: String,
+    /// User second name or patronymic
+    pub second_name: Option<String>,
+    /// User last name
+    pub last_name: String,
+    /// User avatar
+    pub avatar: Option<String>,
+    /// User preferred language
+    pub language: Option<String>,
+    /// User creation time
+    pub created_at: DateTime<Utc>,
+    /// User update time
+    pub updated_at: DateTime<Utc>,
+    /// User status in project
+    pub status: ProjectUserStatusValue,
 }
 
 /// User invitation to project type
