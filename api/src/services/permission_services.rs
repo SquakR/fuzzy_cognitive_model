@@ -6,7 +6,7 @@ use crate::services::project_services;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
-pub fn get_all_permissions(connection: &mut PgConnection) -> ServiceResult<Vec<Permission>> {
+pub fn get_permissions(connection: &mut PgConnection) -> ServiceResult<Vec<Permission>> {
     permissions::table
         .get_results::<Permission>(connection)
         .to_service_result()

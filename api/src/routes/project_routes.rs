@@ -2,6 +2,7 @@ use crate::db;
 use crate::models::{ProjectUserStatusValue, User};
 use crate::request::UserLocale;
 use crate::response::PathResult;
+use crate::services::permission_services;
 use crate::services::project_services;
 use crate::types::{
     CancelInvitationType, InvitationResponseType, InvitationType, PaginationInType,
@@ -30,6 +31,27 @@ pub fn create_project(
     )
 }
 
+/// Get permission keys
+#[openapi(tag = "projects")]
+#[get("/permissions")]
+pub fn get_permissions(locale: UserLocale) -> PathResult<Json<Vec<String>>, UserLocale> {
+    let connection = &mut db::establish_connection();
+    let permissions = match permission_services::get_permissions(connection) {
+        Ok(permissions) => permissions,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(
+        Ok(Json(
+            permissions
+                .into_iter()
+                .map(|permission| permission.key)
+                .collect::<Vec<String>>(),
+        )),
+        locale,
+    )
+}
+
+/// Get project users
 #[openapi(tag = "projects")]
 #[get("/project/<project_id>/users?<statuses>&<search>&<page>&<per_page>")]
 pub fn get_project_users(

@@ -424,7 +424,7 @@ impl ProjectUserType {
             let permissions = if can_change_permissions || current_user.id == user.id {
                 let permissions = match status {
                     ProjectUserStatusValue::Creator => {
-                        permission_services::get_all_permissions(connection)?
+                        permission_services::get_permissions(connection)?
                             .into_iter()
                             .map(|permission| permission.key)
                             .collect::<Vec<String>>()
