@@ -255,6 +255,16 @@ pub struct ProjectInChangeType {
     pub is_archived: bool,
 }
 
+/// Type of project permission
+#[derive(Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PermissionType {
+    /// Permission key
+    pub key: String,
+    /// Permission description
+    pub description: String,
+}
+
 /// Type of project user
 #[derive(Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

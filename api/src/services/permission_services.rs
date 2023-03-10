@@ -3,6 +3,7 @@ use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::permissions;
 use crate::schema::project_user_permissions;
 use crate::services::project_services;
+use crate::types::PermissionType;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
@@ -65,4 +66,13 @@ fn has_permission(
         return Ok(false);
     }
     Ok(true)
+}
+
+impl From<Permission> for PermissionType {
+    fn from(permission: Permission) -> Self {
+        PermissionType {
+            key: permission.key,
+            description: permission.description,
+        }
+    }
 }

@@ -6,7 +6,8 @@ use crate::services::permission_services;
 use crate::services::project_services;
 use crate::types::{
     CancelInvitationType, InvitationResponseType, InvitationType, PaginationInType,
-    PaginationOutType, ProjectInChangeType, ProjectInCreateType, ProjectOutType, ProjectUserType,
+    PaginationOutType, PermissionType, ProjectInChangeType, ProjectInCreateType, ProjectOutType,
+    ProjectUserType,
 };
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
@@ -31,10 +32,10 @@ pub fn create_project(
     )
 }
 
-/// Get permission keys
+/// Get permissions
 #[openapi(tag = "projects")]
 #[get("/permissions")]
-pub fn get_permissions(locale: UserLocale) -> PathResult<Json<Vec<String>>, UserLocale> {
+pub fn get_permissions(locale: UserLocale) -> PathResult<Json<Vec<PermissionType>>, UserLocale> {
     let connection = &mut db::establish_connection();
     let permissions = match permission_services::get_permissions(connection) {
         Ok(permissions) => permissions,
@@ -44,8 +45,8 @@ pub fn get_permissions(locale: UserLocale) -> PathResult<Json<Vec<String>>, User
         Ok(Json(
             permissions
                 .into_iter()
-                .map(|permission| permission.key)
-                .collect::<Vec<String>>(),
+                .map(PermissionType::from)
+                .collect::<Vec<PermissionType>>(),
         )),
         locale,
     )
