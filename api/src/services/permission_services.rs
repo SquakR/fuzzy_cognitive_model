@@ -2,7 +2,7 @@ use crate::models::{Permission, ProjectUserPermission, ProjectUserStatusValue, U
 use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::permissions;
 use crate::schema::project_user_permissions;
-use crate::services::project_services;
+use crate::services::project_user_services;
 use crate::types::PermissionType;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
@@ -35,9 +35,9 @@ pub fn set_project_user_permissions(
             )
         })));
     }
-    let project_user = project_services::find_project_user(connection, project_id, user_id)?;
+    let project_user = project_user_services::find_project_user(connection, project_id, user_id)?;
     let last_status =
-        project_services::find_last_status_by_project_user(connection, project_user.id)?;
+        project_user_services::find_last_status_by_project_user(connection, project_user.id)?;
     match last_status.status {
         ProjectUserStatusValue::Member => {}
         ProjectUserStatusValue::Creator => {
@@ -130,7 +130,7 @@ fn has_permission(
     key: &str,
 ) -> ServiceResult<bool> {
     let last_status =
-        project_services::find_last_status_by_project(connection, project_id, user_id)?;
+        project_user_services::find_last_status_by_project(connection, project_id, user_id)?;
     match last_status.status {
         ProjectUserStatusValue::Creator => return Ok(true),
         ProjectUserStatusValue::Member => {}

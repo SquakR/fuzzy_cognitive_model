@@ -4,9 +4,10 @@ use crate::request::UserLocale;
 use crate::response::PathResult;
 use crate::services::permission_services;
 use crate::services::project_services;
+use crate::services::project_user_services;
 use crate::types::{
-    CancelInvitationType, InvitationResponseType, InvitationType, PaginationInType,
-    PaginationOutType, PermissionType, ProjectInType, ProjectOutType, ProjectUserType,
+    PaginationInType, PaginationOutType, PermissionType, ProjectInType, ProjectOutType,
+    ProjectUserType,
 };
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
@@ -75,7 +76,7 @@ pub fn get_project_users(
         page: page.unwrap_or(1),
         per_page: per_page.unwrap_or(15),
     };
-    let pagination_out = match project_services::paginate_project_users(
+    let pagination_out = match project_user_services::paginate_project_users(
         connection,
         &user,
         project_id,
@@ -143,15 +144,16 @@ pub fn set_project_user_permissions(
 
 /// Invite user to project
 #[openapi(tag = "projects")]
-#[post("/invite_user", format = "json", data = "<invitation>")]
+#[post("/project/<project_id>/user/<user_id>/invite")]
 pub fn invite_user(
-    invitation: Json<InvitationType>,
+    project_id: i32,
+    user_id: i32,
     user: User,
     locale: UserLocale,
 ) -> PathResult<(), UserLocale> {
     let connection = &mut db::establish_connection();
     if let Err(app_error) =
-        project_services::invite_user(connection, &user, invitation.into_inner())
+        project_user_services::invite_user(connection, &user, project_id, user_id)
     {
         return PathResult::new(Err(app_error), locale);
     }
@@ -160,15 +162,16 @@ pub fn invite_user(
 
 /// Cancel user invitation to project
 #[openapi(tag = "projects")]
-#[post("/cancel_invitation", format = "json", data = "<cancel_invitation>")]
+#[post("/project/<project_id>/user/<user_id>/cancel_invitation")]
 pub fn cancel_invitation(
-    cancel_invitation: Json<CancelInvitationType>,
+    project_id: i32,
+    user_id: i32,
     user: User,
     locale: UserLocale,
 ) -> PathResult<(), UserLocale> {
     let connection = &mut db::establish_connection();
     if let Err(app_error) =
-        project_services::cancel_invitation(connection, &user, cancel_invitation.into_inner())
+        project_user_services::cancel_invitation(connection, &user, project_id, user_id)
     {
         return PathResult::new(Err(app_error), locale);
     }
@@ -177,19 +180,16 @@ pub fn cancel_invitation(
 
 /// Respond to invitation to project
 #[openapi(tag = "projects")]
-#[post(
-    "/respond_to_invitation",
-    format = "json",
-    data = "<invitation_response>"
-)]
+#[post("/project/<project_id>/respond_to_invitation?<join>")]
 pub fn respond_to_invitation(
-    invitation_response: Json<InvitationResponseType>,
+    project_id: i32,
+    join: bool,
     user: User,
     locale: UserLocale,
 ) -> PathResult<(), UserLocale> {
     let connection = &mut db::establish_connection();
     if let Err(app_error) =
-        project_services::respond_to_invitation(connection, &user, invitation_response.into_inner())
+        project_user_services::respond_to_invitation(connection, &user, project_id, join)
     {
         return PathResult::new(Err(app_error), locale);
     }
@@ -198,14 +198,14 @@ pub fn respond_to_invitation(
 
 /// Leave project
 #[openapi(tag = "projects")]
-#[post("/leave_project/<project_id>")]
+#[post("/project/<project_id>/leave")]
 pub fn leave_project(
     project_id: i32,
     user: User,
     locale: UserLocale,
 ) -> PathResult<(), UserLocale> {
     let connection = &mut db::establish_connection();
-    if let Err(app_error) = project_services::leave_project(connection, &user, project_id) {
+    if let Err(app_error) = project_user_services::leave_project(connection, &user, project_id) {
         return PathResult::new(Err(app_error), locale);
     }
     PathResult::new(Ok(()), locale)
