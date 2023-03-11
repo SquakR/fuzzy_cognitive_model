@@ -114,7 +114,7 @@ pub async fn change_me(
 
 /// Change current user language
 #[openapi(tag = "users")]
-#[patch("/me_language", format = "json", data = "<change_language>")]
+#[patch("/me/language", format = "json", data = "<change_language>")]
 pub fn change_me_language(
     change_language: Json<ChangeLanguageType>,
     user: User,
@@ -134,7 +134,7 @@ pub fn change_me_language(
 
 /// Change current user password
 #[openapi(tag = "users")]
-#[patch("/me_password", format = "json", data = "<change_password>")]
+#[patch("/me/password", format = "json", data = "<change_password>")]
 pub fn change_me_password(
     change_password: Json<ChangePasswordType>,
     cookies_jar: &CookieJar<'_>,
