@@ -39,6 +39,11 @@ change_project_forbidden_error: "Недостаточно прав для изм
 
 delete_project_forbidden_error: "Недостаточно прав для удаления проекта."
 
+change_permissions_forbidden_error: "Недостаточно прав для изменения разрешений."
+invalid_permission_error: "Неверное разрешение: `%{permission}`."
+change_creator_permissions_error: "Невозможно изменить разрешения у создателя проекта."
+change_not_member_permissions_error: "Невозможно изменить разрешения у пользователя, который не является участником проекта."
+
 invite_user_forbidden_error: "Недостаточно прав для приглашения пользователя в проект."
 invite_user_member_error: "Невозможно пригласить пользователя, т.к. он уже является участником проекта."
 invite_user_invited_error: "Невозможно пригласить пользователя, т.к. он уже был приглашен в проект."

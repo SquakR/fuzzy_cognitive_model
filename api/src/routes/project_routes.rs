@@ -6,8 +6,7 @@ use crate::services::permission_services;
 use crate::services::project_services;
 use crate::types::{
     CancelInvitationType, InvitationResponseType, InvitationType, PaginationInType,
-    PaginationOutType, PermissionType, ProjectInChangeType, ProjectInCreateType, ProjectOutType,
-    ProjectUserType,
+    PaginationOutType, PermissionType, ProjectInType, ProjectOutType, ProjectUserType,
 };
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
@@ -16,7 +15,7 @@ use rocket_okapi::openapi;
 #[openapi(tag = "projects")]
 #[post("/project", format = "json", data = "<project_in>")]
 pub fn create_project(
-    project_in: Json<ProjectInCreateType>,
+    project_in: Json<ProjectInType>,
     user: User,
     locale: UserLocale,
 ) -> PathResult<Json<ProjectOutType>, UserLocale> {
@@ -91,15 +90,20 @@ pub fn get_project_users(
 
 /// Change project
 #[openapi(tag = "projects")]
-#[put("/project", format = "json", data = "<project_in>")]
+#[put("/project/<project_id>", format = "json", data = "<project_in>")]
 pub fn change_project(
-    project_in: Json<ProjectInChangeType>,
+    project_id: i32,
+    project_in: Json<ProjectInType>,
     user: User,
     locale: UserLocale,
 ) -> PathResult<Json<ProjectOutType>, UserLocale> {
     let connection = &mut db::establish_connection();
-    let project = match project_services::change_project(connection, &user, project_in.into_inner())
-    {
+    let project = match project_services::change_project(
+        connection,
+        &user,
+        project_id,
+        project_in.into_inner(),
+    ) {
         Ok(project) => project,
         Err(app_error) => return PathResult::new(Err(app_error), locale),
     };
@@ -107,6 +111,34 @@ pub fn change_project(
         Ok(Json(ProjectOutType::from_project(connection, project))),
         locale,
     )
+}
+
+/// Set project user permissions
+#[openapi(tag = "projects")]
+#[post(
+    "/project/<project_id>/user/<user_id>/permissions",
+    format = "json",
+    data = "<permissions>"
+)]
+pub fn set_project_user_permissions(
+    project_id: i32,
+    user_id: i32,
+    permissions: Json<Vec<String>>,
+    user: User,
+    locale: UserLocale,
+) -> PathResult<Json<Vec<String>>, UserLocale> {
+    let connection = &mut db::establish_connection();
+    let permissions = match permission_services::set_project_user_permissions(
+        connection,
+        &user,
+        project_id,
+        user_id,
+        permissions.into_inner(),
+    ) {
+        Ok(permissions) => permissions,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(Ok(Json(permissions)), locale)
 }
 
 /// Invite user to project

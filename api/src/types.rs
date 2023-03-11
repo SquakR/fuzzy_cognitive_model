@@ -225,26 +225,10 @@ pub struct ProjectOutType {
     pub updated_at: DateTime<Utc>,
 }
 
-/// Type of project to create
+/// Type of project to create or change
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct ProjectInCreateType {
-    /// Project name
-    pub name: String,
-    /// Project description
-    pub description: String,
-    /// Is project public
-    pub is_public: bool,
-    /// Is project archived
-    pub is_archived: bool,
-}
-
-/// Type of project to change
-#[derive(Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct ProjectInChangeType {
-    /// Project identifier
-    pub project_id: i32,
+pub struct ProjectInType {
     /// Project name
     pub name: String,
     /// Project description

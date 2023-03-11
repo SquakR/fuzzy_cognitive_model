@@ -11,8 +11,7 @@ use crate::services::permission_services;
 use crate::services::user_services;
 use crate::types::{
     CancelInvitationType, InvitationResponseType, InvitationType, PaginationInType,
-    PaginationOutType, ProjectInChangeType, ProjectInCreateType, ProjectOutType, ProjectUserType,
-    UserOutType,
+    PaginationOutType, ProjectInType, ProjectOutType, ProjectUserType, UserOutType,
 };
 use chrono::{DateTime, Duration, Utc};
 use diesel::pg::PgConnection;
@@ -21,7 +20,7 @@ use diesel::prelude::*;
 pub fn create_project(
     connection: &mut PgConnection,
     user: &User,
-    project_in: ProjectInCreateType,
+    project_in: ProjectInType,
 ) -> ServiceResult<Project> {
     let project = diesel::insert_into(projects::table)
         .values((
@@ -116,13 +115,11 @@ pub fn find_last_status_by_project(
 pub fn find_last_status_by_project_user(
     connection: &mut PgConnection,
     project_user_id: i32,
-    user_id: i32,
 ) -> ServiceResult<ProjectUserStatus> {
     project_user_statuses::table
         .inner_join(project_users::table.inner_join(users::table))
         .select(project_user_statuses::all_columns)
         .filter(project_users::id.eq(project_user_id))
-        .filter(users::id.eq(user_id))
         .order(project_user_statuses::created_at.desc())
         .first::<ProjectUserStatus>(connection)
         .to_service_result_find(String::from("last_status_not_found_error"))
@@ -131,13 +128,11 @@ pub fn find_last_status_by_project_user(
 pub fn try_find_last_status_by_project_user(
     connection: &mut PgConnection,
     project_user_id: i32,
-    user_id: i32,
 ) -> ServiceResult<Option<ProjectUserStatus>> {
     project_user_statuses::table
         .inner_join(project_users::table.inner_join(users::table))
         .select(project_user_statuses::all_columns)
         .filter(project_users::id.eq(project_user_id))
-        .filter(users::id.eq(user_id))
         .order(project_user_statuses::created_at.desc())
         .first::<ProjectUserStatus>(connection)
         .optional()
@@ -213,15 +208,16 @@ pub fn paginate_project_users(
 pub fn change_project(
     connection: &mut PgConnection,
     user: &User,
-    project_in: ProjectInChangeType,
+    project_id: i32,
+    project_in: ProjectInType,
 ) -> ServiceResult<Project> {
-    if !permission_services::can_change_project(connection, project_in.project_id, user.id)? {
+    if !permission_services::can_change_project(connection, project_id, user.id)? {
         return Err(AppError::ForbiddenError(String::from(
             "change_project_forbidden_error",
         )));
     }
     diesel::update(projects::table)
-        .filter(projects::id.eq(&project_in.project_id))
+        .filter(projects::id.eq(&project_id))
         .set((
             projects::name.eq(project_in.name),
             projects::description.eq(project_in.description),
@@ -245,8 +241,7 @@ pub fn invite_user(
     let project_user_result =
         try_find_project_user(connection, invitation.project_id, invitation.user_id)?;
     let project_user = if let Some(project_user) = project_user_result {
-        let last_status =
-            try_find_last_status_by_project_user(connection, project_user.id, invitation.user_id)?;
+        let last_status = try_find_last_status_by_project_user(connection, project_user.id)?;
         let error = match last_status {
             Some(last_status) => match last_status.status {
                 ProjectUserStatusValue::Creator | ProjectUserStatusValue::Member => {
@@ -302,8 +297,7 @@ pub fn cancel_invitation(
         cancel_invitation.project_id,
         cancel_invitation.user_id,
     )?;
-    let last_status =
-        find_last_status_by_project_user(connection, project_user.id, cancel_invitation.user_id)?;
+    let last_status = find_last_status_by_project_user(connection, project_user.id)?;
     match last_status.status {
         ProjectUserStatusValue::Invited => {}
         _ => {
@@ -327,7 +321,7 @@ pub fn respond_to_invitation(
     invitation_response: InvitationResponseType,
 ) -> ServiceResult<ProjectUserStatus> {
     let project_user = find_project_user(connection, invitation_response.project_id, user.id)?;
-    let last_status = find_last_status_by_project_user(connection, project_user.id, user.id)?;
+    let last_status = find_last_status_by_project_user(connection, project_user.id)?;
     match last_status.status {
         ProjectUserStatusValue::Invited => {}
         _ => {
@@ -356,7 +350,7 @@ pub fn leave_project(
     project_id: i32,
 ) -> ServiceResult<ProjectUserStatus> {
     let project_user = find_project_user(connection, project_id, user.id)?;
-    let last_status = find_last_status_by_project_user(connection, project_user.id, user.id)?;
+    let last_status = find_last_status_by_project_user(connection, project_user.id)?;
     match last_status.status {
         ProjectUserStatusValue::Member => {}
         _ => {
@@ -513,9 +507,9 @@ impl ProjectUserType {
             .map(|(i, _)| i)
             .collect::<Vec<usize>>();
         let mut result = vec![];
-        for index in permission_indices {
+        for index in permission_indices.into_iter().rev() {
             result.push(permissions.remove(index).1)
         }
-        result
+        result.into_iter().rev().collect()
     }
 }
