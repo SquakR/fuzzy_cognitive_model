@@ -45,11 +45,16 @@ change_creator_permissions_error: "Unable to change permissions on project creat
 change_not_member_permissions_error: "Unable to change permissions for a user who is not a member of the project."
 
 invite_user_forbidden_error: "Insufficient permissions to invite a user to the project."
-invite_user_member_error: "Unable to invite user because he is already a member of the project."
-invite_user_invited_error: "Unable to invite user because he has already been invited to the project."
-invite_user_rejected_error: "Unable to invite user because he recently turned down an invitation to the project."
+invite_user_member_error: "Unable to invite user because they are already a member of the project."
+invite_user_invited_error: "Unable to invite user because they have already been invited to the project."
+invite_user_rejected_error: "Unable to invite user because they recently turned down an invitation to the project."
 
 cancel_invitation_forbidden_error: "Insufficient permissions to cancel a user's invitation."
 there_is_no_invitation_error: "There is no invitation to the project."
 
 leave_project_error: "Unable to leave the project."
+
+exclude_user_forbidden_error: "Insufficient permissions to exclude a user from the project."
+exclude_user_self_error: "Unable to exclude yourself from a project."
+exclude_creator_error: "Unable to exclude a project creator from a project."
+exclude_not_member_error: "Unable to exclude the user because they are not a member of the project."

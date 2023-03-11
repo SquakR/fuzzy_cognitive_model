@@ -70,6 +70,7 @@ impl MountRoutes for Rocket<Build> {
                 project_routes::cancel_invitation,
                 project_routes::respond_to_invitation,
                 project_routes::leave_project,
+                project_routes::exclude_user,
                 project_routes::delete_project
             ),
         )

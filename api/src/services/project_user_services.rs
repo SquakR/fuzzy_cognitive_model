@@ -301,3 +301,44 @@ pub fn leave_project(
         .get_result::<ProjectUserStatus>(connection)
         .to_service_result()
 }
+
+pub fn exclude_user(
+    connection: &mut PgConnection,
+    user: &User,
+    project_id: i32,
+    user_id: i32,
+) -> ServiceResult<ProjectUserStatus> {
+    if !permission_services::can_change_users(connection, project_id, user.id)? {
+        return Err(AppError::ForbiddenError(String::from(
+            "exclude_user_forbidden_error",
+        )));
+    }
+    if user.id == user_id {
+        return Err(AppError::ValidationError(Box::new(|locale| {
+            t!("exclude_user_self_error", locale = locale)
+        })));
+    }
+    let project_user = find_project_user(connection, project_id, user_id)?;
+    let last_status = find_last_status_by_project_user(connection, project_user.id)?;
+    match last_status.status {
+        ProjectUserStatusValue::Member => {}
+        ProjectUserStatusValue::Creator => {
+            return Err(AppError::ValidationError(Box::new(|locale| {
+                t!("exclude_creator_error", locale = locale)
+            })))
+        }
+        _ => {
+            return Err(AppError::ValidationError(Box::new(|locale| {
+                t!("exclude_not_member_error", locale = locale)
+            })))
+        }
+    }
+    permission_services::delete_project_user_permissions(connection, project_user.id)?;
+    diesel::insert_into(project_user_statuses::table)
+        .values((
+            project_user_statuses::project_user_id.eq(project_user.id),
+            project_user_statuses::status.eq(ProjectUserStatusValue::Excluded),
+        ))
+        .get_result::<ProjectUserStatus>(connection)
+        .to_service_result()
+}

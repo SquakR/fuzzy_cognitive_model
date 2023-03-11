@@ -211,6 +211,24 @@ pub fn leave_project(
     PathResult::new(Ok(()), locale)
 }
 
+/// Exclude user from project
+#[openapi(tag = "projects")]
+#[post("/project/<project_id>/user/<user_id>/exclude")]
+pub fn exclude_user(
+    project_id: i32,
+    user_id: i32,
+    user: User,
+    locale: UserLocale,
+) -> PathResult<(), UserLocale> {
+    let connection = &mut db::establish_connection();
+    if let Err(app_error) =
+        project_user_services::exclude_user(connection, &user, project_id, user_id)
+    {
+        return PathResult::new(Err(app_error), locale);
+    }
+    PathResult::new(Ok(()), locale)
+}
+
 /// Delete project
 #[openapi(tag = "projects")]
 #[delete("/project/<project_id>")]
