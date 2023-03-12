@@ -9,7 +9,8 @@ use crate::services::session_services;
 use crate::services::user_services;
 use crate::types::{ChangePasswordType, ResetPasswordType};
 use crate::utils;
-use argon2::{password_hash::PasswordHash, Argon2, PasswordHasher, PasswordVerifier};
+use argon2::password_hash::{PasswordHash, Salt};
+use argon2::{Argon2, PasswordHasher, PasswordVerifier};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use jwt::{SignWithKey, VerifyWithKey};
@@ -133,7 +134,7 @@ pub fn find_password_reset_by_id(
 pub fn hash_password(password: &str) -> String {
     let salt = utils::get_env("PASSWORD_SALT");
     Argon2::default()
-        .hash_password(password.as_bytes(), &salt)
+        .hash_password(password.as_bytes(), Salt::from_b64(&salt).unwrap())
         .unwrap()
         .to_string()
 }
