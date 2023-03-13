@@ -2,7 +2,7 @@ use crate::cookies;
 use crate::db;
 use crate::models::User;
 use crate::request::{AcceptLanguage, Locale, UserAgent, UserLocale};
-use crate::response::{AppError, PathResult};
+use crate::response::{AppError, PathResult, ToServiceResult};
 use crate::services::{
     email_confirmation_services, password_services, session_services, user_services,
 };
@@ -286,10 +286,11 @@ pub fn get_sessions(
         None => return PathResult::new(Err(AppError::InternalServerError), locale),
     };
     let connection = &mut db::establish_connection();
-    let sessions = match session_services::get_user_active_sessions(connection, user.id) {
-        Ok(sessions) => sessions,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
+    let sessions =
+        match session_services::get_user_active_sessions(connection, user.id).to_service_result() {
+            Ok(sessions) => sessions,
+            Err(app_error) => return PathResult::new(Err(app_error), locale),
+        };
     let session_types = sessions
         .into_iter()
         .map(|session| session_services::session_to_session_type(&session, session_id))

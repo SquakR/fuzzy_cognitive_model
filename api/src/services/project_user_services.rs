@@ -16,23 +16,23 @@ pub fn add_project_user_status(
     connection: &mut PgConnection,
     project_user_id: i32,
     status: ProjectUserStatusValue,
-) -> ServiceResult<ProjectUserStatus> {
-    let last_status = diesel::insert_into(project_user_statuses::table)
-        .values((
-            project_user_statuses::project_user_id.eq(project_user_id),
-            project_user_statuses::status.eq(status),
-        ))
-        .get_result::<ProjectUserStatus>(connection)
-        .to_service_result()?;
-    diesel::update(project_users::table)
-        .filter(project_users::id.eq(&project_user_id))
-        .set(project_users::last_status_id.eq(last_status.id))
-        .execute(connection)
-        .to_service_result()?;
-    Ok(last_status)
+) -> QueryResult<ProjectUserStatus> {
+    connection.transaction(|connection| {
+        let last_status = diesel::insert_into(project_user_statuses::table)
+            .values((
+                project_user_statuses::project_user_id.eq(project_user_id),
+                project_user_statuses::status.eq(status),
+            ))
+            .get_result::<ProjectUserStatus>(connection)?;
+        diesel::update(project_users::table)
+            .filter(project_users::id.eq(&project_user_id))
+            .set(project_users::last_status_id.eq(last_status.id))
+            .execute(connection)?;
+        Ok(last_status)
+    })
 }
 
-pub fn find_project_creator(connection: &mut PgConnection, project_id: i32) -> User {
+pub fn find_project_creator(connection: &mut PgConnection, project_id: i32) -> QueryResult<User> {
     project_user_statuses::table
         .inner_join(
             project_users::table
@@ -43,39 +43,24 @@ pub fn find_project_creator(connection: &mut PgConnection, project_id: i32) -> U
         .filter(project_users::project_id.eq(project_id))
         .filter(project_user_statuses::status.eq(ProjectUserStatusValue::Creator))
         .first::<User>(connection)
-        .unwrap()
 }
 
 pub fn find_project_user(
     connection: &mut PgConnection,
     project_id: i32,
     user_id: i32,
-) -> ServiceResult<ProjectUser> {
+) -> QueryResult<ProjectUser> {
     project_users::table
         .filter(project_users::project_id.eq(project_id))
         .filter(project_users::user_id.eq(user_id))
         .first::<ProjectUser>(connection)
-        .to_service_result_find(String::from("project_user_not_found_error"))
-}
-
-pub fn try_find_project_user(
-    connection: &mut PgConnection,
-    project_id: i32,
-    user_id: i32,
-) -> ServiceResult<Option<ProjectUser>> {
-    project_users::table
-        .filter(project_users::project_id.eq(project_id))
-        .filter(project_users::user_id.eq(user_id))
-        .first::<ProjectUser>(connection)
-        .optional()
-        .to_service_result()
 }
 
 pub fn find_last_status_by_project(
     connection: &mut PgConnection,
     project_id: i32,
     user_id: i32,
-) -> ServiceResult<ProjectUserStatus> {
+) -> QueryResult<ProjectUserStatus> {
     project_user_statuses::table
         .inner_join(
             project_users::table
@@ -88,7 +73,6 @@ pub fn find_last_status_by_project(
         .filter(users::id.eq(user_id))
         .order(project_user_statuses::created_at.desc())
         .first::<ProjectUserStatus>(connection)
-        .to_service_result_find(String::from("last_status_not_found_error"))
 }
 
 pub fn find_last_status_by_project_user(
@@ -100,11 +84,9 @@ pub fn find_last_status_by_project_user(
             .filter(project_user_statuses::id.eq(last_status_id))
             .first::<ProjectUserStatus>(connection)
             .unwrap()),
-        None => {
-            return Err(AppError::ForbiddenError(String::from(
-                "last_status_not_found_error",
-            )))
-        }
+        None => Err(AppError::ValidationError(Box::new(|locale| {
+            t!("last_status_not_found_error", locale = locale)
+        }))),
     }
 }
 
@@ -113,7 +95,8 @@ pub fn is_project_member(
     user: &User,
     project_id: i32,
 ) -> ServiceResult<bool> {
-    let last_status = find_last_status_by_project(connection, project_id, user.id)?;
+    let last_status = find_last_status_by_project(connection, project_id, user.id)
+        .to_service_result_find(String::from("last_status_not_found_error"))?;
     match last_status.status {
         ProjectUserStatusValue::Creator | ProjectUserStatusValue::Member => Ok(true),
         _ => Ok(false),
@@ -128,7 +111,8 @@ pub fn paginate_project_users(
     search: Option<String>,
     pagination: PaginationInType,
 ) -> ServiceResult<PaginationOutType<ProjectUserType>> {
-    let project = project_services::find_project_by_id(connection, project_id)?;
+    let project = project_services::find_project_by_id(connection, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
     if !project.is_public && !is_project_member(connection, user, project_id)? {
         return Err(AppError::ForbiddenError(String::from(
             "view_project_forbidden_error",
@@ -186,8 +170,10 @@ pub fn invite_user(
             "invite_user_forbidden_error",
         )));
     }
-    let project_user_result = try_find_project_user(connection, project_id, user_id)?;
-    let project_user = if let Some(project_user) = project_user_result {
+    let project_user_result = find_project_user(connection, project_id, user_id)
+        .optional()
+        .to_service_result()?;
+    if let Some(project_user) = &project_user_result {
         let last_status = find_last_status_by_project_user(connection, &project_user)?;
         let error = match last_status.status {
             ProjectUserStatusValue::Creator | ProjectUserStatusValue::Member => {
@@ -208,19 +194,27 @@ pub fn invite_user(
                 t!(error, locale = locale)
             })));
         }
-        project_user
-    } else {
-        diesel::insert_into(project_users::table)
-            .values((
-                project_users::project_id.eq(project_id),
-                project_users::user_id.eq(user_id),
-            ))
-            .get_result::<ProjectUser>(connection)
-            .to_service_result()?
-    };
-    let status =
-        add_project_user_status(connection, project_user.id, ProjectUserStatusValue::Invited)?;
-    Ok((project_user, status))
+    }
+    connection
+        .transaction(|connection| {
+            let project_user = if let Some(project_user) = project_user_result {
+                project_user
+            } else {
+                diesel::insert_into(project_users::table)
+                    .values((
+                        project_users::project_id.eq(project_id),
+                        project_users::user_id.eq(user_id),
+                    ))
+                    .get_result::<ProjectUser>(connection)?
+            };
+            let status = add_project_user_status(
+                connection,
+                project_user.id,
+                ProjectUserStatusValue::Invited,
+            )?;
+            Ok((project_user, status))
+        })
+        .to_service_result()
 }
 
 pub fn cancel_invitation(
@@ -234,7 +228,8 @@ pub fn cancel_invitation(
             "cancel_invitation_forbidden_error",
         )));
     }
-    let project_user = find_project_user(connection, project_id, user_id)?;
+    let project_user = find_project_user(connection, project_id, user_id)
+        .to_service_result_find(String::from("project_user_not_found_error"))?;
     let last_status = find_last_status_by_project_user(connection, &project_user)?;
     match last_status.status {
         ProjectUserStatusValue::Invited => {}
@@ -249,6 +244,7 @@ pub fn cancel_invitation(
         project_user.id,
         ProjectUserStatusValue::Cancelled,
     )
+    .to_service_result()
 }
 
 pub fn respond_to_invitation(
@@ -257,7 +253,8 @@ pub fn respond_to_invitation(
     project_id: i32,
     join: bool,
 ) -> ServiceResult<ProjectUserStatus> {
-    let project_user = find_project_user(connection, project_id, user.id)?;
+    let project_user = find_project_user(connection, project_id, user.id)
+        .to_service_result_find(String::from("project_user_not_found_error"))?;
     let last_status = find_last_status_by_project_user(connection, &project_user)?;
     match last_status.status {
         ProjectUserStatusValue::Invited => {}
@@ -272,7 +269,7 @@ pub fn respond_to_invitation(
     } else {
         ProjectUserStatusValue::Rejected
     };
-    add_project_user_status(connection, project_user.id, status_value)
+    add_project_user_status(connection, project_user.id, status_value).to_service_result()
 }
 
 pub fn leave_project(
@@ -280,7 +277,8 @@ pub fn leave_project(
     user: &User,
     project_id: i32,
 ) -> ServiceResult<ProjectUserStatus> {
-    let project_user = find_project_user(connection, project_id, user.id)?;
+    let project_user = find_project_user(connection, project_id, user.id)
+        .to_service_result_find(String::from("project_user_not_found_error"))?;
     let last_status = find_last_status_by_project_user(connection, &project_user)?;
     match last_status.status {
         ProjectUserStatusValue::Member => {}
@@ -290,8 +288,12 @@ pub fn leave_project(
             })))
         }
     }
-    permission_services::delete_project_user_permissions(connection, project_user.id)?;
-    add_project_user_status(connection, project_user.id, ProjectUserStatusValue::Left)
+    connection
+        .transaction(|connection| {
+            permission_services::delete_project_user_permissions(connection, project_user.id)?;
+            add_project_user_status(connection, project_user.id, ProjectUserStatusValue::Left)
+        })
+        .to_service_result()
 }
 
 pub fn exclude_user(
@@ -310,7 +312,8 @@ pub fn exclude_user(
             t!("exclude_user_self_error", locale = locale)
         })));
     }
-    let project_user = find_project_user(connection, project_id, user_id)?;
+    let project_user = find_project_user(connection, project_id, user_id)
+        .to_service_result_find(String::from("project_user_not_found_error"))?;
     let last_status = find_last_status_by_project_user(connection, &project_user)?;
     match last_status.status {
         ProjectUserStatusValue::Member => {}
@@ -325,12 +328,16 @@ pub fn exclude_user(
             })))
         }
     }
-    permission_services::delete_project_user_permissions(connection, project_user.id)?;
-    add_project_user_status(
-        connection,
-        project_user.id,
-        ProjectUserStatusValue::Excluded,
-    )
+    connection
+        .transaction(|connection| {
+            permission_services::delete_project_user_permissions(connection, project_user.id)?;
+            add_project_user_status(
+                connection,
+                project_user.id,
+                ProjectUserStatusValue::Excluded,
+            )
+        })
+        .to_service_result()
 }
 
 impl ProjectUserType {
@@ -352,10 +359,7 @@ impl ProjectUserType {
             let permissions = if can_change_permissions || current_user.id == user.id {
                 let permissions = match status {
                     ProjectUserStatusValue::Creator => {
-                        permission_services::get_permissions(connection)?
-                            .into_iter()
-                            .map(|permission| permission.key)
-                            .collect::<Vec<String>>()
+                        permission_services::get_permission_keys(connection)?
                     }
                     ProjectUserStatusValue::Member => {
                         ProjectUserType::find_user_permissions(&mut permissions, user.id)

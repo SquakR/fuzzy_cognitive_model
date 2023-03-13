@@ -11,14 +11,13 @@ use std::collections::BTreeMap;
 pub fn create_email_confirmation(
     connection: &mut PgConnection,
     user: &User,
-) -> ServiceResult<EmailConfirmation> {
+) -> QueryResult<EmailConfirmation> {
     diesel::insert_into(email_confirmations::table)
         .values((
             email_confirmations::user_id.eq(user.id),
             email_confirmations::email.eq(&user.email),
         ))
         .get_result::<EmailConfirmation>(connection)
-        .to_service_result()
 }
 
 pub async fn send_email_confirmation_email(
@@ -52,39 +51,43 @@ pub fn confirm_email(connection: &mut PgConnection, token: &str) -> ServiceResul
         }
     };
     let email_confirmation =
-        find_email_confirmation_by_id(connection, claims["email_confirmation_id"])?;
+        find_email_confirmation_by_id(connection, claims["email_confirmation_id"])
+            .to_service_result_find(String::from("email_confirmation_not_found_error"))?;
     if email_confirmation.is_confirmed {
         return Err(AppError::ValidationError(Box::new(|locale| {
             t!("link_is_not_active_error", locale = locale)
         })));
     }
-    let user = user_services::find_user_by_id(connection, email_confirmation.user_id)?;
+    let user = user_services::find_user_by_id(connection, email_confirmation.user_id)
+        .to_service_result_find(String::from("user_not_found_error"))?;
     if user.is_email_confirmed || user.email != email_confirmation.email {
         return Err(AppError::ValidationError(Box::new(|locale| {
             t!("link_is_not_active_error", locale = locale)
         })));
     }
-    confirm_email_confirmation(connection, email_confirmation)?;
-    user_services::confirm_user_email(connection, user)
+    connection
+        .transaction(|connection| {
+            confirm_email_confirmation(connection, email_confirmation)?;
+            user_services::confirm_user_email(connection, user)
+        })
+        .to_service_result()
 }
 
 fn find_email_confirmation_by_id(
     connection: &mut PgConnection,
     id: i32,
-) -> ServiceResult<EmailConfirmation> {
+) -> QueryResult<EmailConfirmation> {
     email_confirmations::table
         .find(id)
         .first::<EmailConfirmation>(connection)
-        .to_service_result_find(String::from("email_confirmation_not_found_error"))
 }
 
 fn confirm_email_confirmation(
     connection: &mut PgConnection,
     email_confirmation: EmailConfirmation,
-) -> Result<EmailConfirmation, AppError> {
+) -> QueryResult<EmailConfirmation> {
     diesel::update(email_confirmations::table)
         .filter(email_confirmations::id.eq(email_confirmation.id))
         .set(email_confirmations::is_confirmed.eq(true))
         .get_result::<EmailConfirmation>(connection)
-        .to_service_result()
 }

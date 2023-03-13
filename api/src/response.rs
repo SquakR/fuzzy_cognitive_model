@@ -10,6 +10,7 @@ use rocket_accept_language::AcceptLanguage as RocketAcceptLanguage;
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::{response::OpenApiResponderInner, Result as RocketOkapiResult};
 use rust_i18n::t;
+
 pub type ServiceResult<T> = Result<T, AppError>;
 
 pub enum AppError {

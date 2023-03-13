@@ -1,7 +1,7 @@
 use crate::db;
 use crate::models::{ProjectUserStatusValue, User};
 use crate::request::UserLocale;
-use crate::response::PathResult;
+use crate::response::{PathResult, ToServiceResult};
 use crate::services::{
     permission_services, plugin_services, project_services, project_user_services,
 };
@@ -26,10 +26,11 @@ pub fn create_project(
         Ok(project) => project,
         Err(app_error) => return PathResult::new(Err(app_error), locale),
     };
-    PathResult::new(
-        Ok(Json(ProjectOutType::from_project(connection, project))),
-        locale,
-    )
+    let project_out = match ProjectOutType::from_project(connection, project) {
+        Ok(project_out) => project_out,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(Ok(Json(project_out)), locale)
 }
 
 /// Get projects
@@ -89,7 +90,7 @@ pub fn get_projects(
 #[get("/plugins")]
 pub fn get_plugins(locale: UserLocale) -> PathResult<Json<Vec<PluginType>>, UserLocale> {
     let connection = &mut db::establish_connection();
-    let plugins = match plugin_services::get_plugins(connection) {
+    let plugins = match plugin_services::get_plugins(connection).to_service_result() {
         Ok(plugins) => plugins,
         Err(app_error) => return PathResult::new(Err(app_error), locale),
     };
@@ -104,7 +105,7 @@ pub fn get_plugins(locale: UserLocale) -> PathResult<Json<Vec<PluginType>>, User
 #[get("/permissions")]
 pub fn get_permissions(locale: UserLocale) -> PathResult<Json<Vec<PermissionType>>, UserLocale> {
     let connection = &mut db::establish_connection();
-    let permissions = match permission_services::get_permissions(connection) {
+    let permissions = match permission_services::get_permissions(connection).to_service_result() {
         Ok(permissions) => permissions,
         Err(app_error) => return PathResult::new(Err(app_error), locale),
     };
@@ -166,10 +167,11 @@ pub fn change_project(
         Ok(project) => project,
         Err(app_error) => return PathResult::new(Err(app_error), locale),
     };
-    PathResult::new(
-        Ok(Json(ProjectOutType::from_project(connection, project))),
-        locale,
-    )
+    let project_out = match ProjectOutType::from_project(connection, project) {
+        Ok(project_out) => project_out,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(Ok(Json(project_out)), locale)
 }
 
 /// Set project plugins

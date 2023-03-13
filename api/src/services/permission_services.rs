@@ -18,10 +18,7 @@ pub fn set_project_user_permissions(
             "change_permissions_forbidden_error",
         )));
     }
-    let all_permissions = get_permissions(connection)?
-        .into_iter()
-        .map(|permission| permission.key)
-        .collect::<Vec<String>>();
+    let all_permissions = get_permission_keys(connection)?;
     if let Some(index) = permissions
         .iter()
         .position(|permission| !all_permissions.contains(permission))
@@ -34,7 +31,8 @@ pub fn set_project_user_permissions(
             )
         })));
     }
-    let project_user = project_user_services::find_project_user(connection, project_id, user_id)?;
+    let project_user = project_user_services::find_project_user(connection, project_id, user_id)
+        .to_service_result_find(String::from("project_user_not_found_error"))?;
     let last_status =
         project_user_services::find_last_status_by_project_user(connection, &project_user)?;
     match last_status.status {
@@ -50,44 +48,52 @@ pub fn set_project_user_permissions(
             })))
         }
     }
-    delete_project_user_permissions(connection, project_user.id)?;
-    let mut insert_rows = vec![];
-    for key in permissions {
-        insert_rows.push((
-            project_user_permissions::project_user_id.eq(project_user.id),
-            project_user_permissions::permission_key.eq(key),
-        ));
-    }
-    let permissions = if insert_rows.len() > 0 {
-        diesel::insert_into(project_user_permissions::table)
-            .values(&insert_rows)
-            .get_results::<ProjectUserPermission>(connection)
-            .to_service_result()?
-    } else {
-        vec![]
-    };
-    Ok(permissions
-        .into_iter()
-        .map(|permission| permission.permission_key)
-        .collect())
+    connection
+        .transaction(|connection| {
+            delete_project_user_permissions(connection, project_user.id)?;
+            let mut insert_rows = vec![];
+            for key in permissions {
+                insert_rows.push((
+                    project_user_permissions::project_user_id.eq(project_user.id),
+                    project_user_permissions::permission_key.eq(key),
+                ));
+            }
+            let permissions = if insert_rows.len() > 0 {
+                diesel::insert_into(project_user_permissions::table)
+                    .values(&insert_rows)
+                    .get_results::<ProjectUserPermission>(connection)?
+            } else {
+                vec![]
+            };
+            Ok(permissions
+                .into_iter()
+                .map(|permission| permission.permission_key)
+                .collect())
+        })
+        .to_service_result()
 }
 
 pub fn delete_project_user_permissions(
     connection: &mut PgConnection,
     project_user_id: i32,
-) -> ServiceResult<usize> {
+) -> QueryResult<usize> {
     diesel::delete(
         project_user_permissions::table
             .filter(project_user_permissions::project_user_id.eq(project_user_id)),
     )
     .execute(connection)
-    .to_service_result()
 }
 
-pub fn get_permissions(connection: &mut PgConnection) -> ServiceResult<Vec<Permission>> {
-    permissions::table
-        .get_results::<Permission>(connection)
-        .to_service_result()
+pub fn get_permissions(connection: &mut PgConnection) -> QueryResult<Vec<Permission>> {
+    permissions::table.get_results::<Permission>(connection)
+}
+
+pub fn get_permission_keys(connection: &mut PgConnection) -> ServiceResult<Vec<String>> {
+    Ok(get_permissions(connection)
+        .to_service_result()?
+        .into_iter()
+        .map(|permission| permission.key)
+        .collect())
 }
 
 pub fn can_change_project(
@@ -137,7 +143,8 @@ fn has_permission(
     key: &str,
 ) -> ServiceResult<bool> {
     let last_status =
-        project_user_services::find_last_status_by_project(connection, project_id, user_id)?;
+        project_user_services::find_last_status_by_project(connection, project_id, user_id)
+            .to_service_result_find(String::from("last_status_not_found_error"))?;
     match last_status.status {
         ProjectUserStatusValue::Creator => return Ok(true),
         ProjectUserStatusValue::Member => {}

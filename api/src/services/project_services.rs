@@ -20,38 +20,36 @@ pub fn create_project(
     user: &User,
     project_in: ProjectInType,
 ) -> ServiceResult<Project> {
-    let project = diesel::insert_into(projects::table)
-        .values((
-            projects::name.eq(project_in.name),
-            projects::description.eq(project_in.description),
-            projects::is_public.eq(project_in.is_public),
-            projects::is_archived.eq(project_in.is_archived),
-        ))
-        .get_result::<Project>(connection)
-        .to_service_result()?;
-    let project_user = diesel::insert_into(project_users::table)
-        .values((
-            project_users::project_id.eq(project.id),
-            project_users::user_id.eq(user.id),
-        ))
-        .get_result::<ProjectUser>(connection)
-        .to_service_result()?;
-    project_user_services::add_project_user_status(
-        connection,
-        project_user.id,
-        ProjectUserStatusValue::Creator,
-    )?;
-    Ok(project)
+    connection
+        .transaction(|connection| {
+            let project = diesel::insert_into(projects::table)
+                .values((
+                    projects::name.eq(project_in.name),
+                    projects::description.eq(project_in.description),
+                    projects::is_public.eq(project_in.is_public),
+                    projects::is_archived.eq(project_in.is_archived),
+                ))
+                .get_result::<Project>(connection)?;
+            let project_user = diesel::insert_into(project_users::table)
+                .values((
+                    project_users::project_id.eq(project.id),
+                    project_users::user_id.eq(user.id),
+                ))
+                .get_result::<ProjectUser>(connection)?;
+            project_user_services::add_project_user_status(
+                connection,
+                project_user.id,
+                ProjectUserStatusValue::Creator,
+            )?;
+            Ok(project)
+        })
+        .to_service_result()
 }
 
-pub fn find_project_by_id(
-    connection: &mut PgConnection,
-    project_id: i32,
-) -> ServiceResult<Project> {
+pub fn find_project_by_id(connection: &mut PgConnection, project_id: i32) -> QueryResult<Project> {
     projects::table
         .find(project_id)
         .first::<Project>(connection)
-        .to_service_result_find(String::from("project_not_found_error"))
 }
 
 macro_rules! filter_date_time {
@@ -132,11 +130,12 @@ pub fn paginate_projects(
         .per_page(pagination.per_page as i64)
         .load_and_count_pages::<Project>(connection)
         .to_service_result()?;
+    let mut data = vec![];
+    for project in projects {
+        data.push(ProjectOutType::from_project(connection, project)?);
+    }
     Ok(PaginationOutType {
-        data: projects
-            .into_iter()
-            .map(|project| ProjectOutType::from_project(connection, project))
-            .collect::<Vec<ProjectOutType>>(),
+        data,
         total_pages: total_pages as i32,
     })
 }
@@ -197,23 +196,25 @@ type ProjectIdWithUser = (
 );
 
 impl ProjectOutType {
-    pub fn from_project(connection: &mut PgConnection, project: Project) -> Self {
-        ProjectOutType {
+    pub fn from_project(connection: &mut PgConnection, project: Project) -> ServiceResult<Self> {
+        Ok(ProjectOutType {
             id: project.id,
             name: project.name,
             description: project.description,
-            creator: UserOutType::from(project_user_services::find_project_creator(
-                connection, project.id,
-            )),
+            creator: UserOutType::from(
+                project_user_services::find_project_creator(connection, project.id)
+                    .to_service_result()?,
+            ),
             is_public: project.is_public,
             is_archived: project.is_archived,
             created_at: project.created_at,
             updated_at: project.updated_at,
             plugins: plugin_services::find_project_plugins(connection, project.id)
+                .to_service_result()?
                 .into_iter()
                 .map(|plugin| plugin.name)
                 .collect(),
-        }
+        })
     }
     pub fn from_projects(
         connection: &mut PgConnection,
