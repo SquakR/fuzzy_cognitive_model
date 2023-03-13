@@ -30,11 +30,9 @@ fn rocket() -> _ {
     .to_cors()
     .unwrap();
 
-    let figment = rocket::Config::figment().merge(("secret_key", utils::get_env("SECRET_KEY")));
-
     let storage = Storage::new();
 
-    rocket::custom(figment)
+    rocket::build()
         .manage(storage)
         .mount_routes("/api/v1")
         .register(
