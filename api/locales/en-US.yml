@@ -39,6 +39,9 @@ change_project_forbidden_error: "Insufficient permissions to change the project.
 
 delete_project_forbidden_error: "Insufficient permissions to delete the project."
 
+change_plugins_forbidden_error: "Insufficient permissions to change plugins."
+invalid_plugin_error: "Invalid plugin: `%{plugin}`."
+
 change_permissions_forbidden_error: "Insufficient permissions to change permissions."
 invalid_permission_error: "Invalid permission: `%{permission}`."
 change_creator_permissions_error: "Unable to change permissions on project creator."

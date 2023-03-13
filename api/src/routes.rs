@@ -67,6 +67,7 @@ impl MountRoutes for Rocket<Build> {
                 project_routes::get_permissions,
                 project_routes::get_project_users,
                 project_routes::change_project,
+                project_routes::set_project_plugins,
                 project_routes::set_project_user_permissions,
                 project_routes::invite_user,
                 project_routes::cancel_invitation,

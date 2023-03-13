@@ -172,6 +172,28 @@ pub fn change_project(
     )
 }
 
+/// Set project plugins
+#[openapi(tag = "projects")]
+#[post("/project/<project_id>/plugins", format = "json", data = "<plugins>")]
+pub fn set_project_plugins(
+    project_id: i32,
+    plugins: Json<Vec<String>>,
+    user: User,
+    locale: UserLocale,
+) -> PathResult<Json<Vec<String>>, UserLocale> {
+    let connection = &mut db::establish_connection();
+    let plugins = match plugin_services::set_project_plugins(
+        connection,
+        &user,
+        project_id,
+        plugins.into_inner(),
+    ) {
+        Ok(plugins) => plugins,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(Ok(Json(plugins)), locale)
+}
+
 /// Set project user permissions
 #[openapi(tag = "projects")]
 #[post(

@@ -56,7 +56,7 @@ pub fn set_project_user_permissions(
         insert_rows.push((
             project_user_permissions::project_user_id.eq(project_user.id),
             project_user_permissions::permission_key.eq(key),
-        ))
+        ));
     }
     let permissions = if insert_rows.len() > 0 {
         diesel::insert_into(project_user_permissions::table)
@@ -69,7 +69,7 @@ pub fn set_project_user_permissions(
     Ok(permissions
         .into_iter()
         .map(|permission| permission.permission_key)
-        .collect::<Vec<String>>())
+        .collect())
 }
 
 pub fn delete_project_user_permissions(
@@ -96,6 +96,14 @@ pub fn can_change_project(
     user_id: i32,
 ) -> ServiceResult<bool> {
     has_permission(connection, project_id, user_id, "can_change_project")
+}
+
+pub fn can_change_plugins(
+    connection: &mut PgConnection,
+    project_id: i32,
+    user_id: i32,
+) -> ServiceResult<bool> {
+    has_permission(connection, project_id, user_id, "can_change_plugins")
 }
 
 pub fn can_change_users(

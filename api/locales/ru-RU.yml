@@ -39,6 +39,9 @@ change_project_forbidden_error: "Недостаточно прав для изм
 
 delete_project_forbidden_error: "Недостаточно прав для удаления проекта."
 
+change_plugins_forbidden_error: "Недостаточно прав для изменения плагинов."
+invalid_plugin_error: "Неверный плагин: `%{plugin}`."
+
 change_permissions_forbidden_error: "Недостаточно прав для изменения разрешений."
 invalid_permission_error: "Неверное разрешение: `%{permission}`."
 change_creator_permissions_error: "Невозможно изменить разрешения у создателя проекта."
