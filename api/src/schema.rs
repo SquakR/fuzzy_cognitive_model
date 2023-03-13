@@ -77,7 +77,7 @@ diesel::table! {
         project_id -> Int4,
         user_id -> Int4,
         created_at -> Timestamptz,
-        last_status_id -> Nullable<Int4>,
+        last_status_id -> Int4,
     }
 }
 

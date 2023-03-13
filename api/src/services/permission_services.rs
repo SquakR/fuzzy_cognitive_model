@@ -33,7 +33,8 @@ pub fn set_project_user_permissions(
     }
     let project_user = project_user_services::find_project_user(conn, project_id, user_id)
         .to_service_result_find(String::from("project_user_not_found_error"))?;
-    let last_status = project_user_services::find_last_status_by_project_user(conn, &project_user)?;
+    let last_status = project_user_services::find_last_status_by_project_user(conn, &project_user)
+        .to_service_result()?;
     match last_status.status {
         ProjectUserStatusValue::Member => {}
         ProjectUserStatusValue::Creator => {

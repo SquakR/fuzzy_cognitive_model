@@ -78,7 +78,7 @@ pub struct ProjectUser {
     pub project_id: i32,
     pub user_id: i32,
     pub created_at: DateTime<Utc>,
-    pub last_status_id: Option<i32>,
+    pub last_status_id: i32,
 }
 
 #[derive(Debug, PartialEq, diesel_derive_enum::DbEnum, Serialize, JsonSchema, FromFormField)]

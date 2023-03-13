@@ -7,10 +7,8 @@ use crate::schema::{
 use crate::services::{permission_services, project_services, user_services};
 use crate::types::{PaginationInType, PaginationOutType, ProjectUserType};
 use chrono::{DateTime, Duration, Utc};
-use diesel::dsl::sql;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
-use diesel::sql_types::Bool;
 
 pub fn add_project_user_status(
     conn: &mut PgConnection,
@@ -78,16 +76,10 @@ pub fn find_last_status_by_project(
 pub fn find_last_status_by_project_user(
     conn: &mut PgConnection,
     project_user: &ProjectUser,
-) -> ServiceResult<ProjectUserStatus> {
-    match project_user.last_status_id {
-        Some(last_status_id) => Ok(project_user_statuses::table
-            .filter(project_user_statuses::id.eq(last_status_id))
-            .first::<ProjectUserStatus>(conn)
-            .unwrap()),
-        None => Err(AppError::ValidationError(Box::new(|locale| {
-            t!("last_status_not_found_error", locale = locale)
-        }))),
-    }
+) -> QueryResult<ProjectUserStatus> {
+    project_user_statuses::table
+        .filter(project_user_statuses::id.eq(project_user.last_status_id))
+        .first::<ProjectUserStatus>(conn)
 }
 
 pub fn is_project_member(
@@ -141,9 +133,10 @@ pub fn paginate_project_users(
     let (users, total_pages) = user_services::filter_users(search)
         .inner_join(
             project_users::table
-                .inner_join(project_user_statuses::table.on(sql::<Bool>(
-                    "project_users.last_status_id = project_user_statuses.id",
-                )))
+                .inner_join(
+                    project_user_statuses::table
+                        .on(project_users::last_status_id.eq(project_user_statuses::id)),
+                )
                 .inner_join(projects::table),
         )
         .select(users::all_columns)
@@ -174,7 +167,8 @@ pub fn invite_user(
         .optional()
         .to_service_result()?;
     if let Some(project_user) = &project_user_result {
-        let last_status = find_last_status_by_project_user(conn, &project_user)?;
+        let last_status =
+            find_last_status_by_project_user(conn, &project_user).to_service_result()?;
         let error = match last_status.status {
             ProjectUserStatusValue::Creator | ProjectUserStatusValue::Member => {
                 Some("invite_user_member_error")
@@ -203,6 +197,7 @@ pub fn invite_user(
                 .values((
                     project_users::project_id.eq(project_id),
                     project_users::user_id.eq(user_id),
+                    project_users::last_status_id.eq(0),
                 ))
                 .get_result::<ProjectUser>(conn)?
         };
@@ -226,7 +221,7 @@ pub fn cancel_invitation(
     }
     let project_user = find_project_user(conn, project_id, user_id)
         .to_service_result_find(String::from("project_user_not_found_error"))?;
-    let last_status = find_last_status_by_project_user(conn, &project_user)?;
+    let last_status = find_last_status_by_project_user(conn, &project_user).to_service_result()?;
     match last_status.status {
         ProjectUserStatusValue::Invited => {}
         _ => {
@@ -247,7 +242,7 @@ pub fn respond_to_invitation(
 ) -> ServiceResult<ProjectUserStatus> {
     let project_user = find_project_user(conn, project_id, user.id)
         .to_service_result_find(String::from("project_user_not_found_error"))?;
-    let last_status = find_last_status_by_project_user(conn, &project_user)?;
+    let last_status = find_last_status_by_project_user(conn, &project_user).to_service_result()?;
     match last_status.status {
         ProjectUserStatusValue::Invited => {}
         _ => {
@@ -271,7 +266,7 @@ pub fn leave_project(
 ) -> ServiceResult<ProjectUserStatus> {
     let project_user = find_project_user(conn, project_id, user.id)
         .to_service_result_find(String::from("project_user_not_found_error"))?;
-    let last_status = find_last_status_by_project_user(conn, &project_user)?;
+    let last_status = find_last_status_by_project_user(conn, &project_user).to_service_result()?;
     match last_status.status {
         ProjectUserStatusValue::Member => {}
         _ => {
@@ -305,7 +300,7 @@ pub fn exclude_user(
     }
     let project_user = find_project_user(conn, project_id, user_id)
         .to_service_result_find(String::from("project_user_not_found_error"))?;
-    let last_status = find_last_status_by_project_user(conn, &project_user)?;
+    let last_status = find_last_status_by_project_user(conn, &project_user).to_service_result()?;
     match last_status.status {
         ProjectUserStatusValue::Member => {}
         ProjectUserStatusValue::Creator => {
@@ -380,9 +375,10 @@ impl ProjectUserType {
     ) -> ServiceResult<Vec<(i32, ProjectUserStatusValue, DateTime<Utc>)>> {
         let user_ids = users.iter().map(|u| u.id);
         project_users::table
-            .inner_join(project_user_statuses::table.on(sql::<Bool>(
-                "project_users.last_status_id = project_user_statuses.id",
-            )))
+            .inner_join(
+                project_user_statuses::table
+                    .on(project_users::last_status_id.eq(project_user_statuses::id)),
+            )
             .select((
                 project_users::user_id,
                 project_user_statuses::status,

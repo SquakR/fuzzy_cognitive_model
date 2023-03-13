@@ -33,10 +33,9 @@ CREATE TABLE project_user_statuses (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 ALTER TABLE project_users
-ADD last_status_id INTEGER;
+ADD last_status_id INTEGER NOT NULL;
 ALTER TABLE project_users
-ADD FOREIGN KEY (last_status_id) REFERENCES project_user_statuses(id) ON DELETE
-SET NULL;
+ADD FOREIGN KEY (last_status_id) REFERENCES project_user_statuses(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 CREATE TABLE permissions (
   key VARCHAR(255) PRIMARY KEY,
   description TEXT NOT NULL

@@ -10,10 +10,8 @@ use crate::types::{
     ProjectOutType, UserOutType,
 };
 use chrono::{DateTime, Utc};
-use diesel::dsl::sql;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
-use diesel::sql_types::Bool;
 
 pub fn create_project(
     conn: &mut PgConnection,
@@ -33,6 +31,7 @@ pub fn create_project(
             .values((
                 project_users::project_id.eq(project.id),
                 project_users::user_id.eq(user.id),
+                project_users::last_status_id.eq(0),
             ))
             .get_result::<ProjectUser>(conn)?;
         project_user_services::add_project_user_status(
@@ -85,9 +84,10 @@ pub fn paginate_projects(
     ]);
     let mut query = projects::table
         .inner_join(
-            project_users::table.inner_join(project_user_statuses::table.on(sql::<Bool>(
-                "project_users.last_status_id = project_user_statuses.id",
-            ))),
+            project_users::table.inner_join(
+                project_user_statuses::table
+                    .on(project_users::last_status_id.eq(project_user_statuses::id)),
+            ),
         )
         .select(projects::all_columns)
         .order(projects::created_at.desc())
