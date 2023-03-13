@@ -11,7 +11,7 @@ use user_agent_parser::{
 };
 
 pub fn create_session(
-    connection: &mut PgConnection,
+    conn: &mut PgConnection,
     user_id: i32,
     ip_address: &IpNetwork,
     user_agent: &str,
@@ -22,46 +22,44 @@ pub fn create_session(
             sessions::ip_address.eq(ip_address),
             sessions::user_agent.eq(user_agent),
         ))
-        .get_result::<Session>(connection)
+        .get_result::<Session>(conn)
 }
 
 pub fn get_user_active_sessions(
-    connection: &mut PgConnection,
+    conn: &mut PgConnection,
     user_id: i32,
 ) -> QueryResult<Vec<Session>> {
     sessions::table
         .filter(sessions::user_id.eq(user_id))
         .filter(sessions::is_active.eq(true))
         .order(sessions::created_at.asc())
-        .get_results::<Session>(connection)
+        .get_results::<Session>(conn)
 }
 
-pub fn find_session_by_id(connection: &mut PgConnection, session_id: i32) -> QueryResult<Session> {
-    sessions::table
-        .find(session_id)
-        .first::<Session>(connection)
+pub fn find_session_by_id(conn: &mut PgConnection, session_id: i32) -> QueryResult<Session> {
+    sessions::table.find(session_id).first::<Session>(conn)
 }
 
 pub fn deactivate_all_user_sessions(
-    connection: &mut PgConnection,
+    conn: &mut PgConnection,
     user_id: i32,
 ) -> QueryResult<Vec<Session>> {
     diesel::update(sessions::table)
         .filter(sessions::user_id.eq(user_id))
         .filter(sessions::is_active.eq(true))
         .set(sessions::is_active.eq(false))
-        .get_results::<Session>(connection)
+        .get_results::<Session>(conn)
 }
 
 pub fn deactivate_user_session(
-    connection: &mut PgConnection,
+    conn: &mut PgConnection,
     user: &User,
     session_id: i32,
 ) -> ServiceResult<Session> {
-    let session = find_session_by_id(connection, session_id)
+    let session = find_session_by_id(conn, session_id)
         .to_service_result_find(String::from("session_not_found_error"))?;
     if !session.is_active {
-        deactivate_all_user_sessions(connection, user.id).to_service_result()?;
+        deactivate_all_user_sessions(conn, user.id).to_service_result()?;
         return Err(AppError::ValidationError(Box::new(|locale| {
             t!("session_is_not_active_error", locale = locale)
         })));
@@ -73,7 +71,7 @@ pub fn deactivate_user_session(
     }
     diesel::update(sessions::table.filter(sessions::id.eq(session_id)))
         .set(sessions::is_active.eq(false))
-        .get_result::<Session>(connection)
+        .get_result::<Session>(conn)
         .to_service_result()
 }
 

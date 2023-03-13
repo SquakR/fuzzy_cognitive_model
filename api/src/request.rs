@@ -29,20 +29,21 @@ impl<'r> FromFormField<'r> for DateTimeWrapper {
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for User {
     type Error = ();
+
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let user_result = request.local_cache(|| {
-            let connection = &mut db::establish_connection();
+            let conn = &mut db::establish_connection();
             let session_id = match cookies::get_session_id(request.cookies()) {
                 Some(session_id) => session_id,
                 None => return Err(Status::Unauthorized),
             };
-            let session = match session_services::find_session_by_id(connection, session_id) {
+            let session = match session_services::find_session_by_id(conn, session_id) {
                 Ok(value) => value,
                 Err(_) => return Err(Status::BadRequest),
             };
-            let user = user_services::find_user_by_session(connection, &session);
+            let user = user_services::find_user_by_session(conn, &session);
             if !session.is_active {
-                let _sessions = session_services::deactivate_all_user_sessions(connection, user.id);
+                let _sessions = session_services::deactivate_all_user_sessions(conn, user.id);
                 return Err(Status::BadRequest);
             }
             Ok(user)
@@ -69,6 +70,7 @@ pub struct UserAgent(pub String);
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for UserAgent {
     type Error = ();
+
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         match request.headers().get_one("User-Agent") {
             Some(user_agent) => Outcome::Success(UserAgent(user_agent.to_owned())),
@@ -92,6 +94,7 @@ pub struct AcceptLanguage(pub Vec<LanguageIdentifier>);
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for &'r AcceptLanguage {
     type Error = ();
+
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         match request.guard::<&RocketAcceptLanguage>().await {
             Outcome::Success(accept_language) => Outcome::Success(
@@ -149,6 +152,7 @@ impl BaseLocale for Locale {
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for Locale {
     type Error = ();
+
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         match request.guard::<&AcceptLanguage>().await {
             Outcome::Success(accept_language) => Outcome::Success(Locale::new(accept_language)),
@@ -204,6 +208,7 @@ impl BaseLocale for UserLocale {
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for UserLocale {
     type Error = ();
+
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let user = match request.guard::<User>().await {
             Outcome::Success(user) => user,

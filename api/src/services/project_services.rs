@@ -16,40 +16,37 @@ use diesel::prelude::*;
 use diesel::sql_types::Bool;
 
 pub fn create_project(
-    connection: &mut PgConnection,
+    conn: &mut PgConnection,
     user: &User,
     project_in: ProjectInType,
 ) -> ServiceResult<Project> {
-    connection
-        .transaction(|connection| {
-            let project = diesel::insert_into(projects::table)
-                .values((
-                    projects::name.eq(project_in.name),
-                    projects::description.eq(project_in.description),
-                    projects::is_public.eq(project_in.is_public),
-                    projects::is_archived.eq(project_in.is_archived),
-                ))
-                .get_result::<Project>(connection)?;
-            let project_user = diesel::insert_into(project_users::table)
-                .values((
-                    project_users::project_id.eq(project.id),
-                    project_users::user_id.eq(user.id),
-                ))
-                .get_result::<ProjectUser>(connection)?;
-            project_user_services::add_project_user_status(
-                connection,
-                project_user.id,
-                ProjectUserStatusValue::Creator,
-            )?;
-            Ok(project)
-        })
-        .to_service_result()
+    conn.transaction(|conn| {
+        let project = diesel::insert_into(projects::table)
+            .values((
+                projects::name.eq(project_in.name),
+                projects::description.eq(project_in.description),
+                projects::is_public.eq(project_in.is_public),
+                projects::is_archived.eq(project_in.is_archived),
+            ))
+            .get_result::<Project>(conn)?;
+        let project_user = diesel::insert_into(project_users::table)
+            .values((
+                project_users::project_id.eq(project.id),
+                project_users::user_id.eq(user.id),
+            ))
+            .get_result::<ProjectUser>(conn)?;
+        project_user_services::add_project_user_status(
+            conn,
+            project_user.id,
+            ProjectUserStatusValue::Creator,
+        )?;
+        Ok(project)
+    })
+    .to_service_result()
 }
 
-pub fn find_project_by_id(connection: &mut PgConnection, project_id: i32) -> QueryResult<Project> {
-    projects::table
-        .find(project_id)
-        .first::<Project>(connection)
+pub fn find_project_by_id(conn: &mut PgConnection, project_id: i32) -> QueryResult<Project> {
+    projects::table.find(project_id).first::<Project>(conn)
 }
 
 macro_rules! filter_date_time {
@@ -72,7 +69,7 @@ macro_rules! filter_date_time {
 }
 
 pub fn paginate_projects(
-    connection: &mut PgConnection,
+    conn: &mut PgConnection,
     user: &User,
     group: ProjectGroupFilterType,
     statuses: Option<Vec<ProjectUserStatusValue>>,
@@ -128,11 +125,11 @@ pub fn paginate_projects(
     let (projects, total_pages) = query
         .paginate(pagination.page as i64)
         .per_page(pagination.per_page as i64)
-        .load_and_count_pages::<Project>(connection)
+        .load_and_count_pages::<Project>(conn)
         .to_service_result()?;
     let mut data = vec![];
     for project in projects {
-        data.push(ProjectOutType::from_project(connection, project)?);
+        data.push(ProjectOutType::from_project(conn, project)?);
     }
     Ok(PaginationOutType {
         data,
@@ -141,12 +138,12 @@ pub fn paginate_projects(
 }
 
 pub fn change_project(
-    connection: &mut PgConnection,
+    conn: &mut PgConnection,
     user: &User,
     project_id: i32,
     project_in: ProjectInType,
 ) -> ServiceResult<Project> {
-    if !permission_services::can_change_project(connection, project_id, user.id)? {
+    if !permission_services::can_change_project(conn, project_id, user.id)? {
         return Err(AppError::ForbiddenError(String::from(
             "change_project_forbidden_error",
         )));
@@ -159,22 +156,18 @@ pub fn change_project(
             projects::is_public.eq(project_in.is_public),
             projects::is_archived.eq(project_in.is_archived),
         ))
-        .get_result::<Project>(connection)
+        .get_result::<Project>(conn)
         .to_service_result()
 }
 
-pub fn delete_project(
-    connection: &mut PgConnection,
-    user: &User,
-    project_id: i32,
-) -> ServiceResult<()> {
-    if !permission_services::can_delete_project(connection, project_id, user.id)? {
+pub fn delete_project(conn: &mut PgConnection, user: &User, project_id: i32) -> ServiceResult<()> {
+    if !permission_services::can_delete_project(conn, project_id, user.id)? {
         return Err(AppError::ForbiddenError(String::from(
             "delete_project_forbidden_error",
         )));
     }
     diesel::delete(projects::table.filter(projects::id.eq(project_id)))
-        .execute(connection)
+        .execute(conn)
         .to_service_result()?;
     Ok(())
 }
@@ -196,20 +189,20 @@ type ProjectIdWithUser = (
 );
 
 impl ProjectOutType {
-    pub fn from_project(connection: &mut PgConnection, project: Project) -> ServiceResult<Self> {
+    pub fn from_project(conn: &mut PgConnection, project: Project) -> ServiceResult<Self> {
         Ok(ProjectOutType {
             id: project.id,
             name: project.name,
             description: project.description,
             creator: UserOutType::from(
-                project_user_services::find_project_creator(connection, project.id)
+                project_user_services::find_project_creator(conn, project.id)
                     .to_service_result()?,
             ),
             is_public: project.is_public,
             is_archived: project.is_archived,
             created_at: project.created_at,
             updated_at: project.updated_at,
-            plugins: plugin_services::find_project_plugins(connection, project.id)
+            plugins: plugin_services::find_project_plugins(conn, project.id)
                 .to_service_result()?
                 .into_iter()
                 .map(|plugin| plugin.name)
@@ -217,11 +210,11 @@ impl ProjectOutType {
         })
     }
     pub fn from_projects(
-        connection: &mut PgConnection,
+        conn: &mut PgConnection,
         projects: Vec<Project>,
     ) -> ServiceResult<Vec<Self>> {
-        let mut creators = ProjectOutType::get_project_creators(connection, &projects)?;
-        let mut plugins = ProjectOutType::get_project_plugins(connection, &projects)?;
+        let mut creators = ProjectOutType::get_project_creators(conn, &projects)?;
+        let mut plugins = ProjectOutType::get_project_plugins(conn, &projects)?;
         let mut result = vec![];
         for project in projects {
             let project_creator = ProjectOutType::find_project_creator(&mut creators, project.id);
@@ -241,7 +234,7 @@ impl ProjectOutType {
         Ok(result)
     }
     fn get_project_creators(
-        connection: &mut PgConnection,
+        conn: &mut PgConnection,
         projects: &[Project],
     ) -> ServiceResult<Vec<ProjectIdWithUser>> {
         let project_ids = projects.iter().map(|project| project.id);
@@ -268,11 +261,11 @@ impl ProjectOutType {
             ))
             .filter(project_users::project_id.eq_any(project_ids))
             .filter(project_user_statuses::status.eq(ProjectUserStatusValue::Creator))
-            .get_results::<ProjectIdWithUser>(connection)
+            .get_results::<ProjectIdWithUser>(conn)
             .to_service_result()
     }
     fn get_project_plugins(
-        connection: &mut PgConnection,
+        conn: &mut PgConnection,
         projects: &[Project],
     ) -> ServiceResult<Vec<(i32, String)>> {
         let project_ids = projects.iter().map(|project| project.id);
@@ -280,7 +273,7 @@ impl ProjectOutType {
             .inner_join(project_plugins::table.inner_join(plugins::table))
             .select((projects::id, plugins::name))
             .filter(projects::id.eq_any(project_ids))
-            .get_results::<(i32, String)>(connection)
+            .get_results::<(i32, String)>(conn)
             .to_service_result()
     }
     fn find_project_creator(creators: &mut Vec<ProjectIdWithUser>, project_id: i32) -> User {

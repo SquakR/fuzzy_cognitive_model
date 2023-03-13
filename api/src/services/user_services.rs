@@ -17,12 +17,12 @@ use diesel::sql_types::{Bool, Text};
 use ipnetwork::IpNetwork;
 
 pub async fn create_user(
-    connection: &mut PgConnection,
+    conn: &mut PgConnection,
     storage: &Storage,
     mut user_in: UserInCreateType<'_>,
 ) -> ServiceResult<User> {
-    let exist_user = find_exist_user(connection, Some(&user_in.username), Some(&user_in.email))
-        .to_service_result()?;
+    let exist_user =
+        find_exist_user(conn, Some(&user_in.username), Some(&user_in.email)).to_service_result()?;
     if let Some(exist_user) = exist_user {
         return Err(get_exist_user_app_error(
             exist_user,
@@ -36,8 +36,8 @@ pub async fn create_user(
             avatar = Some(storage.add_user_avatar(avatar_file).await?);
         }
     }
-    let (user, email_confirmation) = connection
-        .transaction(|connection| {
+    let (user, email_confirmation) = conn
+        .transaction(|conn| {
             let user = diesel::insert_into(users::table)
                 .values((
                     users::username.eq(user_in.username),
@@ -55,9 +55,9 @@ pub async fn create_user(
                         }
                     })),
                 ))
-                .get_result::<User>(connection)?;
+                .get_result::<User>(conn)?;
             let email_confirmation =
-                email_confirmation_services::create_email_confirmation(connection, &user)?;
+                email_confirmation_services::create_email_confirmation(conn, &user)?;
             Ok((user, email_confirmation))
         })
         .to_service_result()?;
@@ -65,26 +65,26 @@ pub async fn create_user(
     Ok(user)
 }
 
-pub fn find_user_by_id(connection: &mut PgConnection, user_id: i32) -> QueryResult<User> {
-    users::table.find(user_id).first::<User>(connection)
+pub fn find_user_by_id(conn: &mut PgConnection, user_id: i32) -> QueryResult<User> {
+    users::table.find(user_id).first::<User>(conn)
 }
 
-pub fn find_user_by_username(connection: &mut PgConnection, username: &str) -> QueryResult<User> {
+pub fn find_user_by_username(conn: &mut PgConnection, username: &str) -> QueryResult<User> {
     users::table
         .filter(users::username.eq(username))
-        .first::<User>(connection)
+        .first::<User>(conn)
 }
 
-pub fn find_user_by_email(connection: &mut PgConnection, email: &str) -> QueryResult<User> {
+pub fn find_user_by_email(conn: &mut PgConnection, email: &str) -> QueryResult<User> {
     users::table
         .filter(users::email.eq(email))
-        .first::<User>(connection)
+        .first::<User>(conn)
 }
 
-pub fn find_user_by_session(connection: &mut PgConnection, session: &Session) -> User {
+pub fn find_user_by_session(conn: &mut PgConnection, session: &Session) -> User {
     users::table
         .filter(users::id.eq(session.user_id))
-        .first::<User>(connection)
+        .first::<User>(conn)
         .unwrap()
 }
 
@@ -122,14 +122,14 @@ pub fn filter_users<'a>(search: Option<String>) -> users::BoxedQuery<'a, Pg> {
 }
 
 pub fn paginate_users(
-    connection: &mut PgConnection,
+    conn: &mut PgConnection,
     search: Option<String>,
     pagination: PaginationInType,
 ) -> ServiceResult<PaginationOutType<UserOutType>> {
     let (users, total_pages) = filter_users(search)
         .paginate(pagination.page as i64)
         .per_page(pagination.per_page as i64)
-        .load_and_count_pages::<User>(connection)
+        .load_and_count_pages::<User>(conn)
         .to_service_result()?;
     Ok(PaginationOutType {
         data: users
@@ -140,15 +140,15 @@ pub fn paginate_users(
     })
 }
 
-pub fn confirm_user_email(connection: &mut PgConnection, user: User) -> QueryResult<User> {
+pub fn confirm_user_email(conn: &mut PgConnection, user: User) -> QueryResult<User> {
     diesel::update(users::table)
         .filter(users::id.eq(user.id))
         .set(users::is_email_confirmed.eq(true))
-        .get_result::<User>(connection)
+        .get_result::<User>(conn)
 }
 
 pub async fn change_user(
-    connection: &mut PgConnection,
+    conn: &mut PgConnection,
     storage: &Storage,
     user: User,
     mut user_in: UserInChangeType<'_>,
@@ -163,7 +163,7 @@ pub async fn change_user(
     } else {
         None
     };
-    let exist_user = find_exist_user(connection, username, email).to_service_result()?;
+    let exist_user = find_exist_user(conn, username, email).to_service_result()?;
     if let Some(exist_user) = exist_user {
         return Err(get_exist_user_app_error(
             exist_user,
@@ -191,8 +191,8 @@ pub async fn change_user(
     } else {
         false
     };
-    let (user, email_confirmation) = connection
-        .transaction(|connection| {
+    let (user, email_confirmation) = conn
+        .transaction(|conn| {
             let user = diesel::update(users::table)
                 .filter(users::id.eq(&user.id))
                 .set((
@@ -204,10 +204,10 @@ pub async fn change_user(
                     users::last_name.eq(&user_in.last_name),
                     users::avatar.eq(avatar.and_then(|p| Some(p.to_str().unwrap().to_owned()))),
                 ))
-                .get_result::<User>(connection)?;
+                .get_result::<User>(conn)?;
             if email.is_some() {
                 let email_confirmation =
-                    email_confirmation_services::create_email_confirmation(connection, &user)?;
+                    email_confirmation_services::create_email_confirmation(conn, &user)?;
                 Ok((user, Some(email_confirmation)))
             } else {
                 Ok((user, None))
@@ -221,7 +221,7 @@ pub async fn change_user(
 }
 
 pub fn change_user_language(
-    connection: &mut PgConnection,
+    conn: &mut PgConnection,
     user: User,
     language: Option<&str>,
 ) -> ServiceResult<User> {
@@ -237,7 +237,7 @@ pub fn change_user_language(
         diesel::update(users::table)
             .filter(users::id.eq(&user.id))
             .set(users::language.eq(language))
-            .get_result::<User>(connection)
+            .get_result::<User>(conn)
             .to_service_result()
     } else {
         Ok(user)
@@ -245,12 +245,12 @@ pub fn change_user_language(
 }
 
 pub fn sign_in(
-    connection: &mut PgConnection,
+    conn: &mut PgConnection,
     credentials: CredentialsType,
     ip_address: &IpNetwork,
     user_agent: &str,
 ) -> ServiceResult<Session> {
-    let user_result = find_user_by_username(connection, &credentials.username)
+    let user_result = find_user_by_username(conn, &credentials.username)
         .to_service_result_find(String::from("user_not_found_error"));
     let user = match user_result {
         Ok(user) => user,
@@ -265,20 +265,15 @@ pub fn sign_in(
             t!("sign_in_credentials_error", locale = locale)
         })));
     }
-    session_services::create_session(connection, user.id, ip_address, user_agent)
-        .to_service_result()
+    session_services::create_session(conn, user.id, ip_address, user_agent).to_service_result()
 }
 
-pub fn sign_out(
-    connection: &mut PgConnection,
-    user: &User,
-    session_id: i32,
-) -> ServiceResult<Session> {
-    session_services::deactivate_user_session(connection, user, session_id)
+pub fn sign_out(conn: &mut PgConnection, user: &User, session_id: i32) -> ServiceResult<Session> {
+    session_services::deactivate_user_session(conn, user, session_id)
 }
 
 fn find_exist_user(
-    connection: &mut PgConnection,
+    conn: &mut PgConnection,
     username: Option<&str>,
     email: Option<&str>,
 ) -> QueryResult<Option<User>> {
@@ -290,7 +285,7 @@ fn find_exist_user(
         if let Some(email) = email {
             query = query.or_filter(users::email.eq(email));
         }
-        return query.first::<User>(connection).optional();
+        return query.first::<User>(conn).optional();
     }
     Ok(None)
 }
