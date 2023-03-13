@@ -1,10 +1,10 @@
-use crate::models::{Plugin, Project, ProjectUser, ProjectUserStatusValue, User};
+use crate::models::{Project, ProjectUser, ProjectUserStatusValue, User};
 use crate::pagination::Paginate;
 use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{
     plugins, project_plugins, project_user_statuses, project_users, projects, users,
 };
-use crate::services::{permission_services, project_user_services};
+use crate::services::{permission_services, plugin_services, project_user_services};
 use crate::types::{
     IntervalInType, PaginationInType, PaginationOutType, ProjectGroupFilterType, ProjectInType,
     ProjectOutType, UserOutType,
@@ -42,15 +42,6 @@ pub fn create_project(
         ProjectUserStatusValue::Creator,
     )?;
     Ok(project)
-}
-
-pub fn find_project_plugins(connection: &mut PgConnection, project_id: i32) -> Vec<Plugin> {
-    projects::table
-        .inner_join(project_plugins::table.inner_join(plugins::table))
-        .select(plugins::all_columns)
-        .filter(projects::id.eq(project_id))
-        .get_results::<Plugin>(connection)
-        .unwrap()
 }
 
 pub fn find_project_by_id(
@@ -218,7 +209,7 @@ impl ProjectOutType {
             is_archived: project.is_archived,
             created_at: project.created_at,
             updated_at: project.updated_at,
-            plugins: find_project_plugins(connection, project.id)
+            plugins: plugin_services::find_project_plugins(connection, project.id)
                 .into_iter()
                 .map(|plugin| plugin.name)
                 .collect(),

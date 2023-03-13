@@ -232,6 +232,16 @@ pub enum ProjectGroupFilterType {
     Both,
 }
 
+/// Type of project plugin
+#[derive(Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginType {
+    /// Plugin name
+    pub name: String,
+    /// Plugin description
+    pub description: String,
+}
+
 /// Type of project permission
 #[derive(Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

@@ -2,9 +2,11 @@ use crate::db;
 use crate::models::{ProjectUserStatusValue, User};
 use crate::request::UserLocale;
 use crate::response::PathResult;
-use crate::services::{permission_services, project_services, project_user_services};
+use crate::services::{
+    permission_services, plugin_services, project_services, project_user_services,
+};
 use crate::types::{
-    IntervalInType, PaginationInType, PaginationOutType, PermissionType, ProjectInType,
+    IntervalInType, PaginationInType, PaginationOutType, PermissionType, PluginType, ProjectInType,
     ProjectOutType, ProjectUserType, ProjectsInType,
 };
 use rocket::serde::json::Json;
@@ -82,6 +84,21 @@ pub fn get_projects(
     PathResult::new(Ok(Json(pagination_out)), locale)
 }
 
+/// Get plugins
+#[openapi(tag = "projects")]
+#[get("/plugins")]
+pub fn get_plugins(locale: UserLocale) -> PathResult<Json<Vec<PluginType>>, UserLocale> {
+    let connection = &mut db::establish_connection();
+    let plugins = match plugin_services::get_plugins(connection) {
+        Ok(plugins) => plugins,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(
+        Ok(Json(plugins.into_iter().map(PluginType::from).collect())),
+        locale,
+    )
+}
+
 /// Get permissions
 #[openapi(tag = "projects")]
 #[get("/permissions")]
@@ -93,10 +110,7 @@ pub fn get_permissions(locale: UserLocale) -> PathResult<Json<Vec<PermissionType
     };
     PathResult::new(
         Ok(Json(
-            permissions
-                .into_iter()
-                .map(PermissionType::from)
-                .collect::<Vec<PermissionType>>(),
+            permissions.into_iter().map(PermissionType::from).collect(),
         )),
         locale,
     )
