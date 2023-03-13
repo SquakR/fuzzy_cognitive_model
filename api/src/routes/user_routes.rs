@@ -3,10 +3,9 @@ use crate::db;
 use crate::models::User;
 use crate::request::{AcceptLanguage, Locale, UserAgent, UserLocale};
 use crate::response::{AppError, PathResult};
-use crate::services::email_confirmation_services;
-use crate::services::password_services;
-use crate::services::session_services;
-use crate::services::user_services;
+use crate::services::{
+    email_confirmation_services, password_services, session_services, user_services,
+};
 use crate::storage::Storage;
 use crate::types::{
     ChangeLanguageType, ChangePasswordType, CredentialsType, PaginationInType, PaginationOutType,
@@ -59,11 +58,14 @@ pub fn get_users(
 ) -> PathResult<Json<PaginationOutType<UserOutType>>, UserLocale> {
     let connection = &mut db::establish_connection();
     let pagination_in = PaginationInType {
-        search: search.map(|s| s.to_owned()),
         page: page.unwrap_or(1),
         per_page: per_page.unwrap_or(15),
     };
-    let pagination_out = match user_services::paginate_users(connection, pagination_in) {
+    let pagination_out = match user_services::paginate_users(
+        connection,
+        search.map(|s| s.to_owned()),
+        pagination_in,
+    ) {
         Ok(pagination_out) => pagination_out,
         Err(app_error) => return PathResult::new(Err(app_error), locale),
     };

@@ -58,3 +58,5 @@ exclude_user_forbidden_error: "Insufficient permissions to exclude a user from t
 exclude_user_self_error: "Unable to exclude yourself from a project."
 exclude_creator_error: "Unable to exclude a project creator from a project."
 exclude_not_member_error: "Unable to exclude the user because they are not a member of the project."
+
+invalid_status_error: "Invalid status: `%{status}`"

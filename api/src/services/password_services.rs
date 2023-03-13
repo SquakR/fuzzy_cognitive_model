@@ -1,12 +1,7 @@
-use crate::models::PasswordReset;
-use crate::models::User;
-use crate::response::ToServiceResult;
-use crate::response::{AppError, ServiceResult};
-use crate::schema::password_resets;
-use crate::schema::users;
-use crate::services::mailing_services;
-use crate::services::session_services;
-use crate::services::user_services;
+use crate::models::{PasswordReset, User};
+use crate::response::{AppError, ServiceResult, ToServiceResult};
+use crate::schema::{password_resets, users};
+use crate::services::{mailing_services, session_services, user_services};
 use crate::types::{ChangePasswordType, ResetPasswordType};
 use crate::utils;
 use argon2::password_hash::{PasswordHash, Salt};

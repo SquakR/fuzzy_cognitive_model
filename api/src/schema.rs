@@ -77,6 +77,7 @@ diesel::table! {
         project_id -> Int4,
         user_id -> Int4,
         created_at -> Timestamptz,
+        last_status_id -> Nullable<Int4>,
     }
 }
 
@@ -127,7 +128,6 @@ diesel::joinable!(project_plugins -> plugins (plugin_name));
 diesel::joinable!(project_plugins -> projects (project_id));
 diesel::joinable!(project_user_permissions -> permissions (permission_key));
 diesel::joinable!(project_user_permissions -> project_users (project_user_id));
-diesel::joinable!(project_user_statuses -> project_users (project_user_id));
 diesel::joinable!(project_users -> projects (project_id));
 diesel::joinable!(project_users -> users (user_id));
 diesel::joinable!(sessions -> users (user_id));

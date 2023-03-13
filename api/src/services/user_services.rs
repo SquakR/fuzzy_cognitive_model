@@ -4,9 +4,7 @@ use crate::models::{Session, User};
 use crate::pagination::Paginate;
 use crate::response::{AppError, ServiceResult, ToAppError, ToServiceResult};
 use crate::schema::users;
-use crate::services::email_confirmation_services;
-use crate::services::password_services;
-use crate::services::session_services;
+use crate::services::{email_confirmation_services, password_services, session_services};
 use crate::storage::Storage;
 use crate::types::{
     CredentialsType, PaginationInType, PaginationOutType, UserInChangeType, UserInCreateType,
@@ -87,7 +85,7 @@ pub fn find_user_by_session(connection: &mut PgConnection, session: &Session) ->
         .unwrap()
 }
 
-pub fn filter_users<'a>(search: &Option<String>) -> users::BoxedQuery<'a, Pg> {
+pub fn filter_users<'a>(search: Option<String>) -> users::BoxedQuery<'a, Pg> {
     match search {
         Some(search) => {
             let like_pattern = format!("{}%", search);
@@ -122,9 +120,10 @@ pub fn filter_users<'a>(search: &Option<String>) -> users::BoxedQuery<'a, Pg> {
 
 pub fn paginate_users(
     connection: &mut PgConnection,
+    search: Option<String>,
     pagination: PaginationInType,
 ) -> ServiceResult<PaginationOutType<UserOutType>> {
-    let (users, total_pages) = filter_users(&pagination.search)
+    let (users, total_pages) = filter_users(search)
         .paginate(pagination.page as i64)
         .per_page(pagination.per_page as i64)
         .load_and_count_pages::<User>(connection)

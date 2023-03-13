@@ -58,3 +58,5 @@ exclude_user_forbidden_error: "Недостаточно прав для искл
 exclude_user_self_error: "Невозможно исключить себя из проекта."
 exclude_creator_error: "Невозможно исключить создателя проекта из проекта."
 exclude_not_member_error: "Невозможно исключить пользователя, т.к. он не является участником проекта."
+
+invalid_status_error: "Неверный статус: `%{status}`"

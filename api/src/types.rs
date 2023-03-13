@@ -1,4 +1,5 @@
 use crate::models::ProjectUserStatusValue;
+use crate::request::DateTimeWrapper;
 use chrono::{DateTime, Utc};
 use rocket::form::FromForm;
 use rocket::fs::TempFile;
@@ -182,27 +183,6 @@ pub struct ResetPasswordType {
     pub new_password: String,
 }
 
-/// Pagination input type
-#[derive(Deserialize)]
-pub struct PaginationInType {
-    /// Search query
-    pub search: Option<String>,
-    /// Page number
-    pub page: u16,
-    /// Number of records per page
-    pub per_page: u16,
-}
-
-/// Pagination output type
-#[derive(Serialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct PaginationOutType<T> {
-    /// Pagination data
-    pub data: Vec<T>,
-    /// Total count of pages
-    pub total_pages: i32,
-}
-
 /// Type of project
 #[derive(Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -223,6 +203,8 @@ pub struct ProjectOutType {
     pub created_at: DateTime<Utc>,
     /// Project update time
     pub updated_at: DateTime<Utc>,
+    /// Project plugins
+    pub plugins: Vec<String>,
 }
 
 /// Type of project to create or change
@@ -237,6 +219,17 @@ pub struct ProjectInType {
     pub is_public: bool,
     /// Is project archived
     pub is_archived: bool,
+}
+
+#[derive(JsonSchema, FromFormField)]
+/// Type of project group filter
+pub enum ProjectGroupFilterType {
+    /// Show only public projects
+    Public,
+    /// Show only user projects
+    Private,
+    /// Show public and user projects
+    Both,
 }
 
 /// Type of project permission
@@ -279,6 +272,81 @@ pub struct ProjectUserType {
     pub status: ProjectUserStatusValue,
     /// User permissions in project
     pub permissions: Option<Vec<String>>,
+}
+
+#[derive(FromForm, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectsInType {
+    /// Project group filter
+    pub group: ProjectGroupFilterType,
+    /// User statuses
+    pub statuses: Option<Vec<ProjectUserStatusValue>>,
+    /// Search string
+    pub search: Option<String>,
+    /// Is project archived
+    #[field(name = "isArchived")]
+    pub is_archived: Option<bool>,
+    /// Start of created at interval
+    #[field(name = "createdAtStart")]
+    pub created_at_start: Option<DateTimeWrapper>,
+    /// Whether to include start to created at interval
+    #[field(name = "createdAtIncludeStart")]
+    pub created_at_include_start: Option<bool>,
+    /// End of created at interval
+    #[field(name = "createdAtEnd")]
+    pub created_at_end: Option<DateTimeWrapper>,
+    /// Whether to include end to created at interval
+    #[field(name = "createdAtIncludeEnd")]
+    pub created_at_include_end: Option<bool>,
+    /// Start of updated at interval
+    #[field(name = "updatedAtStart")]
+    pub updated_at_start: Option<DateTimeWrapper>,
+    /// Whether to include start to updated at interval
+    #[field(name = "updatedAtIncludeStart")]
+    pub updated_at_include_start: Option<bool>,
+    /// End of updated at interval
+    #[field(name = "updatedAtEnd")]
+    pub updated_at_end: Option<DateTimeWrapper>,
+    /// Whether to include end to updated at interval
+    #[field(name = "updatedAtIncludeEnd")]
+    pub updated_at_include_end: Option<bool>,
+    /// Page number
+    pub page: Option<u16>,
+    /// Number of records per page
+    #[field(name = "perPage")]
+    pub per_page: Option<u16>,
+}
+
+/// Interval input type
+#[derive(Deserialize, FromForm, JsonSchema)]
+pub struct IntervalInType<T: JsonSchema> {
+    /// Start of interval
+    pub start: Option<T>,
+    /// Whether to include start
+    pub include_start: bool,
+    /// End of interval
+    pub end: Option<T>,
+    /// Whether to include end
+    pub include_end: bool,
+}
+
+/// Pagination input type
+#[derive(Deserialize)]
+pub struct PaginationInType {
+    /// Page number
+    pub page: u16,
+    /// Number of records per page
+    pub per_page: u16,
+}
+
+/// Pagination output type
+#[derive(Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PaginationOutType<T> {
+    /// Pagination data
+    pub data: Vec<T>,
+    /// Total count of pages
+    pub total_pages: i32,
 }
 
 macro_rules! user_json_schema {

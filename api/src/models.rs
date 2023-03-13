@@ -1,20 +1,12 @@
-use crate::schema::email_confirmations;
-use crate::schema::password_resets;
-use crate::schema::permissions;
-use crate::schema::plugins;
-use crate::schema::project_plugins;
-use crate::schema::project_user_permissions;
-use crate::schema::project_user_statuses;
-use crate::schema::project_users;
-use crate::schema::projects;
-use crate::schema::sessions;
-use crate::schema::users;
+use crate::schema::{
+    email_confirmations, password_resets, permissions, plugins, project_plugins,
+    project_user_permissions, project_user_statuses, project_users, projects, sessions, users,
+};
 use chrono::{DateTime, Utc};
-use diesel::{Identifiable, Queryable};
+use diesel::{Associations, Identifiable, Queryable};
 use ipnetwork::IpNetwork;
 use schemars::JsonSchema;
 use serde::Serialize;
-use std::str::FromStr;
 
 #[derive(Queryable, Identifiable, Clone)]
 pub struct User {
@@ -77,17 +69,19 @@ pub struct Project {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Queryable, Identifiable)]
-#[diesel(belongs_to(User))]
+#[derive(Queryable, Identifiable, Associations)]
 #[diesel(belongs_to(Project))]
+#[diesel(belongs_to(User))]
+#[diesel(belongs_to(ProjectUserStatus, foreign_key = last_status_id))]
 pub struct ProjectUser {
     pub id: i32,
     pub project_id: i32,
     pub user_id: i32,
     pub created_at: DateTime<Utc>,
+    pub last_status_id: Option<i32>,
 }
 
-#[derive(Debug, PartialEq, diesel_derive_enum::DbEnum, Serialize, JsonSchema)]
+#[derive(Debug, PartialEq, diesel_derive_enum::DbEnum, Serialize, JsonSchema, FromFormField)]
 #[serde(rename_all = "snake_case")]
 #[ExistingTypePath = "crate::schema::sql_types::ProjectUserStatusValue"]
 pub enum ProjectUserStatusValue {
@@ -98,23 +92,6 @@ pub enum ProjectUserStatusValue {
     Member,
     Excluded,
     Left,
-}
-
-impl FromStr for ProjectUserStatusValue {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "creator" => Ok(ProjectUserStatusValue::Creator),
-            "invited" => Ok(ProjectUserStatusValue::Invited),
-            "cancelled" => Ok(ProjectUserStatusValue::Cancelled),
-            "rejected" => Ok(ProjectUserStatusValue::Rejected),
-            "member" => Ok(ProjectUserStatusValue::Member),
-            "excluded" => Ok(ProjectUserStatusValue::Excluded),
-            "left" => Ok(ProjectUserStatusValue::Left),
-            _ => Err(()),
-        }
-    }
 }
 
 #[derive(Queryable, Identifiable)]

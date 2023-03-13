@@ -1,7 +1,6 @@
 use crate::response::{AppError, ServiceResult};
 use path_slash::PathBufExt as _;
-use rocket::fs::NamedFile;
-use rocket::fs::TempFile;
+use rocket::fs::{NamedFile, TempFile};
 use rocket::http::MediaType;
 use std::env;
 use std::fs;

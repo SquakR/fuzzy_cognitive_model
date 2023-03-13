@@ -2,12 +2,10 @@ use crate::db;
 use crate::models::{ProjectUserStatusValue, User};
 use crate::request::UserLocale;
 use crate::response::PathResult;
-use crate::services::permission_services;
-use crate::services::project_services;
-use crate::services::project_user_services;
+use crate::services::{permission_services, project_services, project_user_services};
 use crate::types::{
-    PaginationInType, PaginationOutType, PermissionType, ProjectInType, ProjectOutType,
-    ProjectUserType,
+    IntervalInType, PaginationInType, PaginationOutType, PermissionType, ProjectInType,
+    ProjectOutType, ProjectUserType, ProjectsInType,
 };
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
@@ -30,6 +28,58 @@ pub fn create_project(
         Ok(Json(ProjectOutType::from_project(connection, project))),
         locale,
     )
+}
+
+/// Get projects
+#[openapi(tag = "projects")]
+#[get("/projects?<projects_in..>")]
+pub fn get_projects(
+    projects_in: ProjectsInType,
+    user: User,
+    locale: UserLocale,
+) -> PathResult<Json<PaginationOutType<ProjectOutType>>, UserLocale> {
+    let connection = &mut db::establish_connection();
+    let created_at =
+        if projects_in.created_at_start.is_some() || projects_in.created_at_end.is_some() {
+            Some(IntervalInType {
+                start: projects_in.created_at_start.map(|c| c.0),
+                include_start: projects_in.created_at_include_start.unwrap_or(true),
+                end: projects_in.created_at_end.map(|c| c.0),
+                include_end: projects_in.created_at_include_end.unwrap_or(true),
+            })
+        } else {
+            None
+        };
+    let updated_at =
+        if projects_in.updated_at_start.is_some() || projects_in.updated_at_end.is_some() {
+            Some(IntervalInType {
+                start: projects_in.updated_at_start.map(|c| c.0),
+                include_start: projects_in.updated_at_include_start.unwrap_or(true),
+                end: projects_in.updated_at_end.map(|c| c.0),
+                include_end: projects_in.updated_at_include_end.unwrap_or(true),
+            })
+        } else {
+            None
+        };
+    let pagination_id = PaginationInType {
+        page: projects_in.page.unwrap_or(1),
+        per_page: projects_in.per_page.unwrap_or(15),
+    };
+    let pagination_out = match project_services::paginate_projects(
+        connection,
+        &user,
+        projects_in.group,
+        projects_in.statuses,
+        projects_in.search,
+        projects_in.is_archived,
+        created_at,
+        updated_at,
+        pagination_id,
+    ) {
+        Ok(pagination_out) => pagination_out,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(Ok(Json(pagination_out)), locale)
 }
 
 /// Get permissions
@@ -57,22 +107,15 @@ pub fn get_permissions(locale: UserLocale) -> PathResult<Json<Vec<PermissionType
 #[get("/project/<project_id>/users?<statuses>&<search>&<page>&<per_page>")]
 pub fn get_project_users(
     project_id: i32,
-    statuses: Option<&str>,
+    statuses: Option<Vec<ProjectUserStatusValue>>,
     search: Option<&str>,
     page: Option<u16>,
     per_page: Option<u16>,
     user: User,
     locale: UserLocale,
 ) -> PathResult<Json<PaginationOutType<ProjectUserType>>, UserLocale> {
-    let statuses = statuses
-        .unwrap_or("")
-        .split(',')
-        .map(|s| s.trim().parse::<ProjectUserStatusValue>())
-        .filter_map(Result::ok)
-        .collect::<Vec<ProjectUserStatusValue>>();
     let connection = &mut db::establish_connection();
     let pagination_in = PaginationInType {
-        search: search.map(|s| s.to_owned()),
         page: page.unwrap_or(1),
         per_page: per_page.unwrap_or(15),
     };
@@ -81,6 +124,7 @@ pub fn get_project_users(
         &user,
         project_id,
         statuses,
+        search.map(|s| s.to_owned()),
         pagination_in,
     ) {
         Ok(pagination_out) => pagination_out,

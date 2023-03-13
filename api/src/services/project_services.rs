@@ -1,16 +1,19 @@
-use crate::models::{Project, ProjectUser, ProjectUserStatusValue, User};
-use crate::response::AppError;
-use crate::response::{ServiceResult, ToServiceResult};
-use crate::schema::project_user_permissions;
-use crate::schema::project_user_statuses;
-use crate::schema::project_users;
-use crate::schema::projects;
-use crate::services::permission_services;
-use crate::services::project_user_services;
-use crate::types::{ProjectInType, ProjectOutType, ProjectUserType, UserOutType};
+use crate::models::{Plugin, Project, ProjectUser, ProjectUserStatusValue, User};
+use crate::pagination::Paginate;
+use crate::response::{AppError, ServiceResult, ToServiceResult};
+use crate::schema::{
+    plugins, project_plugins, project_user_statuses, project_users, projects, users,
+};
+use crate::services::{permission_services, project_user_services};
+use crate::types::{
+    IntervalInType, PaginationInType, PaginationOutType, ProjectGroupFilterType, ProjectInType,
+    ProjectOutType, UserOutType,
+};
 use chrono::{DateTime, Utc};
+use diesel::dsl::sql;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use diesel::sql_types::Bool;
 
 pub fn create_project(
     connection: &mut PgConnection,
@@ -33,14 +36,21 @@ pub fn create_project(
         ))
         .get_result::<ProjectUser>(connection)
         .to_service_result()?;
-    diesel::insert_into(project_user_statuses::table)
-        .values((
-            project_user_statuses::project_user_id.eq(project_user.id),
-            project_user_statuses::status.eq(ProjectUserStatusValue::Creator),
-        ))
-        .execute(connection)
-        .to_service_result()?;
+    project_user_services::add_project_user_status(
+        connection,
+        project_user.id,
+        ProjectUserStatusValue::Creator,
+    )?;
     Ok(project)
+}
+
+pub fn find_project_plugins(connection: &mut PgConnection, project_id: i32) -> Vec<Plugin> {
+    projects::table
+        .inner_join(project_plugins::table.inner_join(plugins::table))
+        .select(plugins::all_columns)
+        .filter(projects::id.eq(project_id))
+        .get_results::<Plugin>(connection)
+        .unwrap()
 }
 
 pub fn find_project_by_id(
@@ -51,6 +61,93 @@ pub fn find_project_by_id(
         .find(project_id)
         .first::<Project>(connection)
         .to_service_result_find(String::from("project_not_found_error"))
+}
+
+macro_rules! filter_date_time {
+    ($column:expr, $value:expr, $query:expr) => {
+        if let Some(start) = $value.start {
+            $query = if $value.include_start {
+                $query.filter($column.ge(start))
+            } else {
+                $query.filter($column.gt(start))
+            };
+        }
+        if let Some(end) = $value.end {
+            $query = if $value.include_end {
+                $query.filter($column.le(end))
+            } else {
+                $query.filter($column.lt(end))
+            };
+        }
+    };
+}
+
+pub fn paginate_projects(
+    connection: &mut PgConnection,
+    user: &User,
+    group: ProjectGroupFilterType,
+    statuses: Option<Vec<ProjectUserStatusValue>>,
+    search: Option<String>,
+    is_archived: Option<bool>,
+    created_at: Option<IntervalInType<DateTime<Utc>>>,
+    updated_at: Option<IntervalInType<DateTime<Utc>>>,
+    pagination: PaginationInType,
+) -> ServiceResult<PaginationOutType<ProjectOutType>> {
+    let statuses = statuses.unwrap_or(vec![
+        ProjectUserStatusValue::Creator,
+        ProjectUserStatusValue::Member,
+    ]);
+    let mut query = projects::table
+        .inner_join(
+            project_users::table.inner_join(project_user_statuses::table.on(sql::<Bool>(
+                "project_users.last_status_id = project_user_statuses.id",
+            ))),
+        )
+        .select(projects::all_columns)
+        .order(projects::created_at.desc())
+        .distinct()
+        .into_boxed();
+    if let Some(search) = search {
+        let like_pattern = format!("{}%", search);
+        query = query.filter(
+            projects::name
+                .ilike(like_pattern.to_owned())
+                .or(projects::description.ilike(like_pattern.to_owned())),
+        );
+    }
+    query = match group {
+        ProjectGroupFilterType::Public => query.filter(projects::is_public.eq(true)),
+        ProjectGroupFilterType::Private => query
+            .filter(project_users::user_id.eq(user.id))
+            .filter(project_user_statuses::status.eq_any(statuses)),
+        ProjectGroupFilterType::Both => query.filter(
+            project_users::user_id
+                .eq(user.id)
+                .and(project_user_statuses::status.eq_any(statuses))
+                .or(projects::is_public.eq(true)),
+        ),
+    };
+    if let Some(is_archived) = is_archived {
+        query = query.filter(projects::is_archived.eq(is_archived))
+    }
+    if let Some(created_at) = created_at {
+        filter_date_time!(projects::created_at, created_at, query);
+    }
+    if let Some(updated_at) = updated_at {
+        filter_date_time!(projects::updated_at, updated_at, query);
+    }
+    let (projects, total_pages) = query
+        .paginate(pagination.page as i64)
+        .per_page(pagination.per_page as i64)
+        .load_and_count_pages::<Project>(connection)
+        .to_service_result()?;
+    Ok(PaginationOutType {
+        data: projects
+            .into_iter()
+            .map(|project| ProjectOutType::from_project(connection, project))
+            .collect::<Vec<ProjectOutType>>(),
+        total_pages: total_pages as i32,
+    })
 }
 
 pub fn change_project(
@@ -92,6 +189,22 @@ pub fn delete_project(
     Ok(())
 }
 
+type ProjectIdWithUser = (
+    i32,
+    i32,
+    String,
+    String,
+    String,
+    bool,
+    String,
+    Option<String>,
+    String,
+    Option<String>,
+    Option<String>,
+    DateTime<Utc>,
+    DateTime<Utc>,
+);
+
 impl ProjectOutType {
     pub fn from_project(connection: &mut PgConnection, project: Project) -> Self {
         ProjectOutType {
@@ -105,121 +218,113 @@ impl ProjectOutType {
             is_archived: project.is_archived,
             created_at: project.created_at,
             updated_at: project.updated_at,
+            plugins: find_project_plugins(connection, project.id)
+                .into_iter()
+                .map(|plugin| plugin.name)
+                .collect(),
         }
     }
-}
-
-impl ProjectUserType {
-    pub fn from_users(
+    pub fn from_projects(
         connection: &mut PgConnection,
-        current_user: &User,
-        project_id: i32,
-        users: Vec<User>,
+        projects: Vec<Project>,
     ) -> ServiceResult<Vec<Self>> {
-        let can_change_permissions =
-            permission_services::can_change_permissions(connection, project_id, current_user.id)?;
-        let mut statuses =
-            ProjectUserType::get_project_user_statuses(project_id, &users, connection)?;
-        let mut permissions =
-            ProjectUserType::get_project_user_permissions(project_id, &users, connection)?;
-        let mut result = Vec::new();
-        for user in users {
-            let status = ProjectUserType::find_last_status(&mut statuses, user.id);
-            let permissions = if can_change_permissions || current_user.id == user.id {
-                let permissions = match status {
-                    ProjectUserStatusValue::Creator => {
-                        permission_services::get_permissions(connection)?
-                            .into_iter()
-                            .map(|permission| permission.key)
-                            .collect::<Vec<String>>()
-                    }
-                    ProjectUserStatusValue::Member => {
-                        ProjectUserType::find_user_permissions(&mut permissions, user.id)
-                    }
-                    _ => vec![],
-                };
-                Some(permissions)
-            } else {
-                None
-            };
-            result.push(ProjectUserType {
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                is_email_confirmed: user.is_email_confirmed,
-                first_name: user.first_name,
-                second_name: user.second_name,
-                last_name: user.last_name,
-                avatar: user.avatar,
-                language: user.language,
-                created_at: user.created_at,
-                updated_at: user.updated_at,
-                status,
-                permissions,
-            });
+        let mut creators = ProjectOutType::get_project_creators(connection, &projects)?;
+        let mut plugins = ProjectOutType::get_project_plugins(connection, &projects)?;
+        let mut result = vec![];
+        for project in projects {
+            let project_creator = ProjectOutType::find_project_creator(&mut creators, project.id);
+            let project_plugins = ProjectOutType::find_project_plugins(&mut plugins, project.id);
+            result.push(ProjectOutType {
+                id: project.id,
+                name: project.name,
+                description: project.description,
+                creator: UserOutType::from(project_creator),
+                is_public: project.is_public,
+                is_archived: project.is_archived,
+                created_at: project.created_at,
+                updated_at: project.updated_at,
+                plugins: project_plugins.into_iter().rev().collect(),
+            })
         }
         Ok(result)
     }
-    fn get_project_user_statuses(
-        project_id: i32,
-        users: &Vec<User>,
+    fn get_project_creators(
         connection: &mut PgConnection,
-    ) -> ServiceResult<Vec<(i32, ProjectUserStatusValue, DateTime<Utc>)>> {
-        let user_ids = users.iter().map(|u| u.id);
-        project_users::table
-            .inner_join(project_user_statuses::table)
+        projects: &[Project],
+    ) -> ServiceResult<Vec<ProjectIdWithUser>> {
+        let project_ids = projects.iter().map(|project| project.id);
+        project_user_statuses::table
+            .inner_join(
+                project_users::table
+                    .inner_join(users::table)
+                    .on(project_user_statuses::project_user_id.eq(project_users::id)),
+            )
             .select((
-                project_users::user_id,
-                project_user_statuses::status,
-                project_user_statuses::created_at,
+                project_users::project_id,
+                users::id,
+                users::username,
+                users::password,
+                users::email,
+                users::is_email_confirmed,
+                users::first_name,
+                users::second_name,
+                users::last_name,
+                users::avatar,
+                users::language,
+                users::created_at,
+                users::updated_at,
             ))
-            .filter(project_users::project_id.eq(project_id))
-            .filter(project_users::user_id.eq_any(user_ids))
-            .get_results::<(i32, ProjectUserStatusValue, DateTime<Utc>)>(connection)
+            .filter(project_users::project_id.eq_any(project_ids))
+            .filter(project_user_statuses::status.eq(ProjectUserStatusValue::Creator))
+            .get_results::<ProjectIdWithUser>(connection)
             .to_service_result()
     }
-    fn get_project_user_permissions(
-        project_id: i32,
-        users: &Vec<User>,
+    fn get_project_plugins(
         connection: &mut PgConnection,
+        projects: &[Project],
     ) -> ServiceResult<Vec<(i32, String)>> {
-        let user_ids = users.iter().map(|u| u.id);
-        project_users::table
-            .inner_join(project_user_permissions::table)
-            .select((
-                project_users::user_id,
-                project_user_permissions::permission_key,
-            ))
-            .filter(project_users::project_id.eq(project_id))
-            .filter(project_users::user_id.eq_any(user_ids))
+        let project_ids = projects.iter().map(|project| project.id);
+        projects::table
+            .inner_join(project_plugins::table.inner_join(plugins::table))
+            .select((projects::id, plugins::name))
+            .filter(projects::id.eq_any(project_ids))
             .get_results::<(i32, String)>(connection)
             .to_service_result()
     }
-    fn find_last_status(
-        statuses: &mut Vec<(i32, ProjectUserStatusValue, DateTime<Utc>)>,
-        user_id: i32,
-    ) -> ProjectUserStatusValue {
-        let status_index = statuses
+    fn find_project_creator(creators: &mut Vec<ProjectIdWithUser>, project_id: i32) -> User {
+        let index = creators
             .iter()
             .enumerate()
-            .filter(|(_, (id, _, _))| *id == user_id)
-            .max_by_key(|(_, (_, _, created_at))| *created_at)
+            .find(|(_, v)| v.0 == project_id)
             .unwrap()
             .0;
-        let (_, status, _) = statuses.remove(status_index);
-        status
+        let creator = creators.remove(index);
+        return User {
+            id: creator.1,
+            username: creator.2,
+            password: creator.3,
+            email: creator.4,
+            is_email_confirmed: creator.5,
+            first_name: creator.6,
+            second_name: creator.7,
+            last_name: creator.8,
+            avatar: creator.9,
+            language: creator.10,
+            created_at: creator.11,
+            updated_at: creator.12,
+        };
     }
-    fn find_user_permissions(permissions: &mut Vec<(i32, String)>, user_id: i32) -> Vec<String> {
-        let permission_indices = permissions
+    fn find_project_plugins(plugins: &mut Vec<(i32, String)>, project_id: i32) -> Vec<String> {
+        let plugin_indices = plugins
             .iter()
             .enumerate()
-            .filter(|(_, (id, _))| *id == user_id)
+            .filter(|(_, (id, _))| *id == project_id)
             .map(|(i, _)| i)
             .collect::<Vec<usize>>();
-        let mut result = vec![];
-        for index in permission_indices.into_iter().rev() {
-            result.push(permissions.remove(index).1)
+        let mut project_plugins = vec![];
+        for index in plugin_indices.into_iter().rev() {
+            project_plugins.push(plugins.remove(index).1)
         }
-        result.into_iter().rev().collect()
+        project_plugins
     }
 }

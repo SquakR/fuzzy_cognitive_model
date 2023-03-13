@@ -32,6 +32,11 @@ CREATE TABLE project_user_statuses (
   status project_user_status_value NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
+ALTER TABLE project_users
+ADD last_status_id INTEGER;
+ALTER TABLE project_users
+ADD FOREIGN KEY (last_status_id) REFERENCES project_user_statuses(id) ON DELETE
+SET NULL;
 CREATE TABLE permissions (
   key VARCHAR(255) PRIMARY KEY,
   description TEXT NOT NULL

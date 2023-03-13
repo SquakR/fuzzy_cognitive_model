@@ -1,15 +1,30 @@
 use crate::cookies;
 use crate::db;
 use crate::models::User;
-use crate::services::session_services;
-use crate::services::user_services;
+use crate::services::{session_services, user_services};
+use chrono::{DateTime, Utc};
 use okapi::openapi3::{Object, Parameter, ParameterValue};
+use rocket::form::{self, FromFormField, ValueField};
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome, Request};
 use rocket_accept_language::{AcceptLanguage as RocketAcceptLanguage, LanguageIdentifier};
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 use rocket_okapi::Result as RocketOkapiResult;
+use schemars::JsonSchema;
+
+#[derive(JsonSchema)]
+pub struct DateTimeWrapper(pub DateTime<Utc>);
+
+#[rocket::async_trait]
+impl<'r> FromFormField<'r> for DateTimeWrapper {
+    fn from_value(field: ValueField<'r>) -> form::Result<'r, Self> {
+        match DateTime::parse_from_rfc3339(field.value) {
+            Ok(date_time) => Ok(DateTimeWrapper(date_time.into())),
+            Err(_) => Err(form::Error::validation("Invalid date"))?,
+        }
+    }
+}
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for User {

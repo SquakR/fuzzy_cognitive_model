@@ -1,17 +1,14 @@
-use crate::request::AcceptLanguage;
-use crate::request::{BaseLocale, Locale};
+use crate::request::{AcceptLanguage, BaseLocale, Locale};
 use diesel::result::Error as DieselError;
 use okapi::openapi3::Responses;
 use rocket::catcher::BoxFuture;
 use rocket::http::hyper::header;
 use rocket::http::{Header, Status};
 use rocket::request::{FromRequest, Outcome, Request};
-use rocket::response::Response;
-use rocket::response::{self, Responder};
+use rocket::response::{self, Responder, Response};
 use rocket_accept_language::AcceptLanguage as RocketAcceptLanguage;
 use rocket_okapi::gen::OpenApiGenerator;
-use rocket_okapi::response::OpenApiResponderInner;
-use rocket_okapi::Result as RocketOkapiResult;
+use rocket_okapi::{response::OpenApiResponderInner, Result as RocketOkapiResult};
 use rust_i18n::t;
 pub type ServiceResult<T> = Result<T, AppError>;
 
