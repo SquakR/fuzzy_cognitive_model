@@ -1,7 +1,6 @@
-use crate::cookies;
+use crate::authenticate;
 use crate::db;
 use crate::models::User;
-use crate::services::{session_services, user_services};
 use chrono::{DateTime, Utc};
 use okapi::openapi3::{Object, Parameter, ParameterValue};
 use rocket::form::{self, FromFormField, ValueField};
@@ -31,25 +30,12 @@ impl<'r> FromRequest<'r> for User {
     type Error = ();
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let user_result = request.local_cache(|| {
+        let authentication_result = request.local_cache(|| {
             let conn = &mut db::establish_connection();
-            let session_id = match cookies::get_session_id(request.cookies()) {
-                Some(session_id) => session_id,
-                None => return Err(Status::Unauthorized),
-            };
-            let session = match session_services::find_session_by_id(conn, session_id) {
-                Ok(value) => value,
-                Err(_) => return Err(Status::BadRequest),
-            };
-            let user = user_services::find_user_by_session(conn, &session);
-            if !session.is_active {
-                let _sessions = session_services::deactivate_all_user_sessions(conn, user.id);
-                return Err(Status::BadRequest);
-            }
-            Ok(user)
+            authenticate!(conn, request.cookies())
         });
-        match user_result {
-            Ok(user) => Outcome::Success(user.clone()),
+        match authentication_result {
+            Ok((user, _)) => Outcome::Success(user.clone()),
             Err(status) => Outcome::Failure((status.clone(), ())),
         }
     }

@@ -5,6 +5,7 @@ use fuzzy_cognitive_model::response;
 use fuzzy_cognitive_model::routes::MountRoutes;
 use fuzzy_cognitive_model::storage::Storage;
 use fuzzy_cognitive_model::utils;
+use fuzzy_cognitive_model::ws::WsListener;
 use rocket::catcher::Catcher;
 use rocket_cors::AllowedOrigins;
 use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
@@ -30,6 +31,11 @@ fn rocket() -> _ {
     .to_cors()
     .unwrap();
 
+    let ws_listener = WsListener::new(
+        String::from("127.0.0.1"),
+        utils::get_env("WS_PORT").parse().expect("Invalid WS_PORT"),
+    );
+
     let storage = Storage::new();
 
     rocket::build()
@@ -45,4 +51,5 @@ fn rocket() -> _ {
         )
         .mount("/api/v1/docs", make_swagger_ui(&get_docs()))
         .attach(cors)
+        .attach(ws_listener)
 }

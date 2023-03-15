@@ -1,5 +1,6 @@
 use crate::cookies;
 use crate::db;
+use crate::get_session_id;
 use crate::models::User;
 use crate::request::{AcceptLanguage, Locale, UserAgent, UserLocale};
 use crate::response::{AppError, PathResult, ToServiceResult};
@@ -31,7 +32,7 @@ pub async fn create_user(
     storage: &State<Storage>,
     locale: Locale,
 ) -> PathResult<Json<UserOutType>, Locale> {
-    if cookies::get_session_id(cookies_jar).is_some() {
+    if get_session_id!(cookies_jar).is_some() {
         return PathResult::new(
             Err(AppError::ValidationError(Box::new(|locale| {
                 t!("create_user_active_session_error", locale = locale)
@@ -139,7 +140,7 @@ pub fn change_me_password(
     user: User,
     locale: UserLocale,
 ) -> PathResult<(), UserLocale> {
-    let session_id = match cookies::get_session_id(cookies_jar) {
+    let session_id = match get_session_id!(cookies_jar) {
         Some(session_id) => session_id,
         None => return PathResult::new(Err(AppError::InternalServerError), locale),
     };
@@ -164,7 +165,7 @@ pub async fn request_password_reset(
     cookies_jar: &CookieJar<'_>,
     locale: Locale,
 ) -> PathResult<(), Locale> {
-    if cookies::get_session_id(cookies_jar).is_some() {
+    if get_session_id!(cookies_jar).is_some() {
         return PathResult::new(
             Err(AppError::ValidationError(Box::new(|locale| {
                 t!("reset_password_active_session_error", locale = locale)
@@ -251,7 +252,7 @@ pub fn sign_out(
     user: User,
     locale: UserLocale,
 ) -> PathResult<(), UserLocale> {
-    let session_id = match cookies::get_session_id(cookies_jar) {
+    let session_id = match get_session_id!(cookies_jar) {
         Some(session_id) => session_id,
         None => return PathResult::new(Err(AppError::InternalServerError), locale),
     };
@@ -271,7 +272,7 @@ pub fn get_sessions(
     user: User,
     locale: UserLocale,
 ) -> PathResult<Json<Vec<SessionType>>, UserLocale> {
-    let session_id = match cookies::get_session_id(cookies_jar) {
+    let session_id = match get_session_id!(cookies_jar) {
         Some(session_id) => session_id,
         None => return PathResult::new(Err(AppError::InternalServerError), locale),
     };

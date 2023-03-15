@@ -10,6 +10,31 @@ use user_agent_parser::{
     Device as UserAgentDevice, Product as UserAgentProduct, UserAgentParser, OS as UserAgentOS,
 };
 
+#[macro_export]
+macro_rules! authenticate {
+    ($conn:expr, $cookies_jar:expr) => {{
+        let mut result = Err(rocket::http::Status::Unauthorized);
+        let session_id = crate::get_session_id!($cookies_jar);
+        if session_id.is_some() {
+            let session_id = session_id.unwrap();
+            let session = crate::services::session_services::find_session_by_id($conn, session_id);
+            if session.is_ok() {
+                let session = session.unwrap();
+                let user = crate::services::user_services::find_user_by_session($conn, &session);
+                if session.is_active {
+                    result = Ok((user, session))
+                } else {
+                    let _sessions = crate::services::session_services::deactivate_all_user_sessions(
+                        $conn, user.id,
+                    );
+                    result = Err(rocket::http::Status::BadRequest);
+                }
+            }
+        }
+        result
+    }};
+}
+
 pub fn create_session(
     conn: &mut PgConnection,
     user_id: i32,

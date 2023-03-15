@@ -42,6 +42,7 @@
     },
     "cSpell.words": [
       "Artem",
+      "binascii",
       "bulma",
       "chrono",
       "composables",
@@ -66,8 +67,10 @@
       "schemars",
       "SUBSTR",
       "Timestamptz",
+      "tungstenite",
       "unplugin",
-      "vueuse"
+      "vueuse",
+      "yansi"
     ],
     "sqltools.connections": [
       {
