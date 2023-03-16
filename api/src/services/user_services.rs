@@ -88,6 +88,15 @@ pub fn find_user_by_session(conn: &mut PgConnection, session: &Session) -> User 
         .unwrap()
 }
 
+pub fn find_users_by_id(
+    conn: &mut PgConnection,
+    user_ids: impl Iterator<Item = i32>,
+) -> QueryResult<Vec<User>> {
+    users::table
+        .filter(users::id.eq_any(user_ids))
+        .get_results::<User>(conn)
+}
+
 pub fn filter_users<'a>(search: Option<String>) -> users::BoxedQuery<'a, Pg> {
     match search {
         Some(search) => {

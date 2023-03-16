@@ -7,8 +7,8 @@ use crate::schema::{
 use crate::services::{permission_services, project_services, user_services};
 use crate::types::{PaginationInType, PaginationOutType, ProjectUserType};
 use chrono::{DateTime, Duration, Utc};
-use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use diesel::PgConnection;
 
 pub fn add_project_user_status(
     conn: &mut PgConnection,
@@ -105,7 +105,7 @@ pub fn paginate_project_users(
 ) -> ServiceResult<PaginationOutType<ProjectUserType>> {
     let project = project_services::find_project_by_id(conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
-    if !project.is_public && !is_project_member(conn, user, project_id)? {
+    if !permission_services::can_view_project(conn, user, &project)? {
         return Err(AppError::ForbiddenError(String::from(
             "view_project_forbidden_error",
         )));

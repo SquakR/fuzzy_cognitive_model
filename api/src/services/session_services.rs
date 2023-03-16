@@ -2,8 +2,8 @@ use crate::models::{Session, User};
 use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::sessions;
 use crate::types::{DeviceType, OSType, ProductType, SessionType};
-use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use diesel::PgConnection;
 use ipnetwork::IpNetwork;
 use std::env;
 use user_agent_parser::{

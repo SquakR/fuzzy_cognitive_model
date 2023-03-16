@@ -1,6 +1,7 @@
 use crate::authenticate;
 use crate::db;
 use crate::models::User;
+use crate::web_socket::WebSocketProjectService;
 use chrono::{DateTime, Utc};
 use okapi::openapi3::{Object, Parameter, ParameterValue};
 use rocket::form::{self, FromFormField, ValueField};
@@ -242,4 +243,24 @@ fn add_accept_language_header(
         },
         extensions: Object::default(),
     }))
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for WebSocketProjectService {
+    type Error = ();
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let project_service = request.local_cache::<WebSocketProjectService, _>(|| unreachable!());
+        Outcome::Success(project_service.clone())
+    }
+}
+
+impl<'r> OpenApiFromRequest<'r> for WebSocketProjectService {
+    fn from_request_input(
+        _gen: &mut OpenApiGenerator,
+        _name: String,
+        _required: bool,
+    ) -> RocketOkapiResult<RequestHeaderInput> {
+        Ok(RequestHeaderInput::None)
+    }
 }

@@ -3,8 +3,8 @@ use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{plugins, project_plugins, projects};
 use crate::services::permission_services;
 use crate::types::PluginType;
-use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use diesel::PgConnection;
 
 pub fn set_project_plugins(
     conn: &mut PgConnection,

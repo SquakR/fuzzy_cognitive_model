@@ -14,6 +14,6 @@ pub mod services;
 pub mod storage;
 pub mod types;
 pub mod utils;
-pub mod ws;
+pub mod web_socket;
 
 i18n!("locales");

@@ -1,3 +1,4 @@
+mod model_routes;
 mod project_routes;
 mod user_routes;
 use okapi::openapi3::{OpenApi, RefOr};
@@ -74,7 +75,8 @@ impl MountRoutes for Rocket<Build> {
                 project_routes::respond_to_invitation,
                 project_routes::leave_project,
                 project_routes::exclude_user,
-                project_routes::delete_project
+                project_routes::delete_project,
+                model_routes::get_active_users
             ),
         )
     }

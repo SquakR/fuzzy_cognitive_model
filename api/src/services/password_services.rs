@@ -6,8 +6,8 @@ use crate::types::{ChangePasswordType, ResetPasswordType};
 use crate::utils;
 use argon2::password_hash::{PasswordHash, Salt};
 use argon2::{Argon2, PasswordHasher, PasswordVerifier};
-use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use diesel::PgConnection;
 use jwt::{SignWithKey, VerifyWithKey};
 use std::collections::BTreeMap;
 

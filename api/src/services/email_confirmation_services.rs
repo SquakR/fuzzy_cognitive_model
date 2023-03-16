@@ -3,8 +3,8 @@ use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::email_confirmations;
 use crate::services::{mailing_services, user_services};
 use crate::utils;
-use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use diesel::PgConnection;
 use jwt::{SignWithKey, VerifyWithKey};
 use std::collections::BTreeMap;
 

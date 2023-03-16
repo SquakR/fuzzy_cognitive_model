@@ -1,6 +1,9 @@
+use super::web_socket_project_service::WebSocketProjectService;
 use crate::authenticate;
 use crate::cookies::GetPrivate;
 use crate::db;
+use crate::models::{Session, User};
+use crate::services::project_user_services;
 use crate::utils;
 use cookie::{Cookie, CookieJar, Key};
 use futures_channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
@@ -12,8 +15,7 @@ use rocket::log::PaintExt;
 use rocket::tokio::net::{TcpListener, TcpStream};
 use rocket::tokio::runtime::Handle;
 use rocket::yansi::Paint;
-use rocket::{Build, Orbit, Rocket};
-use serde::Deserialize;
+use rocket::{Build, Data, Orbit, Request as RocketRequest, Rocket};
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::mpsc;
@@ -25,19 +27,20 @@ use tokio_tungstenite::tungstenite::http::StatusCode;
 use tokio_tungstenite::tungstenite::protocol::Message;
 use tokio_tungstenite::WebSocketStream;
 
-pub struct WsListener {
+pub struct WebSocketListener {
     host: String,
     port: i32,
     secret_key: Key,
     project_connections: ProjectConnections,
+    project_service: WebSocketProjectService,
 }
 
 #[rocket::async_trait]
-impl fairing::Fairing for WsListener {
+impl fairing::Fairing for WebSocketListener {
     fn info(&self) -> fairing::Info {
         fairing::Info {
             name: "WebSocket listener",
-            kind: fairing::Kind::Ignite | fairing::Kind::Liftoff,
+            kind: fairing::Kind::Ignite | fairing::Kind::Liftoff | fairing::Kind::Request,
         }
     }
     async fn on_ignite(&self, rocket: Rocket<Build>) -> fairing::Result {
@@ -58,6 +61,10 @@ impl fairing::Fairing for WsListener {
         info_!("{}: {}", "Host", Paint::default(self.host.clone()));
         info_!("{}: {}", "Port", Paint::default(self.port));
     }
+    async fn on_request(&self, request: &mut RocketRequest<'_>, _: &mut Data<'_>) {
+        let project_service = self.project_service.clone();
+        request.local_cache(move || project_service);
+    }
 }
 
 struct ListenerError(pub String);
@@ -72,34 +79,58 @@ enum ConnectionType {
     Project(ProjectConnectionData),
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Deserialize)]
-struct ProjectConnectionData {
-    session_id: i32,
-    project_id: i32,
+#[derive(Clone, PartialEq, Eq)]
+pub struct ProjectConnectionData {
+    pub session_id: i32,
+    pub user_id: i32,
+    pub project_id: i32,
 }
 
 impl ProjectConnectionData {
-    pub fn new(session_id: i32, project_id: i32) -> Self {
+    pub fn new(session_id: i32, user_id: i32, project_id: i32) -> Self {
         ProjectConnectionData {
             session_id,
+            user_id,
             project_id,
         }
     }
 }
 
-type ProjectConnections = Arc<Mutex<HashMap<ProjectConnectionData, UnboundedSender<Message>>>>;
+pub struct ConnectionSender<T> {
+    pub data: T,
+    pub sender: UnboundedSender<Message>,
+}
 
-impl WsListener {
+impl<T> ConnectionSender<T> {
+    pub fn new(data: T, sender: UnboundedSender<Message>) -> Self {
+        ConnectionSender { data, sender }
+    }
+}
+
+impl<T: PartialEq> PartialEq<ConnectionSender<T>> for ConnectionSender<T> {
+    fn eq(&self, other: &ConnectionSender<T>) -> bool {
+        self.data == other.data
+    }
+}
+impl<T: PartialEq> Eq for ConnectionSender<T> {}
+
+pub type Connections<K, V> = Arc<Mutex<HashMap<K, V>>>;
+
+pub type ProjectConnections = Connections<i32, Vec<ConnectionSender<ProjectConnectionData>>>;
+
+impl WebSocketListener {
     pub fn new(host: String, port: i32) -> Self {
         let mut buf = [0u8; 88];
-        WsListener {
+        let project_connections = Arc::new(Mutex::new(HashMap::new()));
+        WebSocketListener {
             host,
             port,
             secret_key: Key::from(
                 binascii::b64decode(utils::get_env("ROCKET_SECRET_KEY").as_bytes(), &mut buf)
                     .unwrap(),
             ),
-            project_connections: Arc::new(Mutex::new(HashMap::new())),
+            project_connections: Arc::clone(&project_connections),
+            project_service: WebSocketProjectService::new(project_connections),
         }
     }
     fn listen(&self) -> Result<(), ListenerError> {
@@ -128,7 +159,7 @@ impl WsListener {
                 };
                 let mut connection_id = 1;
                 while let Ok((stream, addr)) = listener.accept().await {
-                    inner_handle.spawn(WsListener::handle_connection(
+                    inner_handle.spawn(WebSocketListener::handle_connection(
                         connection_id,
                         secret_key.clone(),
                         Arc::clone(&project_connections),
@@ -154,7 +185,9 @@ impl WsListener {
             Paint::default(addr)
         );
         let (ws_stream, connection_type) =
-            match WsListener::handle_request(connection_id, secret_key, raw_stream, &addr).await {
+            match WebSocketListener::handle_request(connection_id, secret_key, raw_stream, &addr)
+                .await
+            {
                 Ok(res) => res,
                 Err(_) => {
                     return;
@@ -167,8 +200,16 @@ impl WsListener {
                 project_connections
                     .lock()
                     .unwrap()
-                    .insert(project_connection_data, tx);
-                WsListener::project_connection_loop(outgoing, incoming, rx).await;
+                    .entry(project_connection_data.project_id)
+                    .or_insert(vec![])
+                    .push(ConnectionSender::new(project_connection_data.clone(), tx));
+                WebSocketListener::project_connection_loop(outgoing, incoming, rx).await;
+                project_connections
+                    .lock()
+                    .unwrap()
+                    .get_mut(&project_connection_data.project_id)
+                    .unwrap()
+                    .retain(|sender| sender.data != project_connection_data);
             }
         };
         info_!(
@@ -223,28 +264,10 @@ impl WsListener {
             raw_stream,
             move |request: &Request, response: Response| {
                 let (connection_type, response) =
-                    match WsListener::on_request(secret_key, request, response) {
+                    match WebSocketListener::on_request(secret_key, request, response) {
                         Ok(connection_type) => connection_type,
                         Err((uri, err)) => {
-                            match err.status() {
-                                StatusCode::BAD_REQUEST => error_!(
-                                    "Bad request on WebSocket connection with identifier {} from {}",
-                                    Paint::default(uri),
-                                    Paint::default(connection_id),
-                                ),
-                                StatusCode::UNAUTHORIZED => error_!(
-                                    "No authorization on WebSocket connection with identifier {} from {}",
-                                    Paint::default(uri),
-                                    Paint::default(connection_id)
-                                ),
-                                StatusCode::NOT_FOUND => error_!(
-                                    "Uri {} not found on WebSocket connection with identifier {} from {}",
-                                    Paint::default(uri),
-                                    Paint::default(connection_id),
-                                    Paint::default(&addr)
-                                ),
-                                _ => unreachable!()
-                            }     
+                            WebSocketListener::log_error(err.status(), uri, connection_id, addr);
                             return Err(err);
                         }
                     };
@@ -267,30 +290,48 @@ impl WsListener {
         request: &Request,
         response: Response,
     ) -> Result<(ConnectionType, Response), (Uri, ErrorResponse)> {
-        let session_id = WsListener::parse_cookie(secret_key, request)?;
+        let (user, session) = WebSocketListener::parse_cookie(secret_key, request)?;
         let uri_string = request.uri().to_string();
         let project_uri = "/api/v1/project/";
         if uri_string.starts_with(project_uri) {
             let project_id_str = uri_string.trim_start_matches(project_uri);
             if let Ok(project_id) = project_id_str.parse::<i32>() {
+                let conn = &mut db::establish_connection();
+                let is_project_member =
+                    match project_user_services::is_project_member(conn, &user, project_id) {
+                        Ok(is_project_member) => is_project_member,
+                        Err(_) => false,
+                    };
+                if !is_project_member {
+                    return Err(WebSocketListener::create_or_request_error(
+                        request,
+                        StatusCode::FORBIDDEN,
+                        "Forbidden error",
+                    ));
+                }
                 return Ok((
-                    ConnectionType::Project(ProjectConnectionData::new(project_id, session_id)),
+                    ConnectionType::Project(ProjectConnectionData::new(
+                        session.id, user.id, project_id,
+                    )),
                     response,
                 ));
             }
         }
-        Err(WsListener::create_or_request_error(
+        Err(WebSocketListener::create_or_request_error(
             request,
             StatusCode::NOT_FOUND,
             "Not found",
         ))
     }
-    fn parse_cookie(secret_key: Key, request: &Request) -> Result<i32, (Uri, ErrorResponse)> {
+    fn parse_cookie(
+        secret_key: Key,
+        request: &Request,
+    ) -> Result<(User, Session), (Uri, ErrorResponse)> {
         let cookie_value = match request.headers().get("cookie") {
             Some(cookie) => match cookie.to_str() {
                 Ok(value) => value.to_owned(),
                 Err(_) => {
-                    return Err(WsListener::create_or_request_error(
+                    return Err(WebSocketListener::create_or_request_error(
                         request,
                         StatusCode::UNAUTHORIZED,
                         "Unauthorized",
@@ -298,7 +339,7 @@ impl WsListener {
                 }
             },
             None => {
-                return Err(WsListener::create_or_request_error(
+                return Err(WebSocketListener::create_or_request_error(
                     request,
                     StatusCode::UNAUTHORIZED,
                     "Unauthorized",
@@ -313,7 +354,7 @@ impl WsListener {
         }
         let conn = &mut db::establish_connection();
         match authenticate!(conn, &cookies_jar.private(&secret_key)) {
-            Ok((_, session)) => Ok(session.id),
+            Ok(authentication_data) => Ok(authentication_data),
             Err(status) => {
                 let status_code = StatusCode::from_u16(status.code).unwrap();
                 let message = match status_code {
@@ -321,7 +362,7 @@ impl WsListener {
                     StatusCode::BAD_REQUEST => "Bad request",
                     _ => unreachable!(),
                 };
-                Err(WsListener::create_or_request_error(
+                Err(WebSocketListener::create_or_request_error(
                     request,
                     status_code,
                     message,
@@ -338,5 +379,31 @@ impl WsListener {
         let status = error_response.status_mut();
         *status = status_code;
         (request.uri().clone(), error_response)
+    }
+    fn log_error(status_code: StatusCode, uri: Uri, connection_id: u32, addr: &SocketAddr) -> () {
+        match status_code {
+            StatusCode::BAD_REQUEST => error_!(
+                "Bad request on WebSocket connection with identifier {} from {}",
+                Paint::default(uri),
+                Paint::default(connection_id),
+            ),
+            StatusCode::UNAUTHORIZED => error_!(
+                "No authorization on WebSocket connection with identifier {} from {}",
+                Paint::default(uri),
+                Paint::default(connection_id)
+            ),
+            StatusCode::FORBIDDEN => error_!(
+                "Insufficient permissions on WebSocket connection with identifier {} from {}",
+                Paint::default(uri),
+                Paint::default(connection_id),
+            ),
+            StatusCode::NOT_FOUND => error_!(
+                "Uri {} not found on WebSocket connection with identifier {} from {}",
+                Paint::default(uri),
+                Paint::default(connection_id),
+                Paint::default(&addr)
+            ),
+            _ => unreachable!(),
+        }
     }
 }

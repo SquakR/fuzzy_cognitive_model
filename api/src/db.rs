@@ -1,6 +1,6 @@
 use crate::utils;
-use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use diesel::PgConnection;
 
 pub fn establish_connection() -> PgConnection {
     let database_url = utils::get_env("DATABASE_URL");

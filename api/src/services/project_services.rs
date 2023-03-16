@@ -10,8 +10,8 @@ use crate::types::{
     ProjectOutType, UserOutType,
 };
 use chrono::{DateTime, Utc};
-use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use diesel::PgConnection;
 
 pub fn create_project(
     conn: &mut PgConnection,

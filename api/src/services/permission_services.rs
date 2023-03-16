@@ -1,10 +1,10 @@
-use crate::models::{Permission, ProjectUserPermission, ProjectUserStatusValue, User};
+use crate::models::{Permission, Project, ProjectUserPermission, ProjectUserStatusValue, User};
 use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{permissions, project_user_permissions};
 use crate::services::project_user_services;
 use crate::types::PermissionType;
-use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use diesel::PgConnection;
 
 pub fn set_project_user_permissions(
     conn: &mut PgConnection,
@@ -93,6 +93,14 @@ pub fn get_permission_keys(conn: &mut PgConnection) -> ServiceResult<Vec<String>
         .into_iter()
         .map(|permission| permission.key)
         .collect())
+}
+
+pub fn can_view_project(
+    conn: &mut PgConnection,
+    user: &User,
+    project: &Project,
+) -> ServiceResult<bool> {
+    Ok(project.is_public || project_user_services::is_project_member(conn, user, project.id)?)
 }
 
 pub fn can_change_project(
