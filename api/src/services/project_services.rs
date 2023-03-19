@@ -147,7 +147,7 @@ pub fn change_project(
 ) -> ServiceResult<Project> {
     let project = find_project_by_id(conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
-    permission_services::can_change_project(conn, &project, user.id)?;
+    permission_services::can_change_project(conn, &project, user.id, project_in.is_archived)?;
     let project_plugins =
         plugin_services::find_project_plugins(conn, project_id).to_service_result()?;
     for project_plugin in project_plugins {

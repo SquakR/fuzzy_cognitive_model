@@ -126,13 +126,18 @@ pub fn can_change_project(
     conn: &mut PgConnection,
     project: &Project,
     user_id: i32,
+    is_archived_in: bool,
 ) -> ServiceResult<()> {
     if !can_change_project_base(conn, project.id, user_id)? {
         return Err(AppError::ForbiddenError(String::from(
             "change_project_forbidden_error",
         )));
     }
-    project_services::is_not_archived(project)
+    if is_archived_in {
+        project_services::is_not_archived(project)
+    } else {
+        Ok(())
+    }
 }
 
 pub fn can_change_plugins_base(
