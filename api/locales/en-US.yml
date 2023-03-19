@@ -36,11 +36,14 @@ view_project_forbidden_error: "Insufficient permissions to view the project."
 view_project_users_forbidden_error: "Insufficient permissions to view the project users."
 
 change_project_forbidden_error: "Insufficient permissions to change the project."
+change_project_node_value_type_error: "Unable to change node value type due to plugin: `%{plugin_name}`."
+change_project_arc_value_type_error: "Unable to change arc value type due to plugin: `%{plugin_name}`."
 
 delete_project_forbidden_error: "Insufficient permissions to delete the project."
 
 change_plugins_forbidden_error: "Insufficient permissions to change plugins."
-invalid_plugin_error: "Invalid plugin: `%{plugin}`."
+invalid_plugin_error: "Invalid plugin: `%{plugin_name}`."
+incompatible_plugin_error: "The `%{plugin_name}` plugin is not compatible with the project."
 
 change_permissions_forbidden_error: "Insufficient permissions to change permissions."
 invalid_permission_error: "Invalid permission: `%{permission}`."

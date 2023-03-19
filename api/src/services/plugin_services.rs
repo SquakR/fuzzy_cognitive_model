@@ -1,7 +1,7 @@
-use crate::models::{Plugin, ProjectPlugin, User};
+use crate::models::{Plugin, Project, ProjectPlugin, User};
 use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{plugins, project_plugins, projects};
-use crate::services::permission_services;
+use crate::services::{permission_services, project_services};
 use crate::types::PluginType;
 use diesel::prelude::*;
 use diesel::PgConnection;
@@ -17,19 +17,9 @@ pub fn set_project_plugins(
             "change_plugins_forbidden_error",
         )));
     }
-    let all_plugins = get_plugin_names(conn)?;
-    if let Some(index) = plugins
-        .iter()
-        .position(|plugin| !all_plugins.contains(plugin))
-    {
-        return Err(AppError::ValidationError(Box::new(move |locale| {
-            t!(
-                "invalid_plugin_error",
-                locale = locale,
-                plugin = &plugins[index]
-            )
-        })));
-    }
+    let project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    check_plugins(conn, &project, &plugins)?;
     conn.transaction(|conn| {
         delete_project_plugins(conn, project_id)?;
         let mut insert_rows = vec![];
@@ -79,11 +69,66 @@ pub fn find_project_plugins(conn: &mut PgConnection, project_id: i32) -> QueryRe
         .get_results::<Plugin>(conn)
 }
 
+fn check_plugins(
+    conn: &mut PgConnection,
+    project: &Project,
+    plugins: &[String],
+) -> ServiceResult<()> {
+    let all_plugins = get_plugins(conn).to_service_result()?;
+    let all_plugin_names = all_plugins
+        .iter()
+        .map(|plugin| plugin.name.as_str())
+        .collect::<Vec<&str>>();
+    if let Some(index) = plugins
+        .iter()
+        .position(|plugin_name| !all_plugin_names.contains(&plugin_name.as_str()))
+    {
+        let plugin_name = plugins[index].to_owned();
+        return Err(AppError::ValidationError(Box::new(move |locale| {
+            t!(
+                "invalid_plugin_error",
+                locale = locale,
+                plugin_name = &plugin_name
+            )
+        })));
+    }
+    for plugin_name in plugins {
+        let plugin = all_plugins
+            .iter()
+            .find(|plugin| plugin.name == *plugin_name)
+            .unwrap();
+        let mut incompatible = false;
+        if let Some(node_value_type) = &plugin.node_value_type {
+            if project.node_value_type != *node_value_type {
+                incompatible = true;
+            }
+        }
+        if let Some(arc_value_type) = &plugin.arc_value_type {
+            if project.arc_value_type != *arc_value_type {
+                incompatible = true
+            }
+        }
+        if incompatible {
+            let plugin_name = plugin_name.to_owned();
+            return Err(AppError::ValidationError(Box::new(move |locale| {
+                t!(
+                    "incompatible_plugin_error",
+                    locale = locale,
+                    plugin_name = &plugin_name
+                )
+            })));
+        }
+    }
+    Ok(())
+}
+
 impl From<Plugin> for PluginType {
     fn from(plugin: Plugin) -> Self {
         PluginType {
             name: plugin.name,
             description: plugin.description,
+            node_value_type: plugin.node_value_type,
+            arc_value_type: plugin.arc_value_type,
         }
     }
 }

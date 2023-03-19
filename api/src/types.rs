@@ -1,4 +1,4 @@
-use crate::models::ProjectUserStatusValue;
+use crate::models::{ArcValueType, NodeValueType, ProjectUserStatusValue};
 use crate::request::DateTimeWrapper;
 use chrono::{DateTime, Utc};
 use rocket::form::FromForm;
@@ -203,6 +203,10 @@ pub struct ProjectOutType {
     pub created_at: DateTime<Utc>,
     /// Project update time
     pub updated_at: DateTime<Utc>,
+    /// Project node value type
+    pub node_value_type: NodeValueType,
+    /// Project arc value type
+    pub arc_value_type: ArcValueType,
     /// Project plugins
     pub plugins: Vec<String>,
 }
@@ -219,6 +223,10 @@ pub struct ProjectInType {
     pub is_public: bool,
     /// Is project archived
     pub is_archived: bool,
+    /// Project node value type
+    pub node_value_type: NodeValueType,
+    /// Project arc value type
+    pub arc_value_type: ArcValueType,
 }
 
 #[derive(JsonSchema, FromFormField)]
@@ -240,6 +248,10 @@ pub struct PluginType {
     pub name: String,
     /// Plugin description
     pub description: String,
+    /// Plugin node value type
+    pub node_value_type: Option<NodeValueType>,
+    /// Plugin arc value type
+    pub arc_value_type: Option<ArcValueType>,
 }
 
 /// Type of project permission

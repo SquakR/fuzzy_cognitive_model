@@ -36,11 +36,14 @@ view_project_forbidden_error: "Недостаточно прав для прос
 view_project_users_forbidden_error: "Недостаточно прав для просмотра пользователей проекта."
 
 change_project_forbidden_error: "Недостаточно прав для изменения проекта."
+change_project_node_value_type_error: "Невозможно изменить тип значения вершины из-за плагина: `%{plugin_name}`."
+change_project_arc_value_type_error: "Невозможно изменить тип значения дуги из-за плагина: `%{plugin_name}`."
 
 delete_project_forbidden_error: "Недостаточно прав для удаления проекта."
 
 change_plugins_forbidden_error: "Недостаточно прав для изменения плагинов."
-invalid_plugin_error: "Неверный плагин: `%{plugin}`."
+invalid_plugin_error: "Неверный плагин: `%{plugin_name}`."
+incompatible_plugin_error: "`%{plugin_name}` плагин не совместим с проектом."
 
 change_permissions_forbidden_error: "Недостаточно прав для изменения разрешений."
 invalid_permission_error: "Неверное разрешение: `%{permission}`."

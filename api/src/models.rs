@@ -1,12 +1,12 @@
 use crate::schema::{
-    email_confirmations, password_resets, permissions, plugins, project_plugins,
+    arcs, email_confirmations, nodes, password_resets, permissions, plugins, project_plugins,
     project_user_permissions, project_user_statuses, project_users, projects, sessions, users,
 };
 use chrono::{DateTime, Utc};
 use diesel::{Associations, Identifiable, Queryable};
 use ipnetwork::IpNetwork;
 use schemars::JsonSchema;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Queryable, Identifiable, Clone)]
 pub struct User {
@@ -67,6 +67,8 @@ pub struct Project {
     pub is_archived: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub node_value_type: NodeValueType,
+    pub arc_value_type: ArcValueType,
 }
 
 #[derive(Queryable, Identifiable, Associations)]
@@ -122,6 +124,8 @@ pub struct ProjectUserPermission {
 pub struct Plugin {
     pub name: String,
     pub description: String,
+    pub node_value_type: Option<NodeValueType>,
+    pub arc_value_type: Option<ArcValueType>,
 }
 
 #[derive(Queryable, Identifiable)]
@@ -132,4 +136,49 @@ pub struct ProjectPlugin {
     pub project_id: i32,
     pub plugin_name: String,
     pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, PartialEq, diesel_derive_enum::DbEnum, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+#[ExistingTypePath = "crate::schema::sql_types::NodeValueType"]
+pub enum NodeValueType {
+    None,
+    FromZeroToOne,
+}
+
+#[derive(Queryable, Identifiable)]
+#[diesel(belongs_to(Project))]
+pub struct Node {
+    pub id: i32,
+    pub name: String,
+    pub description: String,
+    pub value: Option<f64>,
+    pub project_id: i32,
+    pub x_position: f64,
+    pub y_position: f64,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, PartialEq, diesel_derive_enum::DbEnum, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+#[ExistingTypePath = "crate::schema::sql_types::ArcValueType"]
+pub enum ArcValueType {
+    Symbolic,
+    FromMinusOneToOne,
+}
+
+#[derive(Queryable, Identifiable)]
+#[diesel(belongs_to(Project))]
+#[diesel(belongs_to(Node, foreign_key = source_id))]
+#[diesel(belongs_to(Node, foreign_key = target_id))]
+pub struct Arc {
+    pub id: i32,
+    pub description: String,
+    pub value: String,
+    pub source_id: i32,
+    pub target_id: i32,
+    pub project_id: i32,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
