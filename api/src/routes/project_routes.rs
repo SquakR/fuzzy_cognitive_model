@@ -9,6 +9,7 @@ use crate::types::{
     IntervalInType, PaginationInType, PaginationOutType, PermissionType, PluginType, ProjectInType,
     ProjectOutType, ProjectUserType, ProjectsInType,
 };
+use crate::web_socket::WebSocketProjectService;
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
 
@@ -301,14 +302,18 @@ pub fn exclude_user(
 /// Delete project
 #[openapi(tag = "projects")]
 #[delete("/project/<project_id>")]
-pub fn delete_project(
+pub async fn delete_project(
     project_id: i32,
     user: User,
     locale: UserLocale,
+    web_socket_project_service: WebSocketProjectService,
 ) -> PathResult<(), UserLocale> {
     let conn = &mut db::establish_connection();
     if let Err(app_error) = project_services::delete_project(conn, &user, project_id) {
         return PathResult::new(Err(app_error), locale);
     }
+    web_socket_project_service
+        .disconnect_project(project_id)
+        .await;
     PathResult::new(Ok(()), locale)
 }

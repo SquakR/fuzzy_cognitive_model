@@ -56,4 +56,22 @@ impl WebSocketProjectService {
             }
         }
     }
+    pub async fn disconnect_project(&self, project_id: i32) -> () {
+        for project_connection in self
+            .project_connections
+            .lock()
+            .await
+            .get_mut(&project_id)
+            .unwrap_or(&mut vec![])
+        {
+            project_connection
+                .sender
+                .send(Message::Close(Some(CloseFrame {
+                    code: CloseCode::Normal,
+                    reason: "The project has been deleted.".into(),
+                })))
+                .await
+                .unwrap()
+        }
+    }
 }
