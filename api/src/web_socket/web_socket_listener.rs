@@ -25,7 +25,8 @@ use std::{fmt, thread};
 use tokio::sync::Mutex;
 use tokio_tungstenite::tungstenite::handshake::server::{ErrorResponse, Request, Response};
 use tokio_tungstenite::tungstenite::http::StatusCode;
-use tokio_tungstenite::tungstenite::protocol::Message;
+use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
+use tokio_tungstenite::tungstenite::protocol::{CloseFrame, Message};
 use tokio_tungstenite::WebSocketStream;
 
 pub struct WebSocketListener {
@@ -41,7 +42,10 @@ impl fairing::Fairing for WebSocketListener {
     fn info(&self) -> fairing::Info {
         fairing::Info {
             name: "WebSocket listener",
-            kind: fairing::Kind::Ignite | fairing::Kind::Liftoff | fairing::Kind::Request,
+            kind: fairing::Kind::Ignite
+                | fairing::Kind::Liftoff
+                | fairing::Kind::Request
+                | fairing::Kind::Shutdown,
         }
     }
     async fn on_ignite(&self, rocket: Rocket<Build>) -> fairing::Result {
@@ -65,6 +69,20 @@ impl fairing::Fairing for WebSocketListener {
     async fn on_request(&self, request: &mut RocketRequest<'_>, _: &mut Data<'_>) {
         let project_service = self.project_service.clone();
         request.local_cache(move || project_service);
+    }
+    async fn on_shutdown(&self, _: &Rocket<Orbit>) {
+        for (_, senders) in self.project_connections.lock().await.iter_mut() {
+            for connection_sender in senders.iter_mut() {
+                connection_sender
+                    .sender
+                    .send(Message::Close(Some(CloseFrame {
+                        code: CloseCode::Away,
+                        reason: "The server has been shut down.".into(),
+                    })))
+                    .await
+                    .unwrap();
+            }
+        }
     }
 }
 
