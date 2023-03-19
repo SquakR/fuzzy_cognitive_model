@@ -12,6 +12,7 @@ use crate::types::{
     ChangeLanguageType, ChangePasswordType, CredentialsType, PaginationInType, PaginationOutType,
     ResetPasswordType, SessionType, UserInChangeType, UserInCreateType, UserOutType,
 };
+use crate::web_socket::WebSocketProjectService;
 use ipnetwork::IpNetwork;
 use rocket::form::Form;
 use rocket::fs::NamedFile;
@@ -134,23 +135,27 @@ pub fn change_me_language(
 /// Change current user password
 #[openapi(tag = "users")]
 #[patch("/me/password", format = "json", data = "<change_password>")]
-pub fn change_me_password(
+pub async fn change_me_password(
     change_password: Json<ChangePasswordType>,
     cookies_jar: &CookieJar<'_>,
     user: User,
     locale: UserLocale,
+    web_socket_project_service: WebSocketProjectService,
 ) -> PathResult<(), UserLocale> {
     let session_id = match get_session_id!(cookies_jar) {
         Some(session_id) => session_id,
         None => return PathResult::new(Err(AppError::InternalServerError), locale),
     };
     let conn = &mut db::establish_connection();
-    if let Err(app_error) =
-        password_services::change_user_password(conn, &user, change_password.into_inner())
+    if let Err(app_error) = password_services::change_user_password(
+        conn,
+        web_socket_project_service,
+        &user,
+        session_id,
+        change_password.into_inner(),
+    )
+    .await
     {
-        return PathResult::new(Err(app_error), locale);
-    }
-    if let Err(app_error) = user_services::sign_out(conn, &user, session_id) {
         return PathResult::new(Err(app_error), locale);
     }
     cookies::remove_session_id(cookies_jar);
@@ -218,7 +223,8 @@ pub fn sign_in(
         SocketAddr::V6(v6) => IpNetwork::from(IpAddr::V6(v6.ip().clone())),
     };
     let session =
-        match user_services::sign_in(conn, credentials.into_inner(), &ip_address, &user_agent.0) {
+        match session_services::sign_in(conn, credentials.into_inner(), &ip_address, &user_agent.0)
+        {
             Ok(session) => session,
             Err(app_error) => return PathResult::new(Err(app_error), locale),
         };
@@ -227,19 +233,26 @@ pub fn sign_in(
     PathResult::new(Ok(Json(session_type)), locale)
 }
 
-/// Deactivate session
+/// Deactivate multiple sessions
 #[openapi(tag = "users")]
 #[patch("/sign_out_multiple", format = "json", data = "<session_ids>")]
-pub fn sign_out_multiple(
+pub async fn sign_out_multiple(
     session_ids: Json<Vec<i32>>,
     user: User,
     locale: UserLocale,
+    web_socket_project_service: WebSocketProjectService,
 ) -> PathResult<(), UserLocale> {
     let conn = &mut db::establish_connection();
-    for session_id in session_ids.into_inner() {
-        if let Err(app_error) = user_services::sign_out(conn, &user, session_id) {
-            return PathResult::new(Err(app_error), locale);
-        }
+    let session_ids = session_ids.into_inner();
+    if let Err(app_error) = session_services::check_user_sessions(conn, &user, &session_ids) {
+        return PathResult::new(Err(app_error), locale);
+    }
+    if let Err(app_error) =
+        session_services::sign_out(conn, web_socket_project_service, &session_ids)
+            .await
+            .to_service_result()
+    {
+        return PathResult::new(Err(app_error), locale);
     }
     PathResult::new(Ok(()), locale)
 }
@@ -247,17 +260,21 @@ pub fn sign_out_multiple(
 /// Deactivate current session
 #[openapi(tag = "users")]
 #[patch("/sign_out")]
-pub fn sign_out(
+pub async fn sign_out(
     cookies_jar: &CookieJar<'_>,
-    user: User,
     locale: UserLocale,
+    web_socket_project_service: WebSocketProjectService,
 ) -> PathResult<(), UserLocale> {
     let session_id = match get_session_id!(cookies_jar) {
         Some(session_id) => session_id,
         None => return PathResult::new(Err(AppError::InternalServerError), locale),
     };
     let conn = &mut db::establish_connection();
-    if let Err(app_error) = user_services::sign_out(conn, &user, session_id) {
+    if let Err(app_error) =
+        session_services::sign_out(conn, web_socket_project_service, &[session_id])
+            .await
+            .to_service_result()
+    {
         return PathResult::new(Err(app_error), locale);
     }
     cookies::remove_session_id(cookies_jar);

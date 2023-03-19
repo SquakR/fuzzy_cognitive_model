@@ -1,7 +1,9 @@
 use crate::models::{Session, User};
 use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::sessions;
-use crate::types::{DeviceType, OSType, ProductType, SessionType};
+use crate::services::{password_services, user_services};
+use crate::types::{CredentialsType, DeviceType, OSType, ProductType, SessionType};
+use crate::web_socket::WebSocketProjectService;
 use diesel::prelude::*;
 use diesel::PgConnection;
 use ipnetwork::IpNetwork;
@@ -33,6 +35,42 @@ macro_rules! authenticate {
         }
         result
     }};
+}
+
+pub fn sign_in(
+    conn: &mut PgConnection,
+    credentials: CredentialsType,
+    ip_address: &IpNetwork,
+    user_agent: &str,
+) -> ServiceResult<Session> {
+    let user_result = user_services::find_user_by_username(conn, &credentials.username)
+        .to_service_result_find(String::from("user_not_found_error"));
+    let user = match user_result {
+        Ok(user) => user,
+        Err(_) => {
+            return Err(AppError::ValidationError(Box::new(|locale| {
+                t!("sign_in_credentials_error", locale = locale)
+            })));
+        }
+    };
+    if !password_services::verify_password(&credentials.password, &user.password) {
+        return Err(AppError::ValidationError(Box::new(|locale| {
+            t!("sign_in_credentials_error", locale = locale)
+        })));
+    }
+    create_session(conn, user.id, ip_address, user_agent).to_service_result()
+}
+
+pub async fn sign_out(
+    conn: &mut PgConnection,
+    web_socket_project_service: WebSocketProjectService,
+    session_ids: &[i32],
+) -> QueryResult<Vec<Session>> {
+    let sessions = deactivate_user_sessions(conn, session_ids)?;
+    web_socket_project_service
+        .disconnect_sessions(session_ids)
+        .await;
+    Ok(sessions)
 }
 
 pub fn create_session(
@@ -76,28 +114,36 @@ pub fn deactivate_all_user_sessions(
         .get_results::<Session>(conn)
 }
 
-pub fn deactivate_user_session(
+pub fn check_user_sessions(
     conn: &mut PgConnection,
     user: &User,
-    session_id: i32,
-) -> ServiceResult<Session> {
-    let session = find_session_by_id(conn, session_id)
-        .to_service_result_find(String::from("session_not_found_error"))?;
-    if !session.is_active {
-        deactivate_all_user_sessions(conn, user.id).to_service_result()?;
-        return Err(AppError::ValidationError(Box::new(|locale| {
-            t!("session_is_not_active_error", locale = locale)
-        })));
+    session_ids: &[i32],
+) -> ServiceResult<()> {
+    for session_id in session_ids {
+        let session = find_session_by_id(conn, *session_id)
+            .to_service_result_find(String::from("session_not_found_error"))?;
+        if !session.is_active {
+            deactivate_all_user_sessions(conn, user.id).to_service_result()?;
+            return Err(AppError::ValidationError(Box::new(|locale| {
+                t!("session_is_not_active_error", locale = locale)
+            })));
+        }
+        if session.user_id != user.id {
+            return Err(AppError::ForbiddenError(String::from(
+                "other_user_session_forbidden_error",
+            )));
+        }
     }
-    if session.user_id != user.id {
-        return Err(AppError::ForbiddenError(String::from(
-            "other_user_session_forbidden_error",
-        )));
-    }
-    diesel::update(sessions::table.filter(sessions::id.eq(session_id)))
+    Ok(())
+}
+
+pub fn deactivate_user_sessions(
+    conn: &mut PgConnection,
+    session_ids: &[i32],
+) -> QueryResult<Vec<Session>> {
+    diesel::update(sessions::table.filter(sessions::id.eq_any(session_ids)))
         .set(sessions::is_active.eq(false))
-        .get_result::<Session>(conn)
-        .to_service_result()
+        .get_results::<Session>(conn)
 }
 
 impl From<UserAgentDevice<'_>> for DeviceType {

@@ -10,14 +10,17 @@ use rocket_okapi::openapi;
 /// Get active users
 #[openapi(tag = "model")]
 #[get("/project/<project_id>/active_users")]
-pub fn get_active_users(
+pub async fn get_active_users(
     project_id: i32,
     user: User,
     locale: UserLocale,
     web_socket_project_service: WebSocketProjectService,
 ) -> PathResult<Json<Vec<UserOutType>>, UserLocale> {
     let conn = &mut db::establish_connection();
-    let users = match web_socket_project_service.get_active_users(conn, &user, project_id) {
+    let users = match web_socket_project_service
+        .get_active_users(conn, &user, project_id)
+        .await
+    {
         Ok(users) => users
             .into_iter()
             .map(UserOutType::from)

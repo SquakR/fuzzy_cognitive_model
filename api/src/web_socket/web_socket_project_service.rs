@@ -3,6 +3,9 @@ use crate::models::User;
 use crate::response::{ServiceResult, ToServiceResult};
 use crate::services::{permission_services, project_services, user_services};
 use diesel::PgConnection;
+use futures_util::SinkExt;
+use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
+use tokio_tungstenite::tungstenite::protocol::{CloseFrame, Message};
 
 #[derive(Clone)]
 pub struct WebSocketProjectService {
@@ -15,7 +18,7 @@ impl WebSocketProjectService {
             project_connections,
         }
     }
-    pub fn get_active_users(
+    pub async fn get_active_users(
         &self,
         conn: &mut PgConnection,
         user: &User,
@@ -28,12 +31,29 @@ impl WebSocketProjectService {
             conn,
             self.project_connections
                 .lock()
-                .unwrap()
+                .await
                 .get(&project_id)
                 .unwrap_or(&vec![])
                 .iter()
                 .map(|sender| sender.data.user_id),
         )
         .to_service_result()
+    }
+    pub async fn disconnect_sessions(&self, session_ids: &[i32]) -> () {
+        for (_, senders) in self.project_connections.lock().await.iter_mut() {
+            for connection_sender in senders
+                .iter_mut()
+                .filter(|sender| session_ids.contains(&sender.data.session_id))
+            {
+                connection_sender
+                    .sender
+                    .send(Message::Close(Some(CloseFrame {
+                        code: CloseCode::Normal,
+                        reason: "The user session has ended.".into(),
+                    })))
+                    .await
+                    .unwrap();
+            }
+        }
     }
 }

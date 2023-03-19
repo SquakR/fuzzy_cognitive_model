@@ -4,17 +4,15 @@ use crate::models::{Session, User};
 use crate::pagination::Paginate;
 use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::users;
-use crate::services::{email_confirmation_services, password_services, session_services};
+use crate::services::{email_confirmation_services, password_services};
 use crate::storage::Storage;
 use crate::types::{
-    CredentialsType, PaginationInType, PaginationOutType, UserInChangeType, UserInCreateType,
-    UserOutType,
+    PaginationInType, PaginationOutType, UserInChangeType, UserInCreateType, UserOutType,
 };
 use diesel::dsl::sql;
 use diesel::pg::{Pg, PgConnection};
 use diesel::prelude::*;
 use diesel::sql_types::{Bool, Text};
-use ipnetwork::IpNetwork;
 
 pub async fn create_user(
     conn: &mut PgConnection,
@@ -251,34 +249,6 @@ pub fn change_user_language(
     } else {
         Ok(user)
     }
-}
-
-pub fn sign_in(
-    conn: &mut PgConnection,
-    credentials: CredentialsType,
-    ip_address: &IpNetwork,
-    user_agent: &str,
-) -> ServiceResult<Session> {
-    let user_result = find_user_by_username(conn, &credentials.username)
-        .to_service_result_find(String::from("user_not_found_error"));
-    let user = match user_result {
-        Ok(user) => user,
-        Err(_) => {
-            return Err(AppError::ValidationError(Box::new(|locale| {
-                t!("sign_in_credentials_error", locale = locale)
-            })));
-        }
-    };
-    if !password_services::verify_password(&credentials.password, &user.password) {
-        return Err(AppError::ValidationError(Box::new(|locale| {
-            t!("sign_in_credentials_error", locale = locale)
-        })));
-    }
-    session_services::create_session(conn, user.id, ip_address, user_agent).to_service_result()
-}
-
-pub fn sign_out(conn: &mut PgConnection, user: &User, session_id: i32) -> ServiceResult<Session> {
-    session_services::deactivate_user_session(conn, user, session_id)
 }
 
 fn find_exist_user(

@@ -20,8 +20,9 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::mpsc;
 use std::sync::mpsc::channel;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::{fmt, thread};
+use tokio::sync::Mutex;
 use tokio_tungstenite::tungstenite::handshake::server::{ErrorResponse, Request, Response};
 use tokio_tungstenite::tungstenite::http::StatusCode;
 use tokio_tungstenite::tungstenite::protocol::Message;
@@ -199,14 +200,14 @@ impl WebSocketListener {
             ConnectionType::Project(project_connection_data) => {
                 project_connections
                     .lock()
-                    .unwrap()
+                    .await
                     .entry(project_connection_data.project_id)
                     .or_insert(vec![])
                     .push(ConnectionSender::new(project_connection_data.clone(), tx));
                 WebSocketListener::project_connection_loop(outgoing, incoming, rx).await;
                 project_connections
                     .lock()
-                    .unwrap()
+                    .await
                     .get_mut(&project_connection_data.project_id)
                     .unwrap()
                     .retain(|sender| sender.data != project_connection_data);
