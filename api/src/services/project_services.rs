@@ -145,11 +145,9 @@ pub fn change_project(
     project_id: i32,
     project_in: ProjectInType,
 ) -> ServiceResult<Project> {
-    if !permission_services::can_change_project(conn, project_id, user.id)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "change_project_forbidden_error",
-        )));
-    }
+    let project = find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_change_project(conn, &project, user.id)?;
     let project_plugins =
         plugin_services::find_project_plugins(conn, project_id).to_service_result()?;
     for project_plugin in project_plugins {
@@ -191,14 +189,19 @@ pub fn change_project(
 }
 
 pub fn delete_project(conn: &mut PgConnection, user: &User, project_id: i32) -> ServiceResult<()> {
-    if !permission_services::can_delete_project(conn, project_id, user.id)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "delete_project_forbidden_error",
-        )));
-    }
+    permission_services::can_delete_project(conn, project_id, user.id)?;
     diesel::delete(projects::table.filter(projects::id.eq(project_id)))
         .execute(conn)
         .to_service_result()?;
+    Ok(())
+}
+
+pub fn is_not_archived(project: &Project) -> ServiceResult<()> {
+    if project.is_archived {
+        return Err(AppError::ValidationError(Box::new(move |locale| {
+            t!("change_archived_project_error", locale = locale)
+        })));
+    }
     Ok(())
 }
 

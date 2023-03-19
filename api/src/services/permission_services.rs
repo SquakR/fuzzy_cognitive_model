@@ -1,7 +1,7 @@
 use crate::models::{Permission, Project, ProjectUserPermission, ProjectUserStatusValue, User};
 use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{permissions, project_user_permissions};
-use crate::services::project_user_services;
+use crate::services::{project_services, project_user_services};
 use crate::types::PermissionType;
 use diesel::prelude::*;
 use diesel::PgConnection;
@@ -13,11 +13,9 @@ pub fn set_project_user_permissions(
     user_id: i32,
     permissions: Vec<String>,
 ) -> ServiceResult<Vec<String>> {
-    if !can_change_permissions(conn, project_id, user.id)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "change_permissions_forbidden_error",
-        )));
-    }
+    let project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    can_change_permissions(conn, &project, user.id)?;
     let all_permissions = get_permission_keys(conn)?;
     if let Some(index) = permissions
         .iter()
@@ -95,15 +93,28 @@ pub fn get_permission_keys(conn: &mut PgConnection) -> ServiceResult<Vec<String>
         .collect())
 }
 
-pub fn can_view_project(
+pub fn can_view_project_base(
     conn: &mut PgConnection,
-    user: &User,
     project: &Project,
+    user: &User,
 ) -> ServiceResult<bool> {
     Ok(project.is_public || project_user_services::is_project_member(conn, user, project.id)?)
 }
 
-pub fn can_change_project(
+pub fn can_view_project(
+    conn: &mut PgConnection,
+    project: &Project,
+    user: &User,
+) -> ServiceResult<()> {
+    if !can_view_project_base(conn, project, user)? {
+        return Err(AppError::ForbiddenError(String::from(
+            "view_project_forbidden_error",
+        )));
+    }
+    Ok(())
+}
+
+pub fn can_change_project_base(
     conn: &mut PgConnection,
     project_id: i32,
     user_id: i32,
@@ -111,7 +122,20 @@ pub fn can_change_project(
     has_permission(conn, project_id, user_id, "can_change_project")
 }
 
-pub fn can_change_plugins(
+pub fn can_change_project(
+    conn: &mut PgConnection,
+    project: &Project,
+    user_id: i32,
+) -> ServiceResult<()> {
+    if !can_change_project_base(conn, project.id, user_id)? {
+        return Err(AppError::ForbiddenError(String::from(
+            "change_project_forbidden_error",
+        )));
+    }
+    project_services::is_not_archived(project)
+}
+
+pub fn can_change_plugins_base(
     conn: &mut PgConnection,
     project_id: i32,
     user_id: i32,
@@ -119,7 +143,20 @@ pub fn can_change_plugins(
     has_permission(conn, project_id, user_id, "can_change_plugins")
 }
 
-pub fn can_change_users(
+pub fn can_change_plugins(
+    conn: &mut PgConnection,
+    project: &Project,
+    user_id: i32,
+) -> ServiceResult<()> {
+    if !can_change_plugins_base(conn, project.id, user_id)? {
+        return Err(AppError::ForbiddenError(String::from(
+            "change_plugins_forbidden_error",
+        )));
+    }
+    project_services::is_not_archived(project)
+}
+
+pub fn can_change_users_base(
     conn: &mut PgConnection,
     project_id: i32,
     user_id: i32,
@@ -127,7 +164,20 @@ pub fn can_change_users(
     has_permission(conn, project_id, user_id, "can_change_users")
 }
 
-pub fn can_change_permissions(
+pub fn can_change_users(
+    conn: &mut PgConnection,
+    project: &Project,
+    user_id: i32,
+) -> ServiceResult<()> {
+    if !can_change_users_base(conn, project.id, user_id)? {
+        return Err(AppError::ForbiddenError(String::from(
+            "invite_user_forbidden_error",
+        )));
+    }
+    project_services::is_not_archived(project)
+}
+
+pub fn can_change_permissions_base(
     conn: &mut PgConnection,
     project_id: i32,
     user_id: i32,
@@ -135,12 +185,38 @@ pub fn can_change_permissions(
     has_permission(conn, project_id, user_id, "can_change_permissions")
 }
 
-pub fn can_delete_project(
+pub fn can_change_permissions(
+    conn: &mut PgConnection,
+    project: &Project,
+    user_id: i32,
+) -> ServiceResult<()> {
+    if !can_change_permissions_base(conn, project.id, user_id)? {
+        return Err(AppError::ForbiddenError(String::from(
+            "change_permissions_forbidden_error",
+        )));
+    }
+    project_services::is_not_archived(project)
+}
+
+pub fn can_delete_project_base(
     conn: &mut PgConnection,
     project_id: i32,
     user_id: i32,
 ) -> ServiceResult<bool> {
     has_permission(conn, project_id, user_id, "can_delete_project")
+}
+
+pub fn can_delete_project(
+    conn: &mut PgConnection,
+    project_id: i32,
+    user_id: i32,
+) -> ServiceResult<()> {
+    if !can_delete_project_base(conn, project_id, user_id)? {
+        return Err(AppError::ForbiddenError(String::from(
+            "delete_project_forbidden_error",
+        )));
+    }
+    Ok(())
 }
 
 fn has_permission(

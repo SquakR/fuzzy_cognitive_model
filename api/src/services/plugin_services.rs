@@ -12,13 +12,9 @@ pub fn set_project_plugins(
     project_id: i32,
     plugins: Vec<String>,
 ) -> ServiceResult<Vec<String>> {
-    if !permission_services::can_change_plugins(conn, project_id, user.id)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "change_plugins_forbidden_error",
-        )));
-    }
     let project = project_services::find_project_by_id(conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_change_plugins(conn, &project, user.id)?;
     check_plugins(conn, &project, &plugins)?;
     conn.transaction(|conn| {
         delete_project_plugins(conn, project_id)?;

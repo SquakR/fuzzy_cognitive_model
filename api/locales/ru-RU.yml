@@ -39,6 +39,8 @@ change_project_forbidden_error: "Недостаточно прав для изм
 change_project_node_value_type_error: "Невозможно изменить тип значения вершины из-за плагина: `%{plugin_name}`."
 change_project_arc_value_type_error: "Невозможно изменить тип значения дуги из-за плагина: `%{plugin_name}`."
 
+change_archived_project_error: "Невозможно изменить архивированный проект."
+
 delete_project_forbidden_error: "Недостаточно прав для удаления проекта."
 
 change_plugins_forbidden_error: "Недостаточно прав для изменения плагинов."

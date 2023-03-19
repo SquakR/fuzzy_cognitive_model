@@ -105,11 +105,7 @@ pub fn paginate_project_users(
 ) -> ServiceResult<PaginationOutType<ProjectUserType>> {
     let project = project_services::find_project_by_id(conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
-    if !permission_services::can_view_project(conn, user, &project)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "view_project_forbidden_error",
-        )));
-    }
+    permission_services::can_view_project(conn, &project, user)?;
     let statuses = statuses.unwrap_or(vec![
         ProjectUserStatusValue::Creator,
         ProjectUserStatusValue::Member,
@@ -120,7 +116,7 @@ pub fn paginate_project_users(
             ProjectUserStatusValue::Creator | ProjectUserStatusValue::Member => {}
             _ => {
                 can_change_users = Some(can_change_users.unwrap_or(
-                    permission_services::can_change_users(conn, project_id, user.id)?,
+                    permission_services::can_change_users_base(conn, project_id, user.id)?,
                 ));
                 if !can_change_users.unwrap() {
                     return Err(AppError::ForbiddenError(String::from(
@@ -158,11 +154,9 @@ pub fn invite_user(
     project_id: i32,
     user_id: i32,
 ) -> ServiceResult<(ProjectUser, ProjectUserStatus)> {
-    if !permission_services::can_change_users(conn, project_id, user.id)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "invite_user_forbidden_error",
-        )));
-    }
+    let project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_change_users(conn, &project, user.id)?;
     let project_user_result = find_project_user(conn, project_id, user_id)
         .optional()
         .to_service_result()?;
@@ -214,11 +208,9 @@ pub fn cancel_invitation(
     project_id: i32,
     user_id: i32,
 ) -> ServiceResult<ProjectUserStatus> {
-    if !permission_services::can_change_users(conn, project_id, user.id)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "cancel_invitation_forbidden_error",
-        )));
-    }
+    let project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_change_users(conn, &project, user.id)?;
     let project_user = find_project_user(conn, project_id, user_id)
         .to_service_result_find(String::from("project_user_not_found_error"))?;
     let last_status = find_last_status_by_project_user(conn, &project_user).to_service_result()?;
@@ -240,6 +232,9 @@ pub fn respond_to_invitation(
     project_id: i32,
     join: bool,
 ) -> ServiceResult<ProjectUserStatus> {
+    let project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    project_services::is_not_archived(&project)?;
     let project_user = find_project_user(conn, project_id, user.id)
         .to_service_result_find(String::from("project_user_not_found_error"))?;
     let last_status = find_last_status_by_project_user(conn, &project_user).to_service_result()?;
@@ -264,6 +259,9 @@ pub fn leave_project(
     user: &User,
     project_id: i32,
 ) -> ServiceResult<ProjectUserStatus> {
+    let project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    project_services::is_not_archived(&project)?;
     let project_user = find_project_user(conn, project_id, user.id)
         .to_service_result_find(String::from("project_user_not_found_error"))?;
     let last_status = find_last_status_by_project_user(conn, &project_user).to_service_result()?;
@@ -288,11 +286,9 @@ pub fn exclude_user(
     project_id: i32,
     user_id: i32,
 ) -> ServiceResult<ProjectUserStatus> {
-    if !permission_services::can_change_users(conn, project_id, user.id)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "exclude_user_forbidden_error",
-        )));
-    }
+    let project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_change_users(conn, &project, user.id)?;
     if user.id == user_id {
         return Err(AppError::ValidationError(Box::new(|locale| {
             t!("exclude_user_self_error", locale = locale)
@@ -329,7 +325,7 @@ impl ProjectUserType {
         users: Vec<User>,
     ) -> ServiceResult<Vec<Self>> {
         let can_change_permissions =
-            permission_services::can_change_permissions(conn, project_id, current_user.id)?;
+            permission_services::can_change_permissions_base(conn, project_id, current_user.id)?;
         let mut statuses = ProjectUserType::get_project_user_statuses(conn, project_id, &users)?;
         let mut permissions =
             ProjectUserType::get_project_user_permissions(conn, project_id, &users)?;

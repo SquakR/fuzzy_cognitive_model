@@ -39,6 +39,8 @@ change_project_forbidden_error: "Insufficient permissions to change the project.
 change_project_node_value_type_error: "Unable to change node value type due to plugin: `%{plugin_name}`."
 change_project_arc_value_type_error: "Unable to change arc value type due to plugin: `%{plugin_name}`."
 
+change_archived_project_error: "Unable to change archive project."
+
 delete_project_forbidden_error: "Insufficient permissions to delete the project."
 
 change_plugins_forbidden_error: "Insufficient permissions to change plugins."
