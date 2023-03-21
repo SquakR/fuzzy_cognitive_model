@@ -140,6 +140,27 @@ pub fn can_change_project(
     }
 }
 
+pub fn can_change_model_base(
+    conn: &mut PgConnection,
+    project_id: i32,
+    user_id: i32,
+) -> ServiceResult<bool> {
+    has_permission(conn, project_id, user_id, "can_change_model")
+}
+
+pub fn can_change_model(
+    conn: &mut PgConnection,
+    project: &Project,
+    user_id: i32,
+) -> ServiceResult<()> {
+    if !can_change_model_base(conn, project.id, user_id)? {
+        return Err(AppError::ForbiddenError(String::from(
+            "change_model_forbidden_error",
+        )));
+    }
+    project_services::is_not_archived(project)
+}
+
 pub fn can_change_plugins_base(
     conn: &mut PgConnection,
     project_id: i32,

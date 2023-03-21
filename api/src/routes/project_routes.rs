@@ -306,14 +306,12 @@ pub async fn delete_project(
     project_id: i32,
     user: User,
     locale: UserLocale,
-    web_socket_project_service: WebSocketProjectService,
+    project_service: WebSocketProjectService,
 ) -> PathResult<(), UserLocale> {
     let conn = &mut db::establish_connection();
     if let Err(app_error) = project_services::delete_project(conn, &user, project_id) {
         return PathResult::new(Err(app_error), locale);
     }
-    web_socket_project_service
-        .disconnect_project(project_id)
-        .await;
+    project_service.disconnect_project(project_id).await;
     PathResult::new(Ok(()), locale)
 }

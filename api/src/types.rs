@@ -296,6 +296,7 @@ pub struct ProjectUserType {
     pub permissions: Option<Vec<String>>,
 }
 
+/// Input type for getting projects
 #[derive(FromForm, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectsInType {
@@ -337,6 +338,45 @@ pub struct ProjectsInType {
     /// Number of records per page
     #[field(name = "perPage")]
     pub per_page: Option<u16>,
+}
+
+#[derive(Clone, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeOutType {
+    /// Node identifier
+    pub id: i32,
+    /// Node name
+    pub name: String,
+    /// Node description
+    pub description: String,
+    /// Node value
+    pub value: Option<f64>,
+    /// Node project identifier
+    pub project_id: i32,
+    /// Node position in x coordinate
+    pub x_position: f64,
+    /// Node position in y coordinate
+    pub y_position: f64,
+    /// Node creation time
+    pub created_at: DateTime<Utc>,
+    /// Node update time
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Type of node to create
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeInCreateType {
+    /// Node name
+    pub name: String,
+    /// Node description
+    pub description: String,
+    /// Node value
+    pub value: Option<f64>,
+    /// Node position in x coordinate
+    pub x_position: f64,
+    /// Node position in y coordinate
+    pub y_position: f64,
 }
 
 /// Interval input type

@@ -21,8 +21,8 @@ reset_password_email_confirmation_error: "Resetting the password is not possible
 session_is_not_active_error: "The session is not active."
 other_user_session_forbidden_error: "It is forbidden to change the session of another user."
 
-invalid_file_type_expected_error: "Invalid file type, expected: [%{expected}]."
-invalid_file_type_expected_but_got_error: "Invalid file type, expected: [%{expected}], but got %{got}."
+invalid_file_type_expected_error: "Invalid file type, expected `[%{expected}]`."
+invalid_file_type_expected_but_got_error: "Invalid file type, expected `[%{expected}]`, but got `%{got}`."
 
 sign_in_credentials_error: "Incorrect username or password."
 user_with_username_already_exists_error: "A user with this username already exists."
@@ -68,3 +68,7 @@ exclude_creator_error: "Unable to exclude a project creator from a project."
 exclude_not_member_error: "Unable to exclude the user because they are not a member of the project."
 
 invalid_status_error: "Invalid status: `%{status}`"
+
+change_model_forbidden_error: "Insufficient permissions to change the project model."
+
+invalid_node_value_error: "Invalid node value, expected `%{expected}`, but got %{got}."

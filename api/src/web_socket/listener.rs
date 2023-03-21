@@ -1,4 +1,4 @@
-use super::web_socket_project_service::WebSocketProjectService;
+use super::project_service::WebSocketProjectService;
 use crate::authenticate;
 use crate::cookies::GetPrivate;
 use crate::db;

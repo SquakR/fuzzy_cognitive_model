@@ -21,8 +21,8 @@ reset_password_email_confirmation_error: "Сброс пароля невозмо
 session_is_not_active_error: "Сессия не является активной."
 other_user_session_forbidden_error: "Запрещено изменять сессию другого пользователя."
 
-invalid_file_type_expected_error: "Неправильный тип файла, ожидалось: [%{expected}]."
-invalid_file_type_expected_but_got_error: "Неправильный тип файла, ожидалось: [%{expected}], но получено %{got}."
+invalid_file_type_expected_error: "Неправильный тип файла, ожидалось `[%{expected}]`."
+invalid_file_type_expected_but_got_error: "Неправильный тип файла, ожидалось `[%{expected}]`, но получено `%{got}`."
 
 sign_in_credentials_error: "Неправильный логин или пароль."
 user_with_username_already_exists_error: "Пользователь с таким логином уже существует."
@@ -68,3 +68,7 @@ exclude_creator_error: "Невозможно исключить создател
 exclude_not_member_error: "Невозможно исключить пользователя, т.к. он не является участником проекта."
 
 invalid_status_error: "Неверный статус: `%{status}`"
+
+change_model_forbidden_error: "Недостаточно прав для изменения модели проекта."
+
+invalid_node_value_error: "Неверное значение вершины, ожидалось `%{expected}`, но получено `%{got}`."

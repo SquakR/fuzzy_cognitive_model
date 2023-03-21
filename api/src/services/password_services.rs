@@ -14,7 +14,7 @@ use std::collections::BTreeMap;
 
 pub async fn change_user_password(
     conn: &mut PgConnection,
-    web_socket_project_service: WebSocketProjectService,
+    project_service: WebSocketProjectService,
     user: &User,
     session_id: i32,
     change_password: ChangePasswordType,
@@ -36,9 +36,7 @@ pub async fn change_user_password(
         session_services::deactivate_user_sessions(conn, &session_ids)
     })
     .to_service_result()?;
-    web_socket_project_service
-        .disconnect_sessions(&session_ids)
-        .await;
+    project_service.disconnect_sessions(&session_ids).await;
     Ok(())
 }
 

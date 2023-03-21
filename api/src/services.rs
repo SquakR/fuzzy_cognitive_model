@@ -1,5 +1,6 @@
 pub mod email_confirmation_services;
 pub mod mailing_services;
+pub mod model_services;
 pub mod password_services;
 pub mod permission_services;
 pub mod plugin_services;

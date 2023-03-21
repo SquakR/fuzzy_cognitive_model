@@ -63,13 +63,11 @@ pub fn sign_in(
 
 pub async fn sign_out(
     conn: &mut PgConnection,
-    web_socket_project_service: WebSocketProjectService,
+    project_service: WebSocketProjectService,
     session_ids: &[i32],
 ) -> QueryResult<Vec<Session>> {
     let sessions = deactivate_user_sessions(conn, session_ids)?;
-    web_socket_project_service
-        .disconnect_sessions(session_ids)
-        .await;
+    project_service.disconnect_sessions(session_ids).await;
     Ok(sessions)
 }
 

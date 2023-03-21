@@ -1,5 +1,7 @@
-mod web_socket_listener;
-mod web_socket_project_service;
+mod listener;
+mod project_service;
+mod service;
 
-pub use web_socket_listener::WebSocketListener;
-pub use web_socket_project_service::WebSocketProjectService;
+pub use listener::WebSocketListener;
+pub use project_service::WebSocketProjectService;
+pub use service::WebSocketService;
