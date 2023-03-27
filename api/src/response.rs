@@ -9,9 +9,43 @@ use rocket::response::{self, Responder, Response};
 use rocket_accept_language::AcceptLanguage as RocketAcceptLanguage;
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::{response::OpenApiResponderInner, Result as RocketOkapiResult};
-use rust_i18n::t;
 
 pub type ServiceResult<T> = Result<T, AppError>;
+
+#[macro_export]
+macro_rules! validation_error {
+    ($key:expr) => {
+        Err(AppError::ValidationError(Box::new(move |locale| {
+            t!($key, locale = locale)
+        })))
+    };
+    ($key:expr, $($var_name:tt = $var_val:expr),+ $(,)?) => {
+        Err(AppError::ValidationError(Box::new(move |locale| {
+            t!($key, locale = locale, $($var_name = $var_val),*)
+        })))
+    };
+}
+
+#[macro_export]
+macro_rules! forbidden_error {
+    ($key:expr) => {
+        Err(AppError::ForbiddenError(String::from($key)))
+    };
+}
+
+#[macro_export]
+macro_rules! not_found_error {
+    ($key:expr) => {
+        Err(AppError::NotFoundError(String::from($key)))
+    };
+}
+
+#[macro_export]
+macro_rules! internal_server_error {
+    () => {
+        Err(AppError::InternalServerError)
+    };
+}
 
 pub enum AppError {
     ValidationError(Box<dyn Fn(&str) -> String>),

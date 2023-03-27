@@ -4,6 +4,7 @@ use crate::schema::sessions;
 use crate::services::{password_services, user_services};
 use crate::types::{CredentialsType, DeviceType, OSType, ProductType, SessionType};
 use crate::web_socket::WebSocketProjectService;
+use crate::{forbidden_error, validation_error};
 use diesel::prelude::*;
 use diesel::PgConnection;
 use ipnetwork::IpNetwork;
@@ -47,16 +48,10 @@ pub fn sign_in(
         .to_service_result_find(String::from("user_not_found_error"));
     let user = match user_result {
         Ok(user) => user,
-        Err(_) => {
-            return Err(AppError::ValidationError(Box::new(|locale| {
-                t!("sign_in_credentials_error", locale = locale)
-            })));
-        }
+        Err(_) => return validation_error!("sign_in_credentials_error"),
     };
     if !password_services::verify_password(&credentials.password, &user.password) {
-        return Err(AppError::ValidationError(Box::new(|locale| {
-            t!("sign_in_credentials_error", locale = locale)
-        })));
+        return validation_error!("sign_in_credentials_error");
     }
     create_session(conn, user.id, ip_address, user_agent).to_service_result()
 }
@@ -122,14 +117,10 @@ pub fn check_user_sessions(
             .to_service_result_find(String::from("session_not_found_error"))?;
         if !session.is_active {
             deactivate_all_user_sessions(conn, user.id).to_service_result()?;
-            return Err(AppError::ValidationError(Box::new(|locale| {
-                t!("session_is_not_active_error", locale = locale)
-            })));
+            return validation_error!("session_is_not_active_error");
         }
         if session.user_id != user.id {
-            return Err(AppError::ForbiddenError(String::from(
-                "other_user_session_forbidden_error",
-            )));
+            return forbidden_error!("other_user_session_forbidden_error");
         }
     }
     Ok(())

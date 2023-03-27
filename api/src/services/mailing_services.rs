@@ -1,3 +1,4 @@
+use crate::internal_server_error;
 use crate::response::{AppError, ServiceResult};
 use crate::utils;
 use lettre::message::header;
@@ -13,7 +14,7 @@ pub async fn send_message(to_email: &str, subject: &str, body: &str) -> ServiceR
     let smtp_credentials = Credentials::new(smtp_login.clone(), smtp_password);
     let mailer_builder = match AsyncSmtpTransport::<Tokio1Executor>::relay(smtp_host.as_str()) {
         Ok(builder) => builder,
-        Err(_) => return Err(AppError::InternalServerError),
+        Err(_) => return internal_server_error!(),
     };
     let mailer = mailer_builder.credentials(smtp_credentials).build();
     let send_result = send_email_smtp(
@@ -25,7 +26,7 @@ pub async fn send_message(to_email: &str, subject: &str, body: &str) -> ServiceR
     )
     .await;
     if send_result.is_err() {
-        return Err(AppError::InternalServerError);
+        return internal_server_error!();
     }
     Ok(())
 }

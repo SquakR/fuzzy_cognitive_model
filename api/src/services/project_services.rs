@@ -9,6 +9,7 @@ use crate::types::{
     IntervalInType, PaginationInType, PaginationOutType, ProjectGroupFilterType, ProjectInType,
     ProjectOutType, UserOutType,
 };
+use crate::validation_error;
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::PgConnection;
@@ -153,24 +154,18 @@ pub fn change_project(
     for project_plugin in project_plugins {
         if let Some(vertex_value_type) = &project_plugin.vertex_value_type {
             if project_in.vertex_value_type != *vertex_value_type {
-                return Err(AppError::ValidationError(Box::new(move |locale| {
-                    t!(
-                        "change_project_vertex_value_type_error",
-                        locale = locale,
-                        plugin_name = project_plugin.name
-                    )
-                })));
+                return validation_error!(
+                    "change_project_vertex_value_type_error",
+                    plugin_name = project_plugin.name
+                );
             }
         }
         if let Some(arc_value_type) = &project_plugin.arc_value_type {
             if project_in.arc_value_type != *arc_value_type {
-                return Err(AppError::ValidationError(Box::new(move |locale| {
-                    t!(
-                        "change_project_arc_value_type_error",
-                        locale = locale,
-                        plugin_name = project_plugin.name
-                    )
-                })));
+                return validation_error!(
+                    "change_project_arc_value_type_error",
+                    plugin_name = project_plugin.name
+                );
             }
         }
     }
@@ -198,9 +193,7 @@ pub fn delete_project(conn: &mut PgConnection, user: &User, project_id: i32) -> 
 
 pub fn is_not_archived(project: &Project) -> ServiceResult<()> {
     if project.is_archived {
-        return Err(AppError::ValidationError(Box::new(move |locale| {
-            t!("change_archived_project_error", locale = locale)
-        })));
+        return validation_error!("change_archived_project_error");
     }
     Ok(())
 }

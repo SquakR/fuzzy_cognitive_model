@@ -158,7 +158,7 @@ pub async fn move_vertex(
 
 /// Delete vertex
 #[openapi(tag = "model")]
-#[patch("/project/<project_id>/vertex/<vertex_id>")]
+#[delete("/project/<project_id>/vertex/<vertex_id>")]
 pub async fn delete_vertex(
     project_id: i32,
     vertex_id: i32,

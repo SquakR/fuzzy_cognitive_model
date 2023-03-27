@@ -6,6 +6,7 @@ use crate::schema::{
 };
 use crate::services::{permission_services, project_services, user_services};
 use crate::types::{PaginationInType, PaginationOutType, ProjectUserType};
+use crate::{forbidden_error, validation_error};
 use chrono::{DateTime, Duration, Utc};
 use diesel::prelude::*;
 use diesel::PgConnection;
@@ -119,9 +120,7 @@ pub fn paginate_project_users(
                     permission_services::can_change_users_base(conn, project_id, user.id)?,
                 ));
                 if !can_change_users.unwrap() {
-                    return Err(AppError::ForbiddenError(String::from(
-                        "view_project_users_forbidden_error",
-                    )));
+                    return forbidden_error!("view_project_users_forbidden_error");
                 }
             }
         }
@@ -178,9 +177,7 @@ pub fn invite_user(
             _ => None,
         };
         if let Some(error) = error {
-            return Err(AppError::ValidationError(Box::new(|locale| {
-                t!(error, locale = locale)
-            })));
+            return validation_error!(error);
         }
     }
     conn.transaction(|conn| {
@@ -216,11 +213,7 @@ pub fn cancel_invitation(
     let last_status = find_last_status_by_project_user(conn, &project_user).to_service_result()?;
     match last_status.status {
         ProjectUserStatusValue::Invited => {}
-        _ => {
-            return Err(AppError::ValidationError(Box::new(|locale| {
-                t!("there_is_no_invitation_error", locale = locale)
-            })))
-        }
+        _ => return validation_error!("there_is_no_invitation_error"),
     }
     add_project_user_status(conn, project_user.id, ProjectUserStatusValue::Cancelled)
         .to_service_result()
@@ -240,11 +233,7 @@ pub fn respond_to_invitation(
     let last_status = find_last_status_by_project_user(conn, &project_user).to_service_result()?;
     match last_status.status {
         ProjectUserStatusValue::Invited => {}
-        _ => {
-            return Err(AppError::ValidationError(Box::new(|locale| {
-                t!("there_is_no_invitation_error", locale = locale)
-            })))
-        }
+        _ => return validation_error!("there_is_no_invitation_error"),
     }
     let status_value = if join {
         ProjectUserStatusValue::Member
@@ -267,11 +256,7 @@ pub fn leave_project(
     let last_status = find_last_status_by_project_user(conn, &project_user).to_service_result()?;
     match last_status.status {
         ProjectUserStatusValue::Member => {}
-        _ => {
-            return Err(AppError::ValidationError(Box::new(|locale| {
-                t!("leave_project_error", locale = locale)
-            })))
-        }
+        _ => return validation_error!("leave_project_error"),
     }
     conn.transaction(|conn| {
         permission_services::delete_project_user_permissions(conn, project_user.id)?;
@@ -290,25 +275,15 @@ pub fn exclude_user(
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_users(conn, &project, user.id)?;
     if user.id == user_id {
-        return Err(AppError::ValidationError(Box::new(|locale| {
-            t!("exclude_user_self_error", locale = locale)
-        })));
+        return validation_error!("exclude_user_self_error");
     }
     let project_user = find_project_user(conn, project_id, user_id)
         .to_service_result_find(String::from("project_user_not_found_error"))?;
     let last_status = find_last_status_by_project_user(conn, &project_user).to_service_result()?;
     match last_status.status {
         ProjectUserStatusValue::Member => {}
-        ProjectUserStatusValue::Creator => {
-            return Err(AppError::ValidationError(Box::new(|locale| {
-                t!("exclude_creator_error", locale = locale)
-            })))
-        }
-        _ => {
-            return Err(AppError::ValidationError(Box::new(|locale| {
-                t!("exclude_not_member_error", locale = locale)
-            })))
-        }
+        ProjectUserStatusValue::Creator => return validation_error!("exclude_creator_error"),
+        _ => return validation_error!("exclude_not_member_error"),
     }
     conn.transaction(|conn| {
         permission_services::delete_project_user_permissions(conn, project_user.id)?;

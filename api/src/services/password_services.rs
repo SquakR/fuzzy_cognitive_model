@@ -4,6 +4,7 @@ use crate::schema::{password_resets, users};
 use crate::services::{mailing_services, session_services, user_services};
 use crate::types::{ChangePasswordType, ResetPasswordType};
 use crate::utils;
+use crate::validation_error;
 use crate::web_socket::WebSocketProjectService;
 use argon2::password_hash::{PasswordHash, Salt};
 use argon2::{Argon2, PasswordHasher, PasswordVerifier};
@@ -20,15 +21,11 @@ pub async fn change_user_password(
     change_password: ChangePasswordType,
 ) -> ServiceResult<()> {
     if !verify_password(&change_password.old_password, &user.password) {
-        return Err(AppError::ValidationError(Box::new(|locale| {
-            t!("incorrect_old_password_error", locale = locale)
-        })));
+        return validation_error!("incorrect_old_password_error");
     }
     let new_password_hash = hash_password(&change_password.new_password);
     if new_password_hash == user.password {
-        return Err(AppError::ValidationError(Box::new(|locale| {
-            t!("passwords_equal_error", locale = locale)
-        })));
+        return validation_error!("passwords_equal_error");
     }
     let session_ids = [session_id];
     conn.transaction(|conn| {
@@ -47,9 +44,7 @@ pub async fn request_password_reset(
     let user = user_services::find_user_by_email(conn, email)
         .to_service_result_find(String::from("user_not_found_error"))?;
     if !user.is_email_confirmed {
-        return Err(AppError::ValidationError(Box::new(|locale| {
-            t!("reset_password_email_confirmation_error", locale = locale)
-        })));
+        return validation_error!("reset_password_email_confirmation_error");
     }
     let password_reset = create_password_reset(conn, &user).to_service_result()?;
     send_password_reset_email(&user, &password_reset).await?;
@@ -64,17 +59,13 @@ pub fn reset_password(
     let claims: BTreeMap<String, i32> = match reset_password.token.verify_with_key(&key) {
         Ok(claims) => claims,
         Err(_) => {
-            return Err(AppError::ValidationError(Box::new(|locale| {
-                t!("invalid_token_error", locale = locale)
-            })));
+            return validation_error!("invalid_token_error");
         }
     };
     let password_reset = find_password_reset_by_id(conn, claims["password_reset_id"])
         .to_service_result_find(String::from("password_reset_not_found_error"))?;
     if !password_reset.is_valid {
-        return Err(AppError::ValidationError(Box::new(|locale| {
-            t!("link_is_not_active_error", locale = locale)
-        })));
+        return validation_error!("link_is_not_active_error");
     }
     let new_password_hash = hash_password(&reset_password.new_password);
     conn.transaction(|conn| {

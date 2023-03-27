@@ -1,6 +1,5 @@
 use crate::cookies;
 use crate::db;
-use crate::get_session_id;
 use crate::models::User;
 use crate::request::{AcceptLanguage, Locale, UserAgent, UserLocale};
 use crate::response::{AppError, PathResult, ToServiceResult};
@@ -13,6 +12,7 @@ use crate::types::{
     ResetPasswordType, SessionType, UserInChangeType, UserInCreateType, UserOutType,
 };
 use crate::web_socket::WebSocketProjectService;
+use crate::{get_session_id, internal_server_error, validation_error};
 use ipnetwork::IpNetwork;
 use rocket::form::Form;
 use rocket::fs::NamedFile;
@@ -20,7 +20,6 @@ use rocket::http::CookieJar;
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_okapi::openapi;
-use rust_i18n::t;
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 
@@ -35,9 +34,7 @@ pub async fn create_user(
 ) -> PathResult<Json<UserOutType>, Locale> {
     if get_session_id!(cookies_jar).is_some() {
         return PathResult::new(
-            Err(AppError::ValidationError(Box::new(|locale| {
-                t!("create_user_active_session_error", locale = locale)
-            }))),
+            validation_error!("create_user_active_session_error"),
             locale,
         );
     }
@@ -144,7 +141,7 @@ pub async fn change_me_password(
 ) -> PathResult<(), UserLocale> {
     let session_id = match get_session_id!(cookies_jar) {
         Some(session_id) => session_id,
-        None => return PathResult::new(Err(AppError::InternalServerError), locale),
+        None => return PathResult::new(internal_server_error!(), locale),
     };
     let conn = &mut db::establish_connection();
     if let Err(app_error) = password_services::change_user_password(
@@ -172,9 +169,7 @@ pub async fn request_password_reset(
 ) -> PathResult<(), Locale> {
     if get_session_id!(cookies_jar).is_some() {
         return PathResult::new(
-            Err(AppError::ValidationError(Box::new(|locale| {
-                t!("reset_password_active_session_error", locale = locale)
-            }))),
+            validation_error!("reset_password_active_session_error"),
             locale,
         );
     }
@@ -210,12 +205,7 @@ pub fn sign_in(
     locale: Locale,
 ) -> PathResult<Json<SessionType>, Locale> {
     if cookies::has_session_id(cookies_jar) {
-        return PathResult::new(
-            Err(AppError::ValidationError(Box::new(|locale| {
-                t!("sign_in_active_session_error", locale = locale)
-            }))),
-            locale,
-        );
+        return PathResult::new(validation_error!("sign_in_active_session_error"), locale);
     }
     let conn = &mut db::establish_connection();
     let ip_address = match ip_address {
@@ -266,7 +256,7 @@ pub async fn sign_out(
 ) -> PathResult<(), UserLocale> {
     let session_id = match get_session_id!(cookies_jar) {
         Some(session_id) => session_id,
-        None => return PathResult::new(Err(AppError::InternalServerError), locale),
+        None => return PathResult::new(internal_server_error!(), locale),
     };
     let conn = &mut db::establish_connection();
     if let Err(app_error) = session_services::sign_out(conn, project_service, &[session_id])
@@ -289,7 +279,7 @@ pub fn get_sessions(
 ) -> PathResult<Json<Vec<SessionType>>, UserLocale> {
     let session_id = match get_session_id!(cookies_jar) {
         Some(session_id) => session_id,
-        None => return PathResult::new(Err(AppError::InternalServerError), locale),
+        None => return PathResult::new(internal_server_error!(), locale),
     };
     let conn = &mut db::establish_connection();
     let sessions =

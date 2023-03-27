@@ -3,6 +3,7 @@ use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{permissions, project_user_permissions};
 use crate::services::{project_services, project_user_services};
 use crate::types::PermissionType;
+use crate::{forbidden_error, validation_error};
 use diesel::prelude::*;
 use diesel::PgConnection;
 
@@ -21,13 +22,7 @@ pub fn set_project_user_permissions(
         .iter()
         .position(|permission| !all_permissions.contains(permission))
     {
-        return Err(AppError::ValidationError(Box::new(move |locale| {
-            t!(
-                "invalid_permission_error",
-                locale = locale,
-                permission = &permissions[index]
-            )
-        })));
+        return validation_error!("invalid_permission_error", permission = &permissions[index]);
     }
     let project_user = project_user_services::find_project_user(conn, project_id, user_id)
         .to_service_result_find(String::from("project_user_not_found_error"))?;
@@ -36,15 +31,9 @@ pub fn set_project_user_permissions(
     match last_status.status {
         ProjectUserStatusValue::Member => {}
         ProjectUserStatusValue::Creator => {
-            return Err(AppError::ValidationError(Box::new(|locale| {
-                t!("change_creator_permissions_error", locale = locale)
-            })))
+            return validation_error!("change_creator_permissions_error")
         }
-        _ => {
-            return Err(AppError::ValidationError(Box::new(|locale| {
-                t!("change_not_member_permissions_error", locale = locale)
-            })))
-        }
+        _ => return validation_error!("change_not_member_permissions_error"),
     }
     conn.transaction(|conn| {
         delete_project_user_permissions(conn, project_user.id)?;
@@ -107,9 +96,7 @@ pub fn can_view_project(
     user: &User,
 ) -> ServiceResult<()> {
     if !can_view_project_base(conn, project, user)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "view_project_forbidden_error",
-        )));
+        return forbidden_error!("view_project_forbidden_error");
     }
     Ok(())
 }
@@ -129,9 +116,7 @@ pub fn can_change_project(
     is_archived_in: bool,
 ) -> ServiceResult<()> {
     if !can_change_project_base(conn, project.id, user_id)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "change_project_forbidden_error",
-        )));
+        return forbidden_error!("change_project_forbidden_error");
     }
     if is_archived_in {
         project_services::is_not_archived(project)
@@ -154,9 +139,7 @@ pub fn can_change_model(
     user_id: i32,
 ) -> ServiceResult<()> {
     if !can_change_model_base(conn, project.id, user_id)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "change_model_forbidden_error",
-        )));
+        return forbidden_error!("change_model_forbidden_error");
     }
     project_services::is_not_archived(project)
 }
@@ -175,9 +158,7 @@ pub fn can_change_plugins(
     user_id: i32,
 ) -> ServiceResult<()> {
     if !can_change_plugins_base(conn, project.id, user_id)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "change_plugins_forbidden_error",
-        )));
+        return forbidden_error!("change_plugins_forbidden_error");
     }
     project_services::is_not_archived(project)
 }
@@ -196,9 +177,7 @@ pub fn can_change_users(
     user_id: i32,
 ) -> ServiceResult<()> {
     if !can_change_users_base(conn, project.id, user_id)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "invite_user_forbidden_error",
-        )));
+        return forbidden_error!("invite_user_forbidden_error");
     }
     project_services::is_not_archived(project)
 }
@@ -217,9 +196,7 @@ pub fn can_change_permissions(
     user_id: i32,
 ) -> ServiceResult<()> {
     if !can_change_permissions_base(conn, project.id, user_id)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "change_permissions_forbidden_error",
-        )));
+        return forbidden_error!("change_permissions_forbidden_error");
     }
     project_services::is_not_archived(project)
 }
@@ -238,9 +215,7 @@ pub fn can_delete_project(
     user_id: i32,
 ) -> ServiceResult<()> {
     if !can_delete_project_base(conn, project_id, user_id)? {
-        return Err(AppError::ForbiddenError(String::from(
-            "delete_project_forbidden_error",
-        )));
+        return forbidden_error!("delete_project_forbidden_error");
     }
     Ok(())
 }

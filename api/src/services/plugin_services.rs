@@ -3,6 +3,7 @@ use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{plugins, project_plugins, projects};
 use crate::services::{permission_services, project_services};
 use crate::types::PluginType;
+use crate::validation_error;
 use diesel::prelude::*;
 use diesel::PgConnection;
 
@@ -80,13 +81,7 @@ fn check_plugins(
         .position(|plugin_name| !all_plugin_names.contains(&plugin_name.as_str()))
     {
         let plugin_name = plugins[index].to_owned();
-        return Err(AppError::ValidationError(Box::new(move |locale| {
-            t!(
-                "invalid_plugin_error",
-                locale = locale,
-                plugin_name = &plugin_name
-            )
-        })));
+        return validation_error!("invalid_plugin_error", plugin_name = &plugin_name);
     }
     for plugin_name in plugins {
         let plugin = all_plugins
@@ -106,13 +101,7 @@ fn check_plugins(
         }
         if incompatible {
             let plugin_name = plugin_name.to_owned();
-            return Err(AppError::ValidationError(Box::new(move |locale| {
-                t!(
-                    "incompatible_plugin_error",
-                    locale = locale,
-                    plugin_name = &plugin_name
-                )
-            })));
+            return validation_error!("incompatible_plugin_error", plugin_name = &plugin_name);
         }
     }
     Ok(())

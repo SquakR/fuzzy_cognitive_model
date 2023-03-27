@@ -6,6 +6,7 @@ use crate::types::{
     VertexInChangeDescriptionType, VertexInCreateType, VertexInMoveType,
     VertexOutChangeDescriptionType, VertexOutChangeValueType, VertexOutMoveType, VertexOutType,
 };
+use crate::validation_error;
 use crate::web_socket::{WebSocketProjectService, WebSocketService};
 use diesel::prelude::*;
 use diesel::PgConnection;
@@ -141,9 +142,7 @@ pub async fn delete_vertex(
         .execute(conn)
         .to_service_result()?;
     if deleted_number == 0 {
-        return Err(AppError::ValidationError(Box::new(move |locale| {
-            t!("vertex_not_found_error", locale = locale)
-        })));
+        return validation_error!("vertex_not_found_error");
     }
     project_service
         .notify(project_id, String::from("delete_vertex"), vertex_id)
@@ -154,40 +153,29 @@ pub async fn delete_vertex(
 fn check_vertex_value(project: &Project, value: Option<f64>) -> ServiceResult<()> {
     match value {
         Some(value) => match project.vertex_value_type {
-            VertexValueType::None => Err(AppError::ValidationError(Box::new(move |locale| {
-                t!(
-                    "invalid_vertex_value_error",
-                    locale = locale,
-                    expected = "null",
-                    got = value
-                )
-            }))),
+            VertexValueType::None => {
+                validation_error!("invalid_vertex_value_error", expected = "null", got = value)
+            }
             VertexValueType::FromZeroToOne => {
                 if value >= 0.0 && value <= 1.0 {
                     Ok(())
                 } else {
-                    Err(AppError::ValidationError(Box::new(move |locale| {
-                        t!(
-                            "invalid_vertex_value_error",
-                            locale = locale,
-                            expected = "[0.0; 1.0]",
-                            got = value
-                        )
-                    })))
+                    validation_error!(
+                        "invalid_vertex_value_error",
+                        expected = "[0.0; 1.0]",
+                        got = value
+                    )
                 }
             }
         },
         None => match project.vertex_value_type {
             VertexValueType::None => Ok(()),
             VertexValueType::FromZeroToOne => {
-                Err(AppError::ValidationError(Box::new(move |locale| {
-                    t!(
-                        "invalid_vertex_value_error",
-                        locale = locale,
-                        expected = "[0.0; 1.0]",
-                        got = "null"
-                    )
-                })))
+                validation_error!(
+                    "invalid_vertex_value_error",
+                    expected = "[0.0; 1.0]",
+                    got = "null"
+                )
             }
         },
     }

@@ -9,6 +9,7 @@ use crate::storage::Storage;
 use crate::types::{
     PaginationInType, PaginationOutType, UserInChangeType, UserInCreateType, UserOutType,
 };
+use crate::validation_error;
 use diesel::dsl::sql;
 use diesel::pg::{Pg, PgConnection};
 use diesel::prelude::*;
@@ -22,11 +23,7 @@ pub async fn create_user(
     let exist_user =
         find_exist_user(conn, Some(&user_in.username), Some(&user_in.email)).to_service_result()?;
     if let Some(exist_user) = exist_user {
-        return Err(get_exist_user_app_error(
-            exist_user,
-            &user_in.username,
-            &user_in.email,
-        ));
+        return get_exist_user_app_error(exist_user, &user_in.username, &user_in.email);
     }
     let mut avatar = None;
     if let Some(avatar_file) = user_in.avatar.take() {
@@ -172,11 +169,7 @@ pub async fn change_user(
     };
     let exist_user = find_exist_user(conn, username, email).to_service_result()?;
     if let Some(exist_user) = exist_user {
-        return Err(get_exist_user_app_error(
-            exist_user,
-            &user_in.username,
-            &user_in.email,
-        ));
+        return get_exist_user_app_error(exist_user, &user_in.username, &user_in.email);
     }
     let avatar = if user_in.reset_avatar {
         None
@@ -269,16 +262,12 @@ fn find_exist_user(
     Ok(None)
 }
 
-fn get_exist_user_app_error(exist_user: User, username: &str, email: &str) -> AppError {
+fn get_exist_user_app_error(exist_user: User, username: &str, email: &str) -> ServiceResult<User> {
     if exist_user.username == username {
-        return AppError::ValidationError(Box::new(|locale| {
-            t!("user_with_username_already_exists_error", locale = locale)
-        }));
+        return validation_error!("user_with_username_already_exists_error");
     }
     if exist_user.email == email {
-        return AppError::ValidationError(Box::new(|locale| {
-            t!("user_with_email_already_exists_error", locale = locale)
-        }));
+        return validation_error!("user_with_email_already_exists_error");
     }
     unreachable!();
 }
