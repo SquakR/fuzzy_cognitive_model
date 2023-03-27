@@ -155,3 +155,22 @@ pub async fn move_vertex(
     };
     PathResult::new(Ok(Json(vertex)), locale)
 }
+
+/// Delete vertex
+#[openapi(tag = "model")]
+#[patch("/project/<project_id>/vertex/<vertex_id>")]
+pub async fn delete_vertex(
+    project_id: i32,
+    vertex_id: i32,
+    user: User,
+    locale: UserLocale,
+    project_service: WebSocketProjectService,
+) -> PathResult<(), UserLocale> {
+    let conn = &mut db::establish_connection();
+    if let Err(app_error) =
+        model_services::delete_vertex(conn, project_service, &user, project_id, vertex_id).await
+    {
+        return PathResult::new(Err(app_error), locale);
+    }
+    PathResult::new(Ok(()), locale)
+}

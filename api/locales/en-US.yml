@@ -10,6 +10,7 @@ file_not_found_error: "File not found."
 project_not_found_error: "Project record not found."
 project_user_not_found_error: "Project user record not found."
 last_status_not_found_error: "Last user status record in project not found."
+vertex_not_found_error: "Vertex record not found."
 
 invalid_token_error: "Invalid token."
 link_is_not_active_error: "The link is not active."

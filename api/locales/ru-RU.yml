@@ -10,6 +10,7 @@ file_not_found_error: "Не найден файл."
 project_not_found_error: "Не найдена запись проекта."
 project_user_not_found_error: "Не найдена запись пользователя проекта."
 last_status_not_found_error: "Не найдена запись последнего статуса пользователя в проекте."
+vertex_not_found_error: "Не найдена запись вершины."
 
 invalid_token_error: "Невалидный токен."
 link_is_not_active_error: "Ссылка не является активной."

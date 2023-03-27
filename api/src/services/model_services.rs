@@ -127,6 +127,30 @@ pub async fn move_vertex(
     Ok(vertex_out)
 }
 
+pub async fn delete_vertex(
+    conn: &mut PgConnection,
+    project_service: WebSocketProjectService,
+    user: &User,
+    project_id: i32,
+    vertex_id: i32,
+) -> ServiceResult<()> {
+    let project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_change_model(conn, &project, user.id)?;
+    let deleted_number = diesel::delete(vertices::table.filter(vertices::id.eq(vertex_id)))
+        .execute(conn)
+        .to_service_result()?;
+    if deleted_number == 0 {
+        return Err(AppError::ValidationError(Box::new(move |locale| {
+            t!("vertex_not_found_error", locale = locale)
+        })));
+    }
+    project_service
+        .notify(project_id, String::from("delete_vertex"), vertex_id)
+        .await;
+    Ok(())
+}
+
 fn check_vertex_value(project: &Project, value: Option<f64>) -> ServiceResult<()> {
     match value {
         Some(value) => match project.vertex_value_type {
