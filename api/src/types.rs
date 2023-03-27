@@ -379,6 +379,65 @@ pub struct VertexInCreateType {
     pub y_position: f64,
 }
 
+/// Type of result of changing vertex description
+#[derive(Clone, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct VertexOutChangeDescriptionType {
+    /// Vertex identifier
+    pub id: i32,
+    /// Vertex name
+    pub name: String,
+    /// Vertex description
+    pub description: String,
+    /// Vertex update time
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Type of vertex to change
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct VertexInChangeDescriptionType {
+    /// Vertex name
+    pub name: String,
+    /// Vertex description
+    pub description: String,
+}
+
+/// Type of result of changing vertex value
+#[derive(Clone, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct VertexOutChangeValueType {
+    /// Vertex identifier
+    pub id: i32,
+    /// Vertex value
+    pub value: Option<f64>,
+    /// Vertex update time
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Type of result of moving vertex
+#[derive(Clone, Serialize, JsonSchema)]
+pub struct VertexOutMoveType {
+    /// Vertex identifier
+    pub id: i32,
+    /// Vertex position in x coordinate
+    pub x_position: f64,
+    /// Vertex position in y coordinate
+    pub y_position: f64,
+    /// Vertex update time
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Type of vertex to mode
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct VertexInMoveType {
+    /// Vertex position in x coordinate
+    pub x_position: f64,
+    /// Vertex position in y coordinate
+    pub y_position: f64,
+}
+
 /// Interval input type
 #[derive(Deserialize, FromForm, JsonSchema)]
 pub struct IntervalInType<T: JsonSchema> {

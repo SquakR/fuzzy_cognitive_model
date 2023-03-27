@@ -3,7 +3,10 @@ use crate::models::User;
 use crate::request::UserLocale;
 use crate::response::PathResult;
 use crate::services::model_services;
-use crate::types::{UserOutType, VertexInCreateType, VertexOutType};
+use crate::types::{
+    UserOutType, VertexInChangeDescriptionType, VertexInCreateType, VertexInMoveType,
+    VertexOutChangeDescriptionType, VertexOutChangeValueType, VertexOutMoveType, VertexOutType,
+};
 use crate::web_socket::WebSocketProjectService;
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
@@ -47,6 +50,102 @@ pub async fn create_vertex(
         project_service,
         &user,
         project_id,
+        vertex_in.into_inner(),
+    )
+    .await
+    {
+        Ok(vertex) => vertex,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(Ok(Json(vertex)), locale)
+}
+
+/// Change vertex description
+#[openapi(tag = "model")]
+#[patch(
+    "/project/<project_id>/vertex/<vertex_id>/change_description",
+    format = "json",
+    data = "<vertex_in>"
+)]
+pub async fn change_vertex_description(
+    project_id: i32,
+    vertex_id: i32,
+    vertex_in: Json<VertexInChangeDescriptionType>,
+    user: User,
+    locale: UserLocale,
+    project_service: WebSocketProjectService,
+) -> PathResult<Json<VertexOutChangeDescriptionType>, UserLocale> {
+    let conn = &mut db::establish_connection();
+    let vertex = match model_services::change_vertex_description(
+        conn,
+        project_service,
+        &user,
+        project_id,
+        vertex_id,
+        vertex_in.into_inner(),
+    )
+    .await
+    {
+        Ok(vertex) => vertex,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(Ok(Json(vertex)), locale)
+}
+
+/// Change vertex value
+#[openapi(tag = "model")]
+#[patch(
+    "/project/<project_id>/vertex/<vertex_id>/change_value",
+    format = "json",
+    data = "<value>"
+)]
+pub async fn change_vertex_value(
+    project_id: i32,
+    vertex_id: i32,
+    value: Json<Option<f64>>,
+    user: User,
+    locale: UserLocale,
+    project_service: WebSocketProjectService,
+) -> PathResult<Json<VertexOutChangeValueType>, UserLocale> {
+    let conn = &mut db::establish_connection();
+    let vertex = match model_services::change_vertex_value(
+        conn,
+        project_service,
+        &user,
+        project_id,
+        vertex_id,
+        value.into_inner(),
+    )
+    .await
+    {
+        Ok(vertex) => vertex,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(Ok(Json(vertex)), locale)
+}
+
+/// Move vertex
+#[openapi(tag = "model")]
+#[patch(
+    "/project/<project_id>/vertex/<vertex_id>/move_vertex",
+    format = "json",
+    data = "<vertex_in>"
+)]
+pub async fn move_vertex(
+    project_id: i32,
+    vertex_id: i32,
+    vertex_in: Json<VertexInMoveType>,
+    user: User,
+    locale: UserLocale,
+    project_service: WebSocketProjectService,
+) -> PathResult<Json<VertexOutMoveType>, UserLocale> {
+    let conn = &mut db::establish_connection();
+    let vertex = match model_services::move_vertex(
+        conn,
+        project_service,
+        &user,
+        project_id,
+        vertex_id,
         vertex_in.into_inner(),
     )
     .await

@@ -2,7 +2,10 @@ use crate::models::{Project, User, Vertex, VertexValueType};
 use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::vertices;
 use crate::services::{permission_services, project_services};
-use crate::types::{VertexInCreateType, VertexOutType};
+use crate::types::{
+    VertexInChangeDescriptionType, VertexInCreateType, VertexInMoveType,
+    VertexOutChangeDescriptionType, VertexOutChangeValueType, VertexOutMoveType, VertexOutType,
+};
 use crate::web_socket::{WebSocketProjectService, WebSocketService};
 use diesel::prelude::*;
 use diesel::PgConnection;
@@ -36,6 +39,90 @@ pub async fn create_vertex(
             String::from("create_vertex"),
             vertex_out.clone(),
         )
+        .await;
+    Ok(vertex_out)
+}
+
+pub async fn change_vertex_description(
+    conn: &mut PgConnection,
+    project_service: WebSocketProjectService,
+    user: &User,
+    project_id: i32,
+    vertex_id: i32,
+    vertex_in: VertexInChangeDescriptionType,
+) -> ServiceResult<VertexOutChangeDescriptionType> {
+    let project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_change_model(conn, &project, user.id)?;
+    let vertex = diesel::update(vertices::table)
+        .filter(vertices::id.eq(vertex_id))
+        .set((
+            vertices::name.eq(vertex_in.name),
+            vertices::description.eq(vertex_in.description),
+        ))
+        .get_result::<Vertex>(conn)
+        .to_service_result()?;
+    let vertex_out = VertexOutChangeDescriptionType::from(vertex);
+    project_service
+        .notify(
+            project_id,
+            String::from("change_vertex_description"),
+            vertex_out.clone(),
+        )
+        .await;
+    Ok(vertex_out)
+}
+
+pub async fn change_vertex_value(
+    conn: &mut PgConnection,
+    project_service: WebSocketProjectService,
+    user: &User,
+    project_id: i32,
+    vertex_id: i32,
+    value: Option<f64>,
+) -> ServiceResult<VertexOutChangeValueType> {
+    let project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_change_model(conn, &project, user.id)?;
+    check_vertex_value(&project, value.clone())?;
+    let vertex = diesel::update(vertices::table)
+        .filter(vertices::id.eq(vertex_id))
+        .set((vertices::value.eq(value),))
+        .get_result::<Vertex>(conn)
+        .to_service_result()?;
+    let vertex_out = VertexOutChangeValueType::from(vertex);
+    project_service
+        .notify(
+            project_id,
+            String::from("change_vertex_value"),
+            vertex_out.clone(),
+        )
+        .await;
+    Ok(vertex_out)
+}
+
+pub async fn move_vertex(
+    conn: &mut PgConnection,
+    project_service: WebSocketProjectService,
+    user: &User,
+    project_id: i32,
+    vertex_id: i32,
+    vertex_in: VertexInMoveType,
+) -> ServiceResult<VertexOutMoveType> {
+    let project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_change_model(conn, &project, user.id)?;
+    let vertex = diesel::update(vertices::table)
+        .filter(vertices::id.eq(vertex_id))
+        .set((
+            vertices::x_position.eq(vertex_in.x_position),
+            vertices::y_position.eq(vertex_in.y_position),
+        ))
+        .get_result::<Vertex>(conn)
+        .to_service_result()?;
+    let vertex_out = VertexOutMoveType::from(vertex);
+    project_service
+        .notify(project_id, String::from("move_vertex"), vertex_out.clone())
         .await;
     Ok(vertex_out)
 }
@@ -93,6 +180,38 @@ impl From<Vertex> for VertexOutType {
             x_position: vertex.x_position,
             y_position: vertex.y_position,
             created_at: vertex.created_at,
+            updated_at: vertex.updated_at,
+        }
+    }
+}
+
+impl From<Vertex> for VertexOutChangeDescriptionType {
+    fn from(vertex: Vertex) -> Self {
+        VertexOutChangeDescriptionType {
+            id: vertex.id,
+            name: vertex.name,
+            description: vertex.description,
+            updated_at: vertex.updated_at,
+        }
+    }
+}
+
+impl From<Vertex> for VertexOutChangeValueType {
+    fn from(vertex: Vertex) -> Self {
+        VertexOutChangeValueType {
+            id: vertex.id,
+            value: vertex.value,
+            updated_at: vertex.updated_at,
+        }
+    }
+}
+
+impl From<Vertex> for VertexOutMoveType {
+    fn from(vertex: Vertex) -> Self {
+        VertexOutMoveType {
+            id: vertex.id,
+            x_position: vertex.x_position,
+            y_position: vertex.y_position,
             updated_at: vertex.updated_at,
         }
     }
