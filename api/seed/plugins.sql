@@ -1,7 +1,7 @@
 INSERT INTO plugins (
     name,
     description,
-    node_value_type,
+    vertex_value_type,
     arc_value_type
   )
 VALUES (

@@ -3,7 +3,7 @@ use crate::models::User;
 use crate::request::UserLocale;
 use crate::response::PathResult;
 use crate::services::model_services;
-use crate::types::{NodeInCreateType, NodeOutType, UserOutType};
+use crate::types::{UserOutType, VertexInCreateType, VertexOutType};
 use crate::web_socket::WebSocketProjectService;
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
@@ -31,28 +31,28 @@ pub async fn get_active_users(
     PathResult::new(Ok(Json(users)), locale)
 }
 
-/// Create new node
+/// Create new vertex
 #[openapi(tag = "model")]
-#[post("/project/<project_id>/node", format = "json", data = "<node_in>")]
-pub async fn create_node(
+#[post("/project/<project_id>/vertex", format = "json", data = "<vertex_in>")]
+pub async fn create_vertex(
     project_id: i32,
-    node_in: Json<NodeInCreateType>,
+    vertex_in: Json<VertexInCreateType>,
     user: User,
     locale: UserLocale,
     project_service: WebSocketProjectService,
-) -> PathResult<Json<NodeOutType>, UserLocale> {
+) -> PathResult<Json<VertexOutType>, UserLocale> {
     let conn = &mut db::establish_connection();
-    let node = match model_services::create_node(
+    let vertex = match model_services::create_vertex(
         conn,
         project_service,
         &user,
         project_id,
-        node_in.into_inner(),
+        vertex_in.into_inner(),
     )
     .await
     {
-        Ok(node) => node,
+        Ok(vertex) => vertex,
         Err(app_error) => return PathResult::new(Err(app_error), locale),
     };
-    PathResult::new(Ok(Json(node)), locale)
+    PathResult::new(Ok(Json(vertex)), locale)
 }

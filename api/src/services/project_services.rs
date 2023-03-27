@@ -25,7 +25,7 @@ pub fn create_project(
                 projects::description.eq(project_in.description),
                 projects::is_public.eq(project_in.is_public),
                 projects::is_archived.eq(project_in.is_archived),
-                projects::node_value_type.eq(project_in.node_value_type),
+                projects::vertex_value_type.eq(project_in.vertex_value_type),
                 projects::arc_value_type.eq(project_in.arc_value_type),
             ))
             .get_result::<Project>(conn)?;
@@ -151,11 +151,11 @@ pub fn change_project(
     let project_plugins =
         plugin_services::find_project_plugins(conn, project_id).to_service_result()?;
     for project_plugin in project_plugins {
-        if let Some(node_value_type) = &project_plugin.node_value_type {
-            if project_in.node_value_type != *node_value_type {
+        if let Some(vertex_value_type) = &project_plugin.vertex_value_type {
+            if project_in.vertex_value_type != *vertex_value_type {
                 return Err(AppError::ValidationError(Box::new(move |locale| {
                     t!(
-                        "change_project_node_value_type_error",
+                        "change_project_vertex_value_type_error",
                         locale = locale,
                         plugin_name = project_plugin.name
                     )
@@ -181,7 +181,7 @@ pub fn change_project(
             projects::description.eq(project_in.description),
             projects::is_public.eq(project_in.is_public),
             projects::is_archived.eq(project_in.is_archived),
-            projects::node_value_type.eq(project_in.node_value_type),
+            projects::vertex_value_type.eq(project_in.vertex_value_type),
             projects::arc_value_type.eq(project_in.arc_value_type),
         ))
         .get_result::<Project>(conn)
@@ -235,7 +235,7 @@ impl ProjectOutType {
             is_archived: project.is_archived,
             created_at: project.created_at,
             updated_at: project.updated_at,
-            node_value_type: project.node_value_type,
+            vertex_value_type: project.vertex_value_type,
             arc_value_type: project.arc_value_type,
             plugins: plugin_services::find_project_plugins(conn, project.id)
                 .to_service_result()?
@@ -263,7 +263,7 @@ impl ProjectOutType {
                 is_archived: project.is_archived,
                 created_at: project.created_at,
                 updated_at: project.updated_at,
-                node_value_type: project.node_value_type,
+                vertex_value_type: project.vertex_value_type,
                 arc_value_type: project.arc_value_type,
                 plugins: project_plugins.into_iter().rev().collect(),
             })

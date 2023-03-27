@@ -77,7 +77,7 @@ impl MountRoutes for Rocket<Build> {
                 project_routes::exclude_user,
                 project_routes::delete_project,
                 model_routes::get_active_users,
-                model_routes::create_node
+                model_routes::create_vertex
             ),
         )
     }

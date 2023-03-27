@@ -1,4 +1,4 @@
-use crate::models::{ArcValueType, NodeValueType, ProjectUserStatusValue};
+use crate::models::{ArcValueType, ProjectUserStatusValue, VertexValueType};
 use crate::request::DateTimeWrapper;
 use chrono::{DateTime, Utc};
 use rocket::form::FromForm;
@@ -203,8 +203,8 @@ pub struct ProjectOutType {
     pub created_at: DateTime<Utc>,
     /// Project update time
     pub updated_at: DateTime<Utc>,
-    /// Project node value type
-    pub node_value_type: NodeValueType,
+    /// Project vertex value type
+    pub vertex_value_type: VertexValueType,
     /// Project arc value type
     pub arc_value_type: ArcValueType,
     /// Project plugins
@@ -223,8 +223,8 @@ pub struct ProjectInType {
     pub is_public: bool,
     /// Is project archived
     pub is_archived: bool,
-    /// Project node value type
-    pub node_value_type: NodeValueType,
+    /// Project vertex value type
+    pub vertex_value_type: VertexValueType,
     /// Project arc value type
     pub arc_value_type: ArcValueType,
 }
@@ -248,8 +248,8 @@ pub struct PluginType {
     pub name: String,
     /// Plugin description
     pub description: String,
-    /// Plugin node value type
-    pub node_value_type: Option<NodeValueType>,
+    /// Plugin vertex value type
+    pub vertex_value_type: Option<VertexValueType>,
     /// Plugin arc value type
     pub arc_value_type: Option<ArcValueType>,
 }
@@ -342,40 +342,40 @@ pub struct ProjectsInType {
 
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct NodeOutType {
-    /// Node identifier
+pub struct VertexOutType {
+    /// Vertex identifier
     pub id: i32,
-    /// Node name
+    /// Vertex name
     pub name: String,
-    /// Node description
+    /// Vertex description
     pub description: String,
-    /// Node value
+    /// Vertex value
     pub value: Option<f64>,
-    /// Node project identifier
+    /// Vertex project identifier
     pub project_id: i32,
-    /// Node position in x coordinate
+    /// Vertex position in x coordinate
     pub x_position: f64,
-    /// Node position in y coordinate
+    /// Vertex position in y coordinate
     pub y_position: f64,
-    /// Node creation time
+    /// Vertex creation time
     pub created_at: DateTime<Utc>,
-    /// Node update time
+    /// Vertex update time
     pub updated_at: DateTime<Utc>,
 }
 
-/// Type of node to create
+/// Type of vertex to create
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct NodeInCreateType {
-    /// Node name
+pub struct VertexInCreateType {
+    /// Vertex name
     pub name: String,
-    /// Node description
+    /// Vertex description
     pub description: String,
-    /// Node value
+    /// Vertex value
     pub value: Option<f64>,
-    /// Node position in x coordinate
+    /// Vertex position in x coordinate
     pub x_position: f64,
-    /// Node position in y coordinate
+    /// Vertex position in y coordinate
     pub y_position: f64,
 }
 

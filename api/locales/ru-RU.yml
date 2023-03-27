@@ -36,7 +36,7 @@ view_project_forbidden_error: "Недостаточно прав для прос
 view_project_users_forbidden_error: "Недостаточно прав для просмотра пользователей проекта."
 
 change_project_forbidden_error: "Недостаточно прав для изменения проекта."
-change_project_node_value_type_error: "Невозможно изменить тип значения вершины из-за плагина: `%{plugin_name}`."
+change_project_vertex_value_type_error: "Невозможно изменить тип значения вершины из-за плагина: `%{plugin_name}`."
 change_project_arc_value_type_error: "Невозможно изменить тип значения дуги из-за плагина: `%{plugin_name}`."
 
 change_archived_project_error: "Невозможно изменить архивированный проект."
@@ -71,4 +71,4 @@ invalid_status_error: "Неверный статус: `%{status}`"
 
 change_model_forbidden_error: "Недостаточно прав для изменения модели проекта."
 
-invalid_node_value_error: "Неверное значение вершины, ожидалось `%{expected}`, но получено `%{got}`."
+invalid_vertex_value_error: "Неверное значение вершины, ожидалось `%{expected}`, но получено `%{got}`."

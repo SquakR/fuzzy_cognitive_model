@@ -36,7 +36,7 @@ view_project_forbidden_error: "Insufficient permissions to view the project."
 view_project_users_forbidden_error: "Insufficient permissions to view the project users."
 
 change_project_forbidden_error: "Insufficient permissions to change the project."
-change_project_node_value_type_error: "Unable to change node value type due to plugin: `%{plugin_name}`."
+change_project_vertex_value_type_error: "Unable to change vertex value type due to plugin: `%{plugin_name}`."
 change_project_arc_value_type_error: "Unable to change arc value type due to plugin: `%{plugin_name}`."
 
 change_archived_project_error: "Unable to change archive project."
@@ -71,4 +71,4 @@ invalid_status_error: "Invalid status: `%{status}`"
 
 change_model_forbidden_error: "Insufficient permissions to change the project model."
 
-invalid_node_value_error: "Invalid node value, expected `%{expected}`, but got %{got}."
+invalid_vertex_value_error: "Invalid vertex value, expected `%{expected}`, but got %{got}."

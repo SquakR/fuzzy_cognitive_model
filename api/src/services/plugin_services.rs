@@ -94,8 +94,8 @@ fn check_plugins(
             .find(|plugin| plugin.name == *plugin_name)
             .unwrap();
         let mut incompatible = false;
-        if let Some(node_value_type) = &plugin.node_value_type {
-            if project.node_value_type != *node_value_type {
+        if let Some(vertex_value_type) = &plugin.vertex_value_type {
+            if project.vertex_value_type != *vertex_value_type {
                 incompatible = true;
             }
         }
@@ -123,7 +123,7 @@ impl From<Plugin> for PluginType {
         PluginType {
             name: plugin.name,
             description: plugin.description,
-            node_value_type: plugin.node_value_type,
+            vertex_value_type: plugin.vertex_value_type,
             arc_value_type: plugin.arc_value_type,
         }
     }

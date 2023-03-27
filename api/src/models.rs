@@ -1,6 +1,7 @@
 use crate::schema::{
-    arcs, email_confirmations, nodes, password_resets, permissions, plugins, project_plugins,
+    arcs, email_confirmations, password_resets, permissions, plugins, project_plugins,
     project_user_permissions, project_user_statuses, project_users, projects, sessions, users,
+    vertices,
 };
 use chrono::{DateTime, Utc};
 use diesel::{Associations, Identifiable, Queryable};
@@ -67,7 +68,7 @@ pub struct Project {
     pub is_archived: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-    pub node_value_type: NodeValueType,
+    pub vertex_value_type: VertexValueType,
     pub arc_value_type: ArcValueType,
 }
 
@@ -124,7 +125,7 @@ pub struct ProjectUserPermission {
 pub struct Plugin {
     pub name: String,
     pub description: String,
-    pub node_value_type: Option<NodeValueType>,
+    pub vertex_value_type: Option<VertexValueType>,
     pub arc_value_type: Option<ArcValueType>,
 }
 
@@ -140,15 +141,15 @@ pub struct ProjectPlugin {
 
 #[derive(Debug, PartialEq, diesel_derive_enum::DbEnum, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-#[ExistingTypePath = "crate::schema::sql_types::NodeValueType"]
-pub enum NodeValueType {
+#[ExistingTypePath = "crate::schema::sql_types::VertexValueType"]
+pub enum VertexValueType {
     None,
     FromZeroToOne,
 }
 
 #[derive(Queryable, Identifiable)]
-#[diesel(belongs_to(Project))]
-pub struct Node {
+#[diesel(table_name = vertices, belongs_to(Project))]
+pub struct Vertex {
     pub id: i32,
     pub name: String,
     pub description: String,
@@ -170,8 +171,8 @@ pub enum ArcValueType {
 
 #[derive(Queryable, Identifiable)]
 #[diesel(belongs_to(Project))]
-#[diesel(belongs_to(Node, foreign_key = source_id))]
-#[diesel(belongs_to(Node, foreign_key = target_id))]
+#[diesel(belongs_to(Vertex, foreign_key = source_id))]
+#[diesel(belongs_to(Vertex, foreign_key = target_id))]
 pub struct Arc {
     pub id: i32,
     pub description: String,
