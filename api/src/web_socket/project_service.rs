@@ -1,10 +1,11 @@
 use super::listener::ProjectConnections;
-use super::service::WebSocketService;
 use crate::models::User;
 use crate::response::{ServiceResult, ToServiceResult};
 use crate::services::{permission_services, project_services, user_services};
+use crate::types::ModelActionType;
 use diesel::PgConnection;
 use futures_util::SinkExt;
+use schemars::JsonSchema;
 use serde::Serialize;
 use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 use tokio_tungstenite::tungstenite::protocol::{CloseFrame, Message};
@@ -14,31 +15,9 @@ pub struct WebSocketProjectService {
     project_connections: ProjectConnections,
 }
 
-#[rocket::async_trait]
-impl<T> WebSocketService<T> for WebSocketProjectService
-where
-    T: Serialize + Send,
-{
-    async fn send_message(&self, id: i32, message: Message) -> () {
-        for connection_sender in self
-            .project_connections
-            .lock()
-            .await
-            .get_mut(&id)
-            .unwrap_or(&mut vec![])
-        {
-            connection_sender
-                .sender
-                .send(message.clone())
-                .await
-                .unwrap()
-        }
-    }
-}
-
 impl WebSocketProjectService {
     pub fn new(project_connections: ProjectConnections) -> Self {
-        WebSocketProjectService {
+        Self {
             project_connections,
         }
     }
@@ -94,6 +73,25 @@ impl WebSocketProjectService {
                     code: CloseCode::Normal,
                     reason: "The project has been deleted.".into(),
                 })))
+                .await
+                .unwrap()
+        }
+    }
+    pub async fn notify<T>(&self, model_action: ModelActionType<T>) -> ()
+    where
+        T: Clone + Serialize + JsonSchema,
+    {
+        let message = Message::Text(serde_json::to_string(&model_action).unwrap());
+        for connection_sender in self
+            .project_connections
+            .lock()
+            .await
+            .get_mut(&model_action.project_id)
+            .unwrap_or(&mut vec![])
+        {
+            connection_sender
+                .sender
+                .send(message.clone())
                 .await
                 .unwrap()
         }

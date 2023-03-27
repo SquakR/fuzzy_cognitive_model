@@ -137,7 +137,7 @@ pub fn deactivate_user_sessions(
 
 impl From<UserAgentDevice<'_>> for DeviceType {
     fn from(user_agent_device: UserAgentDevice) -> Self {
-        DeviceType {
+        Self {
             name: user_agent_device
                 .name
                 .and_then(|name| Some(name.into_owned())),
@@ -153,7 +153,7 @@ impl From<UserAgentDevice<'_>> for DeviceType {
 
 impl From<UserAgentOS<'_>> for OSType {
     fn from(user_agent_os: UserAgentOS<'_>) -> Self {
-        OSType {
+        Self {
             name: user_agent_os.name.and_then(|name| Some(name.into_owned())),
             major: user_agent_os
                 .major
@@ -173,7 +173,7 @@ impl From<UserAgentOS<'_>> for OSType {
 
 impl From<UserAgentProduct<'_>> for ProductType {
     fn from(user_agent_product: UserAgentProduct<'_>) -> Self {
-        ProductType {
+        Self {
             name: user_agent_product
                 .name
                 .and_then(|name| Some(name.into_owned())),

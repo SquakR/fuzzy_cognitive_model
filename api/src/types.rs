@@ -340,6 +340,20 @@ pub struct ProjectsInType {
     pub per_page: Option<u16>,
 }
 
+/// Type of model action
+#[derive(Clone, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelActionType<T: Clone + Serialize + JsonSchema> {
+    /// Project identifier
+    pub project_id: i32,
+    /// Project update time
+    pub project_updated_at: DateTime<Utc>,
+    /// Action name
+    pub name: String,
+    /// Action data
+    pub data: T,
+}
+
 /// Type of vertex
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

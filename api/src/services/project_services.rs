@@ -140,6 +140,17 @@ pub fn paginate_projects(
     })
 }
 
+pub fn update_project(
+    conn: &mut PgConnection,
+    project_id: i32,
+    updated_at: DateTime<Utc>,
+) -> QueryResult<Project> {
+    diesel::update(projects::table)
+        .filter(projects::id.eq(project_id))
+        .set(projects::updated_at.eq(updated_at))
+        .get_result::<Project>(conn)
+}
+
 pub fn change_project(
     conn: &mut PgConnection,
     user: &User,
@@ -216,7 +227,7 @@ type ProjectIdWithUser = (
 
 impl ProjectOutType {
     pub fn from_project(conn: &mut PgConnection, project: Project) -> ServiceResult<Self> {
-        Ok(ProjectOutType {
+        Ok(Self {
             id: project.id,
             name: project.name,
             description: project.description,
@@ -241,13 +252,13 @@ impl ProjectOutType {
         conn: &mut PgConnection,
         projects: Vec<Project>,
     ) -> ServiceResult<Vec<Self>> {
-        let mut creators = ProjectOutType::get_project_creators(conn, &projects)?;
-        let mut plugins = ProjectOutType::get_project_plugins(conn, &projects)?;
+        let mut creators = Self::get_project_creators(conn, &projects)?;
+        let mut plugins = Self::get_project_plugins(conn, &projects)?;
         let mut result = vec![];
         for project in projects {
-            let project_creator = ProjectOutType::find_project_creator(&mut creators, project.id);
-            let project_plugins = ProjectOutType::find_project_plugins(&mut plugins, project.id);
-            result.push(ProjectOutType {
+            let project_creator = Self::find_project_creator(&mut creators, project.id);
+            let project_plugins = Self::find_project_plugins(&mut plugins, project.id);
+            result.push(Self {
                 id: project.id,
                 name: project.name,
                 description: project.description,

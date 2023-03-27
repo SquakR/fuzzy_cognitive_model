@@ -109,7 +109,7 @@ fn check_plugins(
 
 impl From<Plugin> for PluginType {
     fn from(plugin: Plugin) -> Self {
-        PluginType {
+        Self {
             name: plugin.name,
             description: plugin.description,
             vertex_value_type: plugin.vertex_value_type,

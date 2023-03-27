@@ -107,7 +107,7 @@ pub struct ProjectConnectionData {
 
 impl ProjectConnectionData {
     pub fn new(session_id: i32, user_id: i32, project_id: i32) -> Self {
-        ProjectConnectionData {
+        Self {
             session_id,
             user_id,
             project_id,
@@ -122,7 +122,7 @@ pub struct ConnectionSender<T> {
 
 impl<T> ConnectionSender<T> {
     pub fn new(data: T, sender: UnboundedSender<Message>) -> Self {
-        ConnectionSender { data, sender }
+        Self { data, sender }
     }
 }
 
@@ -141,7 +141,7 @@ impl WebSocketListener {
     pub fn new(host: String, port: i32) -> Self {
         let mut buf = [0u8; 88];
         let project_connections = Arc::new(Mutex::new(HashMap::new()));
-        WebSocketListener {
+        Self {
             host,
             port,
             secret_key: Key::from(

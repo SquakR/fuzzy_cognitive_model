@@ -3,14 +3,17 @@ use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{arcs, projects, vertices};
 use crate::services::{permission_services, project_services};
 use crate::types::{
-    ArcOutType, ModelOutType, ProjectOutType, VertexInChangeDescriptionType, VertexInCreateType,
-    VertexInMoveType, VertexOutChangeDescriptionType, VertexOutChangeValueType, VertexOutMoveType,
-    VertexOutType,
+    ArcOutType, ModelActionType, ModelOutType, ProjectOutType, VertexInChangeDescriptionType,
+    VertexInCreateType, VertexInMoveType, VertexOutChangeDescriptionType, VertexOutChangeValueType,
+    VertexOutMoveType, VertexOutType,
 };
 use crate::validation_error;
-use crate::web_socket::{WebSocketProjectService, WebSocketService};
+use crate::web_socket::WebSocketProjectService;
+use chrono::Utc;
 use diesel::prelude::*;
 use diesel::PgConnection;
+use schemars::JsonSchema;
+use serde::Serialize;
 
 pub fn get_model(
     conn: &mut PgConnection,
@@ -60,8 +63,8 @@ pub async fn create_vertex(
     user: &User,
     project_id: i32,
     vertex_in: VertexInCreateType,
-) -> ServiceResult<VertexOutType> {
-    let project = project_services::find_project_by_id(conn, project_id)
+) -> ServiceResult<ModelActionType<VertexOutType>> {
+    let mut project = project_services::find_project_by_id(conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
     check_vertex_value(&project, vertex_in.value.clone())?;
@@ -76,15 +79,12 @@ pub async fn create_vertex(
         ))
         .get_result::<Vertex>(conn)
         .to_service_result()?;
+    project = project_services::update_project(conn, project_id, vertex.created_at)
+        .to_service_result()?;
     let vertex_out = VertexOutType::from(vertex);
-    project_service
-        .notify(
-            project_id,
-            String::from("create_vertex"),
-            vertex_out.clone(),
-        )
-        .await;
-    Ok(vertex_out)
+    let model_action = ModelActionType::new(&project, String::from("create_vertex"), vertex_out);
+    project_service.notify(model_action.clone()).await;
+    Ok(model_action)
 }
 
 pub async fn change_vertex_description(
@@ -94,8 +94,8 @@ pub async fn change_vertex_description(
     project_id: i32,
     vertex_id: i32,
     vertex_in: VertexInChangeDescriptionType,
-) -> ServiceResult<VertexOutChangeDescriptionType> {
-    let project = project_services::find_project_by_id(conn, project_id)
+) -> ServiceResult<ModelActionType<VertexOutChangeDescriptionType>> {
+    let mut project = project_services::find_project_by_id(conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
     let vertex = diesel::update(vertices::table)
@@ -106,15 +106,16 @@ pub async fn change_vertex_description(
         ))
         .get_result::<Vertex>(conn)
         .to_service_result()?;
+    project = project_services::update_project(conn, project_id, vertex.updated_at)
+        .to_service_result()?;
     let vertex_out = VertexOutChangeDescriptionType::from(vertex);
-    project_service
-        .notify(
-            project_id,
-            String::from("change_vertex_description"),
-            vertex_out.clone(),
-        )
-        .await;
-    Ok(vertex_out)
+    let model_action = ModelActionType::new(
+        &project,
+        String::from("change_vertex_description"),
+        vertex_out,
+    );
+    project_service.notify(model_action.clone()).await;
+    Ok(model_action)
 }
 
 pub async fn change_vertex_value(
@@ -124,8 +125,8 @@ pub async fn change_vertex_value(
     project_id: i32,
     vertex_id: i32,
     value: Option<f64>,
-) -> ServiceResult<VertexOutChangeValueType> {
-    let project = project_services::find_project_by_id(conn, project_id)
+) -> ServiceResult<ModelActionType<VertexOutChangeValueType>> {
+    let mut project = project_services::find_project_by_id(conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
     check_vertex_value(&project, value.clone())?;
@@ -134,15 +135,13 @@ pub async fn change_vertex_value(
         .set((vertices::value.eq(value),))
         .get_result::<Vertex>(conn)
         .to_service_result()?;
+    project = project_services::update_project(conn, project_id, vertex.updated_at)
+        .to_service_result()?;
     let vertex_out = VertexOutChangeValueType::from(vertex);
-    project_service
-        .notify(
-            project_id,
-            String::from("change_vertex_value"),
-            vertex_out.clone(),
-        )
-        .await;
-    Ok(vertex_out)
+    let model_action =
+        ModelActionType::new(&project, String::from("change_vertex_value"), vertex_out);
+    project_service.notify(model_action.clone()).await;
+    Ok(model_action)
 }
 
 pub async fn move_vertex(
@@ -152,8 +151,8 @@ pub async fn move_vertex(
     project_id: i32,
     vertex_id: i32,
     vertex_in: VertexInMoveType,
-) -> ServiceResult<VertexOutMoveType> {
-    let project = project_services::find_project_by_id(conn, project_id)
+) -> ServiceResult<ModelActionType<VertexOutMoveType>> {
+    let mut project = project_services::find_project_by_id(conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
     let vertex = diesel::update(vertices::table)
@@ -164,11 +163,12 @@ pub async fn move_vertex(
         ))
         .get_result::<Vertex>(conn)
         .to_service_result()?;
+    project = project_services::update_project(conn, project_id, vertex.updated_at)
+        .to_service_result()?;
     let vertex_out = VertexOutMoveType::from(vertex);
-    project_service
-        .notify(project_id, String::from("move_vertex"), vertex_out.clone())
-        .await;
-    Ok(vertex_out)
+    let model_action = ModelActionType::new(&project, String::from("move_vertex"), vertex_out);
+    project_service.notify(model_action.clone()).await;
+    Ok(model_action)
 }
 
 pub async fn delete_vertex(
@@ -177,8 +177,8 @@ pub async fn delete_vertex(
     user: &User,
     project_id: i32,
     vertex_id: i32,
-) -> ServiceResult<()> {
-    let project = project_services::find_project_by_id(conn, project_id)
+) -> ServiceResult<ModelActionType<()>> {
+    let mut project = project_services::find_project_by_id(conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
     let deleted_number = diesel::delete(vertices::table.filter(vertices::id.eq(vertex_id)))
@@ -187,10 +187,10 @@ pub async fn delete_vertex(
     if deleted_number == 0 {
         return validation_error!("vertex_not_found_error");
     }
-    project_service
-        .notify(project_id, String::from("delete_vertex"), vertex_id)
-        .await;
-    Ok(())
+    project = project_services::update_project(conn, project_id, Utc::now()).to_service_result()?;
+    let model_action = ModelActionType::new(&project, String::from("delete_vertex"), ());
+    project_service.notify(model_action.clone()).await;
+    Ok(model_action)
 }
 
 fn check_vertex_value(project: &Project, value: Option<f64>) -> ServiceResult<()> {
@@ -224,9 +224,23 @@ fn check_vertex_value(project: &Project, value: Option<f64>) -> ServiceResult<()
     }
 }
 
+impl<T> ModelActionType<T>
+where
+    T: Clone + Serialize + JsonSchema,
+{
+    fn new(project: &Project, name: String, data: T) -> Self {
+        Self {
+            project_id: project.id,
+            project_updated_at: project.updated_at,
+            name,
+            data,
+        }
+    }
+}
+
 impl From<Vertex> for VertexOutType {
     fn from(vertex: Vertex) -> Self {
-        VertexOutType {
+        Self {
             id: vertex.id,
             name: vertex.name,
             description: vertex.description,
@@ -242,7 +256,7 @@ impl From<Vertex> for VertexOutType {
 
 impl From<Vertex> for VertexOutChangeDescriptionType {
     fn from(vertex: Vertex) -> Self {
-        VertexOutChangeDescriptionType {
+        Self {
             id: vertex.id,
             name: vertex.name,
             description: vertex.description,
@@ -253,7 +267,7 @@ impl From<Vertex> for VertexOutChangeDescriptionType {
 
 impl From<Vertex> for VertexOutChangeValueType {
     fn from(vertex: Vertex) -> Self {
-        VertexOutChangeValueType {
+        Self {
             id: vertex.id,
             value: vertex.value,
             updated_at: vertex.updated_at,
@@ -263,7 +277,7 @@ impl From<Vertex> for VertexOutChangeValueType {
 
 impl From<Vertex> for VertexOutMoveType {
     fn from(vertex: Vertex) -> Self {
-        VertexOutMoveType {
+        Self {
             id: vertex.id,
             x_position: vertex.x_position,
             y_position: vertex.y_position,
@@ -274,7 +288,7 @@ impl From<Vertex> for VertexOutMoveType {
 
 impl From<Arc> for ArcOutType {
     fn from(arc: Arc) -> Self {
-        ArcOutType {
+        Self {
             id: arc.id,
             description: arc.description,
             value: arc.value,

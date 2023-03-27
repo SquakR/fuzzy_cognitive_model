@@ -245,7 +245,7 @@ fn has_permission(
 
 impl From<Permission> for PermissionType {
     fn from(permission: Permission) -> Self {
-        PermissionType {
+        Self {
             key: permission.key,
             description: permission.description,
         }

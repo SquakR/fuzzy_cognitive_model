@@ -274,7 +274,7 @@ fn get_exist_user_app_error(exist_user: User, username: &str, email: &str) -> Se
 
 impl From<User> for UserOutType {
     fn from(user: User) -> Self {
-        UserOutType {
+        Self {
             id: user.id,
             username: user.username,
             email: user.email,
