@@ -16,7 +16,7 @@ CREATE TYPE arc_value_type AS ENUM ('symbolic', 'from_minus_one_to_one');
 CREATE TABLE arcs (
   id SERIAL PRIMARY KEY,
   description TEXT NOT NULL,
-  value VARCHAR(255) NOT NULL,
+  value DOUBLE PRECISION NOT NULL,
   source_id INTEGER NOT NULL,
   FOREIGN KEY (source_id) REFERENCES vertices(id) ON DELETE CASCADE,
   target_id INTEGER NOT NULL,

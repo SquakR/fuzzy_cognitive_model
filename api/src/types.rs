@@ -340,6 +340,7 @@ pub struct ProjectsInType {
     pub per_page: Option<u16>,
 }
 
+/// Type of vertex
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct VertexOutType {
@@ -436,6 +437,40 @@ pub struct VertexInMoveType {
     pub x_position: f64,
     /// Vertex position in y coordinate
     pub y_position: f64,
+}
+
+/// Type of arc
+#[derive(Clone, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ArcOutType {
+    /// Arc identifier
+    pub id: i32,
+    /// Arc description
+    pub description: String,
+    /// Arc value
+    pub value: f64,
+    /// Arc source vertex identifier
+    pub source_id: i32,
+    /// Arc target vertex identifier
+    pub target_id: i32,
+    /// Arc project identifier
+    pub project_id: i32,
+    /// Arc creation time
+    pub created_at: DateTime<Utc>,
+    /// Arc update time
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Type of model
+#[derive(Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelOutType {
+    /// Model project
+    pub project: ProjectOutType,
+    /// Model vertices
+    pub vertices: Vec<VertexOutType>,
+    /// Model arcs
+    pub arcs: Vec<ArcOutType>,
 }
 
 /// Interval input type

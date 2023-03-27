@@ -4,14 +4,30 @@ use crate::request::UserLocale;
 use crate::response::PathResult;
 use crate::services::model_services;
 use crate::types::{
-    UserOutType, VertexInChangeDescriptionType, VertexInCreateType, VertexInMoveType,
+    ModelOutType, UserOutType, VertexInChangeDescriptionType, VertexInCreateType, VertexInMoveType,
     VertexOutChangeDescriptionType, VertexOutChangeValueType, VertexOutMoveType, VertexOutType,
 };
 use crate::web_socket::WebSocketProjectService;
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
 
-/// Get active users
+/// Get model
+#[openapi(tag = "model")]
+#[get("/project/<project_id>")]
+pub fn get_model(
+    project_id: i32,
+    user: User,
+    locale: UserLocale,
+) -> PathResult<Json<ModelOutType>, UserLocale> {
+    let conn = &mut db::establish_connection();
+    let model = match model_services::get_model(conn, &user, project_id) {
+        Ok(model) => model,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(Ok(Json(model)), locale)
+}
+
+/// Get model active users
 #[openapi(tag = "model")]
 #[get("/project/<project_id>/active_users")]
 pub async fn get_active_users(

@@ -176,7 +176,7 @@ pub enum ArcValueType {
 pub struct Arc {
     pub id: i32,
     pub description: String,
-    pub value: String,
+    pub value: f64,
     pub source_id: i32,
     pub target_id: i32,
     pub project_id: i32,

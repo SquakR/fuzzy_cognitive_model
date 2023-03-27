@@ -18,7 +18,7 @@ diesel::table! {
     arcs (id) {
         id -> Int4,
         description -> Text,
-        value -> Varchar,
+        value -> Float8,
         source_id -> Int4,
         target_id -> Int4,
         project_id -> Int4,

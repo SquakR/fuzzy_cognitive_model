@@ -1,15 +1,58 @@
-use crate::models::{Project, User, Vertex, VertexValueType};
+use crate::models::{Arc, Project, User, Vertex, VertexValueType};
 use crate::response::{AppError, ServiceResult, ToServiceResult};
-use crate::schema::vertices;
+use crate::schema::{arcs, projects, vertices};
 use crate::services::{permission_services, project_services};
 use crate::types::{
-    VertexInChangeDescriptionType, VertexInCreateType, VertexInMoveType,
-    VertexOutChangeDescriptionType, VertexOutChangeValueType, VertexOutMoveType, VertexOutType,
+    ArcOutType, ModelOutType, ProjectOutType, VertexInChangeDescriptionType, VertexInCreateType,
+    VertexInMoveType, VertexOutChangeDescriptionType, VertexOutChangeValueType, VertexOutMoveType,
+    VertexOutType,
 };
 use crate::validation_error;
 use crate::web_socket::{WebSocketProjectService, WebSocketService};
 use diesel::prelude::*;
 use diesel::PgConnection;
+
+pub fn get_model(
+    conn: &mut PgConnection,
+    user: &User,
+    project_id: i32,
+) -> ServiceResult<ModelOutType> {
+    let project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_view_project(conn, &project, user)?;
+    let project = ProjectOutType::from_project(conn, project)?;
+    let vertices = find_project_vertices(conn, project_id)
+        .to_service_result()?
+        .into_iter()
+        .map(VertexOutType::from)
+        .collect();
+    let arcs = find_project_arcs(conn, project_id)
+        .to_service_result()?
+        .into_iter()
+        .map(ArcOutType::from)
+        .collect();
+    Ok(ModelOutType {
+        project,
+        vertices,
+        arcs,
+    })
+}
+
+pub fn find_project_vertices(conn: &mut PgConnection, project_id: i32) -> QueryResult<Vec<Vertex>> {
+    projects::table
+        .inner_join(vertices::table)
+        .select(vertices::all_columns)
+        .filter(projects::id.eq(project_id))
+        .get_results::<Vertex>(conn)
+}
+
+pub fn find_project_arcs(conn: &mut PgConnection, project_id: i32) -> QueryResult<Vec<Arc>> {
+    projects::table
+        .inner_join(arcs::table)
+        .select(arcs::all_columns)
+        .filter(projects::id.eq(project_id))
+        .get_results::<Arc>(conn)
+}
 
 pub async fn create_vertex(
     conn: &mut PgConnection,
@@ -225,6 +268,21 @@ impl From<Vertex> for VertexOutMoveType {
             x_position: vertex.x_position,
             y_position: vertex.y_position,
             updated_at: vertex.updated_at,
+        }
+    }
+}
+
+impl From<Arc> for ArcOutType {
+    fn from(arc: Arc) -> Self {
+        ArcOutType {
+            id: arc.id,
+            description: arc.description,
+            value: arc.value,
+            source_id: arc.source_id,
+            target_id: arc.target_id,
+            project_id: arc.project_id,
+            created_at: arc.created_at,
+            updated_at: arc.updated_at,
         }
     }
 }
