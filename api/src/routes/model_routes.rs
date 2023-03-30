@@ -4,9 +4,10 @@ use crate::request::UserLocale;
 use crate::response::PathResult;
 use crate::services::model_services;
 use crate::types::{
-    ArcInCreateType, ArcOutType, ModelActionType, ModelOutType, UserOutType,
-    VertexInChangeDescriptionType, VertexInCreateType, VertexInMoveType,
-    VertexOutChangeDescriptionType, VertexOutChangeValueType, VertexOutMoveType, VertexOutType,
+    ArcInCreateType, ArcOutChangeDescriptionType, ArcOutChangeValueType, ArcOutType,
+    ModelActionType, ModelOutType, UserOutType, VertexInChangeDescriptionType, VertexInCreateType,
+    VertexInMoveType, VertexOutChangeDescriptionType, VertexOutChangeValueType, VertexOutMoveType,
+    VertexOutType,
 };
 use crate::web_socket::WebSocketProjectService;
 use rocket::serde::json::Json;
@@ -211,6 +212,70 @@ pub async fn create_arc(
         &user,
         project_id,
         arc_in.into_inner(),
+    )
+    .await
+    {
+        Ok(model_action) => model_action,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(Ok(Json(model_action)), locale)
+}
+
+/// Change arc description
+#[openapi(tag = "model")]
+#[patch(
+    "/project/<project_id>/arc/<arc_id>/change_description",
+    format = "json",
+    data = "<description>"
+)]
+pub async fn change_arc_description(
+    project_id: i32,
+    arc_id: i32,
+    description: Json<String>,
+    user: User,
+    locale: UserLocale,
+    project_service: WebSocketProjectService,
+) -> PathResult<Json<ModelActionType<ArcOutChangeDescriptionType>>, UserLocale> {
+    let conn = &mut db::establish_connection();
+    let model_action = match model_services::change_arc_description(
+        conn,
+        project_service,
+        &user,
+        project_id,
+        arc_id,
+        description.into_inner(),
+    )
+    .await
+    {
+        Ok(model_action) => model_action,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
+    PathResult::new(Ok(Json(model_action)), locale)
+}
+
+/// Change arc value
+#[openapi(tag = "model")]
+#[patch(
+    "/project/<project_id>/arc/<arc_id>/change_value",
+    format = "json",
+    data = "<value>"
+)]
+pub async fn change_arc_value(
+    project_id: i32,
+    arc_id: i32,
+    value: Json<f64>,
+    user: User,
+    locale: UserLocale,
+    project_service: WebSocketProjectService,
+) -> PathResult<Json<ModelActionType<ArcOutChangeValueType>>, UserLocale> {
+    let conn = &mut db::establish_connection();
+    let model_action = match model_services::change_arc_value(
+        conn,
+        project_service,
+        &user,
+        project_id,
+        arc_id,
+        value.into_inner(),
     )
     .await
     {

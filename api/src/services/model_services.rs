@@ -3,9 +3,10 @@ use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{arcs, projects, vertices};
 use crate::services::{permission_services, project_services};
 use crate::types::{
-    ArcInCreateType, ArcOutType, ModelActionType, ModelOutType, ProjectOutType,
-    VertexInChangeDescriptionType, VertexInCreateType, VertexInMoveType,
-    VertexOutChangeDescriptionType, VertexOutChangeValueType, VertexOutMoveType, VertexOutType,
+    ArcInCreateType, ArcOutChangeDescriptionType, ArcOutChangeValueType, ArcOutType,
+    ModelActionType, ModelOutType, ProjectOutType, VertexInChangeDescriptionType,
+    VertexInCreateType, VertexInMoveType, VertexOutChangeDescriptionType, VertexOutChangeValueType,
+    VertexOutMoveType, VertexOutType,
 };
 use crate::validation_error;
 use crate::web_socket::WebSocketProjectService;
@@ -232,6 +233,56 @@ pub async fn create_arc(
     Ok(model_action)
 }
 
+pub async fn change_arc_description(
+    conn: &mut PgConnection,
+    project_service: WebSocketProjectService,
+    user: &User,
+    project_id: i32,
+    arc_id: i32,
+    description: String,
+) -> ServiceResult<ModelActionType<ArcOutChangeDescriptionType>> {
+    let mut project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_change_model(conn, &project, user.id)?;
+    let arc = diesel::update(arcs::table)
+        .filter(arcs::id.eq(arc_id))
+        .set(arcs::description.eq(description))
+        .get_result::<Arc>(conn)
+        .to_service_result()?;
+    project =
+        project_services::update_project(conn, project_id, arc.updated_at).to_service_result()?;
+    let arc_out = ArcOutChangeDescriptionType::from(arc);
+    let model_action =
+        ModelActionType::new(&project, String::from("change_arc_description"), arc_out);
+    project_service.notify(model_action.clone()).await;
+    Ok(model_action)
+}
+
+pub async fn change_arc_value(
+    conn: &mut PgConnection,
+    project_service: WebSocketProjectService,
+    user: &User,
+    project_id: i32,
+    arc_id: i32,
+    value: f64,
+) -> ServiceResult<ModelActionType<ArcOutChangeValueType>> {
+    let mut project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_change_model(conn, &project, user.id)?;
+    check_arc_value(&project, value)?;
+    let arc = diesel::update(arcs::table)
+        .filter(arcs::id.eq(arc_id))
+        .set((arcs::value.eq(value),))
+        .get_result::<Arc>(conn)
+        .to_service_result()?;
+    project =
+        project_services::update_project(conn, project_id, arc.updated_at).to_service_result()?;
+    let arc_out = ArcOutChangeValueType::from(arc);
+    let model_action = ModelActionType::new(&project, String::from("change_arc_value"), arc_out);
+    project_service.notify(model_action.clone()).await;
+    Ok(model_action)
+}
+
 fn check_vertex_value(project: &Project, value: Option<f64>) -> ServiceResult<()> {
     match value {
         Some(value) => match project.vertex_value_type {
@@ -358,6 +409,26 @@ impl From<Arc> for ArcOutType {
             target_id: arc.target_id,
             project_id: arc.project_id,
             created_at: arc.created_at,
+            updated_at: arc.updated_at,
+        }
+    }
+}
+
+impl From<Arc> for ArcOutChangeDescriptionType {
+    fn from(arc: Arc) -> Self {
+        Self {
+            id: arc.id,
+            description: arc.description,
+            updated_at: arc.updated_at,
+        }
+    }
+}
+
+impl From<Arc> for ArcOutChangeValueType {
+    fn from(arc: Arc) -> Self {
+        Self {
+            id: arc.id,
+            value: arc.value,
             updated_at: arc.updated_at,
         }
     }

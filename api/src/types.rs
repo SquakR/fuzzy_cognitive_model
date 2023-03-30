@@ -489,6 +489,30 @@ pub struct ArcInCreateType {
     pub target_id: i32,
 }
 
+/// Type of result of changing arc description
+#[derive(Clone, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ArcOutChangeDescriptionType {
+    /// Arc identifier
+    pub id: i32,
+    /// Arc description
+    pub description: String,
+    /// Arc update time
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Type of result of changing arc value
+#[derive(Clone, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ArcOutChangeValueType {
+    /// Arc identifier
+    pub id: i32,
+    /// Arc value
+    pub value: f64,
+    /// Arc update time
+    pub updated_at: DateTime<Utc>,
+}
+
 /// Type of model
 #[derive(Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

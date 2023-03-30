@@ -83,7 +83,9 @@ impl MountRoutes for Rocket<Build> {
                 model_routes::change_vertex_value,
                 model_routes::move_vertex,
                 model_routes::delete_vertex,
-                model_routes::create_arc
+                model_routes::create_arc,
+                model_routes::change_arc_description,
+                model_routes::change_arc_value
             ),
         )
     }
