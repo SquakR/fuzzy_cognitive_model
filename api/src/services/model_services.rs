@@ -112,7 +112,7 @@ pub async fn change_vertex_description(
             vertices::description.eq(vertex_in.description),
         ))
         .get_result::<Vertex>(conn)
-        .to_service_result()?;
+        .to_service_result_find(String::from("vertex_not_found_error"))?;
     project = project_services::update_project(conn, project_id, vertex.updated_at)
         .to_service_result()?;
     let vertex_out = VertexOutChangeDescriptionType::from(vertex);
@@ -141,7 +141,7 @@ pub async fn change_vertex_value(
         .filter(vertices::id.eq(vertex_id))
         .set((vertices::value.eq(value),))
         .get_result::<Vertex>(conn)
-        .to_service_result()?;
+        .to_service_result_find(String::from("vertex_not_found_error"))?;
     project = project_services::update_project(conn, project_id, vertex.updated_at)
         .to_service_result()?;
     let vertex_out = VertexOutChangeValueType::from(vertex);
@@ -169,7 +169,7 @@ pub async fn move_vertex(
             vertices::y_position.eq(vertex_in.y_position),
         ))
         .get_result::<Vertex>(conn)
-        .to_service_result()?;
+        .to_service_result_find(String::from("vertex_not_found_error"))?;
     project = project_services::update_project(conn, project_id, vertex.updated_at)
         .to_service_result()?;
     let vertex_out = VertexOutMoveType::from(vertex);
@@ -248,7 +248,7 @@ pub async fn change_arc_description(
         .filter(arcs::id.eq(arc_id))
         .set(arcs::description.eq(description))
         .get_result::<Arc>(conn)
-        .to_service_result()?;
+        .to_service_result_find(String::from("arc_not_found_error"))?;
     project =
         project_services::update_project(conn, project_id, arc.updated_at).to_service_result()?;
     let arc_out = ArcOutChangeDescriptionType::from(arc);
@@ -274,7 +274,7 @@ pub async fn change_arc_value(
         .filter(arcs::id.eq(arc_id))
         .set((arcs::value.eq(value),))
         .get_result::<Arc>(conn)
-        .to_service_result()?;
+        .to_service_result_find(String::from("arc_not_found_error"))?;
     project =
         project_services::update_project(conn, project_id, arc.updated_at).to_service_result()?;
     let arc_out = ArcOutChangeValueType::from(arc);

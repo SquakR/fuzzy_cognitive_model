@@ -10,6 +10,8 @@ file_not_found_error: "File not found."
 project_not_found_error: "Project record not found."
 project_user_not_found_error: "Project user record not found."
 last_status_not_found_error: "Last user status record in project not found."
+vertex_not_found_error: "Vertex record not found."
+arc_not_found_error: "Arc record not found."
 source_vertex_not_found_error: "Source vertex record not found."
 target_vertex_not_found_error: "Target vertex record not found."
 

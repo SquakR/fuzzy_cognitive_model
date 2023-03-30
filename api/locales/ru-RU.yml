@@ -10,6 +10,8 @@ file_not_found_error: "Не найден файл."
 project_not_found_error: "Не найдена запись проекта."
 project_user_not_found_error: "Не найдена запись пользователя проекта."
 last_status_not_found_error: "Не найдена запись последнего статуса пользователя в проекте."
+vertex_not_found_error: "Не найдена запись вершины."
+arc_not_found_error: "Не найдена запись дуги."
 source_vertex_not_found_error: "Не найдена запись начальной вершины."
 target_vertex_not_found_error: "Не найдена запись конечной вершины."
 
