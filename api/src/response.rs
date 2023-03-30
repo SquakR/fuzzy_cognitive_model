@@ -1,5 +1,5 @@
 use crate::request::{AcceptLanguage, BaseLocale, Locale};
-use diesel::result::Error as DieselError;
+use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use okapi::openapi3::Responses;
 use rocket::catcher::BoxFuture;
 use rocket::http::hyper::header;
@@ -49,38 +49,45 @@ macro_rules! internal_server_error {
 
 pub enum AppError {
     ValidationError(Box<dyn Fn(&str) -> String>),
-    DieselError(DieselError, Option<String>),
+    DieselError(DieselError, Option<String>, Option<String>),
     ForbiddenError(String),
     NotFoundError(String),
     InternalServerError,
 }
 
 pub trait ToAppError {
-    fn to_app_error(self, not_found_key: Option<String>) -> AppError;
+    fn to_app_error(self, not_found_key: Option<String>, unique_key: Option<String>) -> AppError;
 }
 
 impl ToAppError for DieselError {
-    fn to_app_error(self, not_found_key: Option<String>) -> AppError {
-        AppError::DieselError(self, not_found_key)
+    fn to_app_error(self, not_found_key: Option<String>, unique_key: Option<String>) -> AppError {
+        AppError::DieselError(self, not_found_key, unique_key)
     }
 }
 
 pub trait ToServiceResult<T> {
     fn to_service_result(self) -> ServiceResult<T>;
     fn to_service_result_find(self, not_found_key: String) -> ServiceResult<T>;
+    fn to_service_result_unique(self, unique_key: String) -> ServiceResult<T>;
 }
 
 impl<T> ToServiceResult<T> for Result<T, DieselError> {
     fn to_service_result(self) -> ServiceResult<T> {
         match self {
             Ok(v) => Ok(v),
-            Err(err) => Err(err.to_app_error(None)),
+            Err(err) => Err(err.to_app_error(None, None)),
         }
     }
     fn to_service_result_find(self, not_found_key: String) -> ServiceResult<T> {
         match self {
             Ok(v) => Ok(v),
-            Err(err) => Err(err.to_app_error(Some(not_found_key))),
+            Err(err) => Err(err.to_app_error(Some(not_found_key), None)),
+        }
+    }
+    fn to_service_result_unique(self, unique_key: String) -> ServiceResult<T> {
+        match self {
+            Ok(v) => Ok(v),
+            Err(err) => Err(err.to_app_error(None, Some(unique_key))),
         }
     }
 }
@@ -113,18 +120,28 @@ impl<'r, R: Responder<'r, 'static>, L: BaseLocale> Responder<'r, 'static> for Pa
                     ));
                     return Ok(response);
                 }
-                AppError::DieselError(diesel_error, not_found_key) => match diesel_error {
-                    DieselError::NotFound => PathResult::<(), Locale>::new(
-                        Err(AppError::NotFoundError(not_found_key.unwrap())),
-                        Locale(self.locale.get_locale().to_owned()),
-                    )
-                    .respond_to(req),
-                    _ => PathResult::<(), Locale>::new(
-                        Err(AppError::InternalServerError),
-                        Locale(self.locale.get_locale().to_owned()),
-                    )
-                    .respond_to(req),
-                },
+                AppError::DieselError(diesel_error, not_found_key, unique_error_key) => {
+                    match diesel_error {
+                        DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
+                            let key = unique_error_key.unwrap().clone();
+                            PathResult::<(), Locale>::new(
+                                validation_error!(&key),
+                                Locale(self.locale.get_locale().to_owned()),
+                            )
+                            .respond_to(req)
+                        }
+                        DieselError::NotFound => PathResult::<(), Locale>::new(
+                            not_found_error!(not_found_key.unwrap()),
+                            Locale(self.locale.get_locale().to_owned()),
+                        )
+                        .respond_to(req),
+                        _ => PathResult::<(), Locale>::new(
+                            internal_server_error!(),
+                            Locale(self.locale.get_locale().to_owned()),
+                        )
+                        .respond_to(req),
+                    }
+                }
                 AppError::ForbiddenError(forbidden_key) => {
                     let mut response =
                         t!(&forbidden_key, locale = self.locale.get_locale()).respond_to(req)?;

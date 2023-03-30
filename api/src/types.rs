@@ -475,6 +475,20 @@ pub struct ArcOutType {
     pub updated_at: DateTime<Utc>,
 }
 
+/// Type of arc to create
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ArcInCreateType {
+    /// Arc description
+    pub description: String,
+    /// Arc value
+    pub value: f64,
+    /// Arc source vertex identifier
+    pub source_id: i32,
+    /// Arc target vertex identifier
+    pub target_id: i32,
+}
+
 /// Type of model
 #[derive(Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

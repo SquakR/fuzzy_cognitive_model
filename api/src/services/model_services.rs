@@ -1,11 +1,11 @@
-use crate::models::{Arc, Project, User, Vertex, VertexValueType};
+use crate::models::{Arc, ArcValueType, Project, User, Vertex, VertexValueType};
 use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{arcs, projects, vertices};
 use crate::services::{permission_services, project_services};
 use crate::types::{
-    ArcOutType, ModelActionType, ModelOutType, ProjectOutType, VertexInChangeDescriptionType,
-    VertexInCreateType, VertexInMoveType, VertexOutChangeDescriptionType, VertexOutChangeValueType,
-    VertexOutMoveType, VertexOutType,
+    ArcInCreateType, ArcOutType, ModelActionType, ModelOutType, ProjectOutType,
+    VertexInChangeDescriptionType, VertexInCreateType, VertexInMoveType,
+    VertexOutChangeDescriptionType, VertexOutChangeValueType, VertexOutMoveType, VertexOutType,
 };
 use crate::validation_error;
 use crate::web_socket::WebSocketProjectService;
@@ -55,6 +55,12 @@ pub fn find_project_arcs(conn: &mut PgConnection, project_id: i32) -> QueryResul
         .select(arcs::all_columns)
         .filter(projects::id.eq(project_id))
         .get_results::<Arc>(conn)
+}
+
+pub fn find_vertex_by_id(conn: &mut PgConnection, vertex_id: i32) -> QueryResult<Vertex> {
+    vertices::table
+        .filter(vertices::id.eq(vertex_id))
+        .get_result::<Vertex>(conn)
 }
 
 pub async fn create_vertex(
@@ -193,6 +199,39 @@ pub async fn delete_vertex(
     Ok(model_action)
 }
 
+pub async fn create_arc(
+    conn: &mut PgConnection,
+    project_service: WebSocketProjectService,
+    user: &User,
+    project_id: i32,
+    arc_in: ArcInCreateType,
+) -> ServiceResult<ModelActionType<ArcOutType>> {
+    let mut project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_change_model(conn, &project, user.id)?;
+    find_vertex_by_id(conn, arc_in.source_id)
+        .to_service_result_find(String::from("source_vertex_not_found_error"))?;
+    find_vertex_by_id(conn, arc_in.target_id)
+        .to_service_result_find(String::from("target_vertex_not_found_error"))?;
+    check_arc_value(&project, arc_in.value)?;
+    let arc = diesel::insert_into(arcs::table)
+        .values((
+            arcs::project_id.eq(project_id),
+            arcs::description.eq(arc_in.description),
+            arcs::value.eq(arc_in.value),
+            arcs::source_id.eq(arc_in.source_id),
+            arcs::target_id.eq(arc_in.target_id),
+        ))
+        .get_result::<Arc>(conn)
+        .to_service_result_unique(String::from("arc_duplication_error"))?;
+    project =
+        project_services::update_project(conn, project_id, arc.created_at).to_service_result()?;
+    let arc_out = ArcOutType::from(arc);
+    let model_action = ModelActionType::new(&project, String::from("create_arc"), arc_out);
+    project_service.notify(model_action.clone()).await;
+    Ok(model_action)
+}
+
 fn check_vertex_value(project: &Project, value: Option<f64>) -> ServiceResult<()> {
     match value {
         Some(value) => match project.vertex_value_type {
@@ -221,6 +260,29 @@ fn check_vertex_value(project: &Project, value: Option<f64>) -> ServiceResult<()
                 )
             }
         },
+    }
+}
+
+fn check_arc_value(project: &Project, value: f64) -> ServiceResult<()> {
+    match project.arc_value_type {
+        ArcValueType::Symbolic => {
+            if value == 0.0 || value == 1.0 {
+                Ok(())
+            } else {
+                validation_error!("invalid_arc_value_symbolic_error", got = value)
+            }
+        }
+        ArcValueType::FromMinusOneToOne => {
+            if value >= -1.0 && value <= 1.0 {
+                Ok(())
+            } else {
+                validation_error!(
+                    "invalid_arc_value_error",
+                    expected = "[-1.0; 1.0]",
+                    got = value
+                )
+            }
+        }
     }
 }
 

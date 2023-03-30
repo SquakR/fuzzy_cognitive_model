@@ -24,7 +24,8 @@ CREATE TABLE arcs (
   project_id INTEGER NOT NULL,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  UNIQUE (source_id, target_id, project_id)
 );
 ALTER TABLE projects
 ADD COLUMN vertex_value_type vertex_value_type NOT NULL DEFAULT 'none';

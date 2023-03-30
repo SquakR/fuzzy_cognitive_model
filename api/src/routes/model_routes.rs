@@ -4,9 +4,9 @@ use crate::request::UserLocale;
 use crate::response::PathResult;
 use crate::services::model_services;
 use crate::types::{
-    ModelActionType, ModelOutType, UserOutType, VertexInChangeDescriptionType, VertexInCreateType,
-    VertexInMoveType, VertexOutChangeDescriptionType, VertexOutChangeValueType, VertexOutMoveType,
-    VertexOutType,
+    ArcInCreateType, ArcOutType, ModelActionType, ModelOutType, UserOutType,
+    VertexInChangeDescriptionType, VertexInCreateType, VertexInMoveType,
+    VertexOutChangeDescriptionType, VertexOutChangeValueType, VertexOutMoveType, VertexOutType,
 };
 use crate::web_socket::WebSocketProjectService;
 use rocket::serde::json::Json;
@@ -191,5 +191,31 @@ pub async fn delete_vertex(
             Ok(model_action) => model_action,
             Err(app_error) => return PathResult::new(Err(app_error), locale),
         };
+    PathResult::new(Ok(Json(model_action)), locale)
+}
+
+/// Create new arc
+#[openapi(tag = "model")]
+#[post("/project/<project_id>/arc", format = "json", data = "<arc_in>")]
+pub async fn create_arc(
+    project_id: i32,
+    arc_in: Json<ArcInCreateType>,
+    user: User,
+    locale: UserLocale,
+    project_service: WebSocketProjectService,
+) -> PathResult<Json<ModelActionType<ArcOutType>>, UserLocale> {
+    let conn = &mut db::establish_connection();
+    let model_action = match model_services::create_arc(
+        conn,
+        project_service,
+        &user,
+        project_id,
+        arc_in.into_inner(),
+    )
+    .await
+    {
+        Ok(model_action) => model_action,
+        Err(app_error) => return PathResult::new(Err(app_error), locale),
+    };
     PathResult::new(Ok(Json(model_action)), locale)
 }
