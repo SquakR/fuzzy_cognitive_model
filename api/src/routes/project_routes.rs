@@ -1,7 +1,9 @@
 use crate::db;
 use crate::models::{ProjectUserStatusValue, User};
 use crate::request::UserLocale;
-use crate::response::{PathResult, ToServiceResult};
+use crate::response::{
+    PathEmptyResult, PathResult, ToPathEmptyResult, ToPathResult, ToServiceResult,
+};
 use crate::services::{
     permission_services, plugin_services, project_services, project_user_services,
 };
@@ -19,18 +21,11 @@ use rocket_okapi::openapi;
 pub fn create_project(
     project_in: Json<ProjectInType>,
     user: User,
-    locale: UserLocale,
-) -> PathResult<Json<ProjectOutType>, UserLocale> {
+    _locale: UserLocale,
+) -> PathResult<ProjectOutType> {
     let conn = &mut db::establish_connection();
-    let project = match project_services::create_project(conn, &user, project_in.into_inner()) {
-        Ok(project) => project,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    let project_out = match ProjectOutType::from_project(conn, project) {
-        Ok(project_out) => project_out,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(Ok(Json(project_out)), locale)
+    let project = project_services::create_project(conn, &user, project_in.into_inner())?;
+    ProjectOutType::from_project(conn, project).to_path_result()
 }
 
 /// Get projects
@@ -39,8 +34,8 @@ pub fn create_project(
 pub fn get_projects(
     projects_in: ProjectsInType,
     user: User,
-    locale: UserLocale,
-) -> PathResult<Json<PaginationOutType<ProjectOutType>>, UserLocale> {
+    _locale: UserLocale,
+) -> PathResult<PaginationOutType<ProjectOutType>> {
     let conn = &mut db::establish_connection();
     let created_at =
         if projects_in.created_at_start.is_some() || projects_in.created_at_end.is_some() {
@@ -68,7 +63,7 @@ pub fn get_projects(
         page: projects_in.page.unwrap_or(1),
         per_page: projects_in.per_page.unwrap_or(15),
     };
-    let pagination_out = match project_services::paginate_projects(
+    project_services::paginate_projects(
         conn,
         &user,
         projects_in.group,
@@ -78,43 +73,34 @@ pub fn get_projects(
         created_at,
         updated_at,
         pagination_id,
-    ) {
-        Ok(pagination_out) => pagination_out,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(Ok(Json(pagination_out)), locale)
+    )
+    .to_path_result()
 }
 
 /// Get plugins
 #[openapi(tag = "projects")]
 #[get("/plugins")]
-pub fn get_plugins(locale: UserLocale) -> PathResult<Json<Vec<PluginType>>, UserLocale> {
+pub fn get_plugins(_locale: UserLocale) -> PathResult<Vec<PluginType>> {
     let conn = &mut db::establish_connection();
-    let plugins = match plugin_services::get_plugins(conn).to_service_result() {
-        Ok(plugins) => plugins,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(
-        Ok(Json(plugins.into_iter().map(PluginType::from).collect())),
-        locale,
-    )
+    let plugins = plugin_services::get_plugins(conn)
+        .to_service_result()?
+        .into_iter()
+        .map(PluginType::from)
+        .collect();
+    Ok(Json(plugins))
 }
 
 /// Get permissions
 #[openapi(tag = "projects")]
 #[get("/permissions")]
-pub fn get_permissions(locale: UserLocale) -> PathResult<Json<Vec<PermissionType>>, UserLocale> {
+pub fn get_permissions(_locale: UserLocale) -> PathResult<Vec<PermissionType>> {
     let conn = &mut db::establish_connection();
-    let permissions = match permission_services::get_permissions(conn).to_service_result() {
-        Ok(permissions) => permissions,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(
-        Ok(Json(
-            permissions.into_iter().map(PermissionType::from).collect(),
-        )),
-        locale,
-    )
+    let permissions = permission_services::get_permissions(conn)
+        .to_service_result()?
+        .into_iter()
+        .map(PermissionType::from)
+        .collect();
+    Ok(Json(permissions))
 }
 
 /// Get project users
@@ -127,25 +113,22 @@ pub fn get_project_users(
     page: Option<u16>,
     per_page: Option<u16>,
     user: User,
-    locale: UserLocale,
-) -> PathResult<Json<PaginationOutType<ProjectUserType>>, UserLocale> {
+    _locale: UserLocale,
+) -> PathResult<PaginationOutType<ProjectUserType>> {
     let conn = &mut db::establish_connection();
     let pagination_in = PaginationInType {
         page: page.unwrap_or(1),
         per_page: per_page.unwrap_or(15),
     };
-    let pagination_out = match project_user_services::paginate_project_users(
+    project_user_services::paginate_project_users(
         conn,
         &user,
         project_id,
         statuses,
         search.map(|s| s.to_owned()),
         pagination_in,
-    ) {
-        Ok(pagination_out) => pagination_out,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(Ok(Json(pagination_out)), locale)
+    )
+    .to_path_result()
 }
 
 /// Change project
@@ -155,19 +138,12 @@ pub fn change_project(
     project_id: i32,
     project_in: Json<ProjectInType>,
     user: User,
-    locale: UserLocale,
-) -> PathResult<Json<ProjectOutType>, UserLocale> {
+    _locale: UserLocale,
+) -> PathResult<ProjectOutType> {
     let conn = &mut db::establish_connection();
     let project =
-        match project_services::change_project(conn, &user, project_id, project_in.into_inner()) {
-            Ok(project) => project,
-            Err(app_error) => return PathResult::new(Err(app_error), locale),
-        };
-    let project_out = match ProjectOutType::from_project(conn, project) {
-        Ok(project_out) => project_out,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(Ok(Json(project_out)), locale)
+        project_services::change_project(conn, &user, project_id, project_in.into_inner())?;
+    ProjectOutType::from_project(conn, project).to_path_result()
 }
 
 /// Set project plugins
@@ -177,15 +153,11 @@ pub fn set_project_plugins(
     project_id: i32,
     plugins: Json<Vec<String>>,
     user: User,
-    locale: UserLocale,
-) -> PathResult<Json<Vec<String>>, UserLocale> {
+    _locale: UserLocale,
+) -> PathResult<Vec<String>> {
     let conn = &mut db::establish_connection();
-    let plugins =
-        match plugin_services::set_project_plugins(conn, &user, project_id, plugins.into_inner()) {
-            Ok(plugins) => plugins,
-            Err(app_error) => return PathResult::new(Err(app_error), locale),
-        };
-    PathResult::new(Ok(Json(plugins)), locale)
+    plugin_services::set_project_plugins(conn, &user, project_id, plugins.into_inner())
+        .to_path_result()
 }
 
 /// Set project user permissions
@@ -200,20 +172,17 @@ pub fn set_project_user_permissions(
     user_id: i32,
     permissions: Json<Vec<String>>,
     user: User,
-    locale: UserLocale,
-) -> PathResult<Json<Vec<String>>, UserLocale> {
+    _locale: UserLocale,
+) -> PathResult<Vec<String>> {
     let conn = &mut db::establish_connection();
-    let permissions = match permission_services::set_project_user_permissions(
+    permission_services::set_project_user_permissions(
         conn,
         &user,
         project_id,
         user_id,
         permissions.into_inner(),
-    ) {
-        Ok(permissions) => permissions,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(Ok(Json(permissions)), locale)
+    )
+    .to_path_result()
 }
 
 /// Invite user to project
@@ -223,13 +192,10 @@ pub fn invite_user(
     project_id: i32,
     user_id: i32,
     user: User,
-    locale: UserLocale,
-) -> PathResult<(), UserLocale> {
+    _locale: UserLocale,
+) -> PathEmptyResult {
     let conn = &mut db::establish_connection();
-    if let Err(app_error) = project_user_services::invite_user(conn, &user, project_id, user_id) {
-        return PathResult::new(Err(app_error), locale);
-    }
-    PathResult::new(Ok(()), locale)
+    project_user_services::invite_user(conn, &user, project_id, user_id).to_path_empty_result()
 }
 
 /// Cancel user invitation to project
@@ -239,15 +205,11 @@ pub fn cancel_invitation(
     project_id: i32,
     user_id: i32,
     user: User,
-    locale: UserLocale,
-) -> PathResult<(), UserLocale> {
+    _locale: UserLocale,
+) -> PathEmptyResult {
     let conn = &mut db::establish_connection();
-    if let Err(app_error) =
-        project_user_services::cancel_invitation(conn, &user, project_id, user_id)
-    {
-        return PathResult::new(Err(app_error), locale);
-    }
-    PathResult::new(Ok(()), locale)
+    project_user_services::cancel_invitation(conn, &user, project_id, user_id)
+        .to_path_empty_result()
 }
 
 /// Respond to invitation to project
@@ -257,30 +219,19 @@ pub fn respond_to_invitation(
     project_id: i32,
     join: bool,
     user: User,
-    locale: UserLocale,
-) -> PathResult<(), UserLocale> {
+    _locale: UserLocale,
+) -> PathEmptyResult {
     let conn = &mut db::establish_connection();
-    if let Err(app_error) =
-        project_user_services::respond_to_invitation(conn, &user, project_id, join)
-    {
-        return PathResult::new(Err(app_error), locale);
-    }
-    PathResult::new(Ok(()), locale)
+    project_user_services::respond_to_invitation(conn, &user, project_id, join)
+        .to_path_empty_result()
 }
 
 /// Leave project
 #[openapi(tag = "projects")]
 #[post("/project/<project_id>/leave")]
-pub fn leave_project(
-    project_id: i32,
-    user: User,
-    locale: UserLocale,
-) -> PathResult<(), UserLocale> {
+pub fn leave_project(project_id: i32, user: User, _locale: UserLocale) -> PathEmptyResult {
     let conn = &mut db::establish_connection();
-    if let Err(app_error) = project_user_services::leave_project(conn, &user, project_id) {
-        return PathResult::new(Err(app_error), locale);
-    }
-    PathResult::new(Ok(()), locale)
+    project_user_services::leave_project(conn, &user, project_id).to_path_empty_result()
 }
 
 /// Exclude user from project
@@ -290,13 +241,10 @@ pub fn exclude_user(
     project_id: i32,
     user_id: i32,
     user: User,
-    locale: UserLocale,
-) -> PathResult<(), UserLocale> {
+    _locale: UserLocale,
+) -> PathEmptyResult {
     let conn = &mut db::establish_connection();
-    if let Err(app_error) = project_user_services::exclude_user(conn, &user, project_id, user_id) {
-        return PathResult::new(Err(app_error), locale);
-    }
-    PathResult::new(Ok(()), locale)
+    project_user_services::exclude_user(conn, &user, project_id, user_id).to_path_empty_result()
 }
 
 /// Delete project
@@ -305,13 +253,11 @@ pub fn exclude_user(
 pub async fn delete_project(
     project_id: i32,
     user: User,
-    locale: UserLocale,
+    _locale: UserLocale,
     project_service: WebSocketProjectService,
-) -> PathResult<(), UserLocale> {
+) -> PathEmptyResult {
     let conn = &mut db::establish_connection();
-    if let Err(app_error) = project_services::delete_project(conn, &user, project_id) {
-        return PathResult::new(Err(app_error), locale);
-    }
+    project_services::delete_project(conn, &user, project_id)?;
     project_service.disconnect_project(project_id).await;
-    PathResult::new(Ok(()), locale)
+    Ok(())
 }

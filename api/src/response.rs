@@ -1,4 +1,4 @@
-use crate::request::{AcceptLanguage, BaseLocale, Locale};
+use crate::request::{AcceptLanguage, BaseLocale, Locale, RequestedLocales};
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use okapi::openapi3::Responses;
 use rocket::catcher::BoxFuture;
@@ -6,11 +6,10 @@ use rocket::http::hyper::header;
 use rocket::http::{Header, Status};
 use rocket::request::{FromRequest, Outcome, Request};
 use rocket::response::{self, Responder, Response};
+use rocket::serde::json::Json;
 use rocket_accept_language::AcceptLanguage as RocketAcceptLanguage;
 use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::{response::OpenApiResponderInner, Result as RocketOkapiResult};
-
-pub type ServiceResult<T> = Result<T, AppError>;
 
 #[macro_export]
 macro_rules! validation_error {
@@ -45,6 +44,38 @@ macro_rules! internal_server_error {
     () => {
         Err(AppError::InternalServerError)
     };
+}
+
+pub type ServiceResult<T> = Result<T, AppError>;
+
+pub type PathResult<T> = Result<Json<T>, AppError>;
+pub type PathAnyResult<T> = Result<T, AppError>;
+pub type PathEmptyResult = Result<(), AppError>;
+
+pub trait ToPathResult<T> {
+    fn to_path_result(self) -> PathResult<T>;
+}
+
+impl<T> ToPathResult<T> for ServiceResult<T> {
+    fn to_path_result(self) -> PathResult<T> {
+        match self {
+            Ok(data) => Ok(Json(data)),
+            Err(app_error) => Err(app_error),
+        }
+    }
+}
+
+pub trait ToPathEmptyResult {
+    fn to_path_empty_result(self) -> PathEmptyResult;
+}
+
+impl<T> ToPathEmptyResult for ServiceResult<T> {
+    fn to_path_empty_result(self) -> PathEmptyResult {
+        match self {
+            Ok(_) => Ok(()),
+            Err(app_error) => Err(app_error),
+        }
+    }
 }
 
 pub enum AppError {
@@ -92,97 +123,76 @@ impl<T> ToServiceResult<T> for Result<T, DieselError> {
     }
 }
 
-pub struct PathResult<T, L: BaseLocale> {
-    pub service_result: ServiceResult<T>,
-    pub locale: L,
-}
-
-impl<T, L: BaseLocale> PathResult<T, L> {
-    pub fn new(service_result: ServiceResult<T>, locale: L) -> PathResult<T, L> {
-        PathResult {
-            service_result,
-            locale,
-        }
-    }
-}
-
-impl<'r, R: Responder<'r, 'static>, L: BaseLocale> Responder<'r, 'static> for PathResult<R, L> {
+impl<'r> Responder<'r, 'static> for AppError {
     fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
-        match self.service_result {
-            Ok(value) => value.respond_to(req),
-            Err(app_error) => match app_error {
-                AppError::ValidationError(get_message) => {
-                    let mut response = get_message(self.locale.get_locale()).respond_to(req)?;
-                    response.set_status(Status::BadRequest);
-                    response.set_header(Header::new(
-                        header::CONTENT_LANGUAGE.as_str(),
-                        self.locale.get_locale().to_owned(),
-                    ));
-                    return Ok(response);
-                }
-                AppError::DieselError(diesel_error, not_found_key, unique_error_key) => {
-                    match diesel_error {
-                        DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
-                            let key = unique_error_key.unwrap().clone();
-                            PathResult::<(), Locale>::new(
-                                validation_error!(&key),
-                                Locale(self.locale.get_locale().to_owned()),
-                            )
-                            .respond_to(req)
-                        }
-                        DieselError::NotFound => PathResult::<(), Locale>::new(
-                            not_found_error!(not_found_key.unwrap()),
-                            Locale(self.locale.get_locale().to_owned()),
-                        )
-                        .respond_to(req),
-                        _ => PathResult::<(), Locale>::new(
-                            internal_server_error!(),
-                            Locale(self.locale.get_locale().to_owned()),
-                        )
-                        .respond_to(req),
+        let requested_locales = req.local_cache::<RequestedLocales, _>(|| unreachable!());
+        match self {
+            AppError::ValidationError(get_message) => {
+                let mut response = get_message(&requested_locales.get_locale()).respond_to(req)?;
+                response.set_status(Status::BadRequest);
+                response.set_header(Header::new(
+                    header::CONTENT_LANGUAGE.as_str(),
+                    requested_locales.get_locale().to_owned(),
+                ));
+                return Ok(response);
+            }
+            AppError::DieselError(diesel_error, not_found_key, unique_error_key) => {
+                match diesel_error {
+                    DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
+                        let key = unique_error_key.unwrap().clone();
+                        let result: PathEmptyResult = validation_error!(&key);
+                        result.respond_to(req)
+                    }
+                    DieselError::NotFound => {
+                        let result: PathEmptyResult = not_found_error!(not_found_key.unwrap());
+                        result.respond_to(req)
+                    }
+                    _ => {
+                        let result: PathEmptyResult = internal_server_error!();
+                        result.respond_to(req)
                     }
                 }
-                AppError::ForbiddenError(forbidden_key) => {
-                    let mut response =
-                        t!(&forbidden_key, locale = self.locale.get_locale()).respond_to(req)?;
-                    response.set_status(Status::Forbidden);
-                    response.set_header(Header::new(
-                        header::CONTENT_LANGUAGE.as_str(),
-                        self.locale.get_locale().to_owned(),
-                    ));
-                    return Ok(response);
-                }
-                AppError::NotFoundError(not_found_key) => {
-                    let mut response =
-                        t!(&not_found_key, locale = self.locale.get_locale()).respond_to(req)?;
-                    response.set_status(Status::NotFound);
-                    response.set_header(Header::new(
-                        header::CONTENT_LANGUAGE.as_str(),
-                        self.locale.get_locale().to_owned(),
-                    ));
-                    return Ok(response);
-                }
-                AppError::InternalServerError => {
-                    let mut response =
-                        t!("internal_server_error", locale = self.locale.get_locale())
-                            .respond_to(req)?;
-                    response.set_header(Header::new(
-                        header::CONTENT_LANGUAGE.as_str(),
-                        self.locale.get_locale().to_owned(),
-                    ));
-                    response.set_status(Status::BadRequest);
-                    return Ok(response);
-                }
-            },
+            }
+            AppError::ForbiddenError(forbidden_key) => {
+                let mut response =
+                    t!(&forbidden_key, locale = &requested_locales.get_locale()).respond_to(req)?;
+                response.set_status(Status::Forbidden);
+                response.set_header(Header::new(
+                    header::CONTENT_LANGUAGE.as_str(),
+                    requested_locales.get_locale().to_owned(),
+                ));
+                return Ok(response);
+            }
+            AppError::NotFoundError(not_found_key) => {
+                let mut response =
+                    t!(&not_found_key, locale = &requested_locales.get_locale()).respond_to(req)?;
+                response.set_status(Status::NotFound);
+                response.set_header(Header::new(
+                    header::CONTENT_LANGUAGE.as_str(),
+                    requested_locales.get_locale().to_owned(),
+                ));
+                return Ok(response);
+            }
+            AppError::InternalServerError => {
+                let mut response = t!(
+                    "internal_server_error",
+                    locale = &requested_locales.get_locale()
+                )
+                .respond_to(req)?;
+                response.set_header(Header::new(
+                    header::CONTENT_LANGUAGE.as_str(),
+                    requested_locales.get_locale().to_owned(),
+                ));
+                response.set_status(Status::BadRequest);
+                return Ok(response);
+            }
         }
     }
 }
 
-impl<T, L: BaseLocale> OpenApiResponderInner for PathResult<T, L> {
+impl OpenApiResponderInner for AppError {
     fn responses(gen: &mut OpenApiGenerator) -> RocketOkapiResult<Responses> {
-        let ok_responses = <String>::responses(gen)?;
-        let err_responses = <Status>::responses(gen)?;
-        rocket_okapi::util::produce_any_responses(ok_responses, err_responses)
+        <String>::responses(gen)
     }
 }
 

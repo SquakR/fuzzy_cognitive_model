@@ -1,7 +1,7 @@
 use crate::db;
 use crate::models::User;
 use crate::request::UserLocale;
-use crate::response::PathResult;
+use crate::response::{PathResult, ToPathResult};
 use crate::services::model_services;
 use crate::types::{
     ArcInCreateType, ArcOutChangeDescriptionType, ArcOutChangeValueType, ArcOutType,
@@ -16,17 +16,9 @@ use rocket_okapi::openapi;
 /// Get model
 #[openapi(tag = "model")]
 #[get("/project/<project_id>")]
-pub fn get_model(
-    project_id: i32,
-    user: User,
-    locale: UserLocale,
-) -> PathResult<Json<ModelOutType>, UserLocale> {
+pub fn get_model(project_id: i32, user: User, _locale: UserLocale) -> PathResult<ModelOutType> {
     let conn = &mut db::establish_connection();
-    let model = match model_services::get_model(conn, &user, project_id) {
-        Ok(model) => model,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(Ok(Json(model)), locale)
+    model_services::get_model(conn, &user, project_id).to_path_result()
 }
 
 /// Get model active users
@@ -35,21 +27,17 @@ pub fn get_model(
 pub async fn get_active_users(
     project_id: i32,
     user: User,
-    locale: UserLocale,
+    _locale: UserLocale,
     project_service: WebSocketProjectService,
-) -> PathResult<Json<Vec<UserOutType>>, UserLocale> {
+) -> PathResult<Vec<UserOutType>> {
     let conn = &mut db::establish_connection();
-    let users = match project_service
+    let users = project_service
         .get_active_users(conn, &user, project_id)
-        .await
-    {
-        Ok(users) => users
-            .into_iter()
-            .map(UserOutType::from)
-            .collect::<Vec<UserOutType>>(),
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(Ok(Json(users)), locale)
+        .await?
+        .into_iter()
+        .map(UserOutType::from)
+        .collect::<Vec<UserOutType>>();
+    Ok(Json(users))
 }
 
 /// Create new vertex
@@ -59,11 +47,11 @@ pub async fn create_vertex(
     project_id: i32,
     vertex_in: Json<VertexInCreateType>,
     user: User,
-    locale: UserLocale,
+    _locale: UserLocale,
     project_service: WebSocketProjectService,
-) -> PathResult<Json<ModelActionType<VertexOutType>>, UserLocale> {
+) -> PathResult<ModelActionType<VertexOutType>> {
     let conn = &mut db::establish_connection();
-    let model_action = match model_services::create_vertex(
+    model_services::create_vertex(
         conn,
         project_service,
         &user,
@@ -71,11 +59,7 @@ pub async fn create_vertex(
         vertex_in.into_inner(),
     )
     .await
-    {
-        Ok(model_action) => model_action,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(Ok(Json(model_action)), locale)
+    .to_path_result()
 }
 
 /// Change vertex description
@@ -90,11 +74,11 @@ pub async fn change_vertex_description(
     vertex_id: i32,
     vertex_in: Json<VertexInChangeDescriptionType>,
     user: User,
-    locale: UserLocale,
+    _locale: UserLocale,
     project_service: WebSocketProjectService,
-) -> PathResult<Json<ModelActionType<VertexOutChangeDescriptionType>>, UserLocale> {
+) -> PathResult<ModelActionType<VertexOutChangeDescriptionType>> {
     let conn = &mut db::establish_connection();
-    let model_action = match model_services::change_vertex_description(
+    model_services::change_vertex_description(
         conn,
         project_service,
         &user,
@@ -103,11 +87,7 @@ pub async fn change_vertex_description(
         vertex_in.into_inner(),
     )
     .await
-    {
-        Ok(model_action) => model_action,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(Ok(Json(model_action)), locale)
+    .to_path_result()
 }
 
 /// Change vertex value
@@ -122,11 +102,11 @@ pub async fn change_vertex_value(
     vertex_id: i32,
     value: Json<Option<f64>>,
     user: User,
-    locale: UserLocale,
+    _locale: UserLocale,
     project_service: WebSocketProjectService,
-) -> PathResult<Json<ModelActionType<VertexOutChangeValueType>>, UserLocale> {
+) -> PathResult<ModelActionType<VertexOutChangeValueType>> {
     let conn = &mut db::establish_connection();
-    let model_action = match model_services::change_vertex_value(
+    model_services::change_vertex_value(
         conn,
         project_service,
         &user,
@@ -135,11 +115,7 @@ pub async fn change_vertex_value(
         value.into_inner(),
     )
     .await
-    {
-        Ok(model_action) => model_action,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(Ok(Json(model_action)), locale)
+    .to_path_result()
 }
 
 /// Move vertex
@@ -154,11 +130,11 @@ pub async fn move_vertex(
     vertex_id: i32,
     vertex_in: Json<VertexInMoveType>,
     user: User,
-    locale: UserLocale,
+    _locale: UserLocale,
     project_service: WebSocketProjectService,
-) -> PathResult<Json<ModelActionType<VertexOutMoveType>>, UserLocale> {
+) -> PathResult<ModelActionType<VertexOutMoveType>> {
     let conn = &mut db::establish_connection();
-    let model_action = match model_services::move_vertex(
+    model_services::move_vertex(
         conn,
         project_service,
         &user,
@@ -167,11 +143,7 @@ pub async fn move_vertex(
         vertex_in.into_inner(),
     )
     .await
-    {
-        Ok(model_action) => model_action,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(Ok(Json(model_action)), locale)
+    .to_path_result()
 }
 
 /// Delete vertex
@@ -181,18 +153,13 @@ pub async fn delete_vertex(
     project_id: i32,
     vertex_id: i32,
     user: User,
-    locale: UserLocale,
+    _locale: UserLocale,
     project_service: WebSocketProjectService,
-) -> PathResult<Json<ModelActionType<()>>, UserLocale> {
+) -> PathResult<ModelActionType<()>> {
     let conn = &mut db::establish_connection();
-    let model_action =
-        match model_services::delete_vertex(conn, project_service, &user, project_id, vertex_id)
-            .await
-        {
-            Ok(model_action) => model_action,
-            Err(app_error) => return PathResult::new(Err(app_error), locale),
-        };
-    PathResult::new(Ok(Json(model_action)), locale)
+    model_services::delete_vertex(conn, project_service, &user, project_id, vertex_id)
+        .await
+        .to_path_result()
 }
 
 /// Create new arc
@@ -202,11 +169,11 @@ pub async fn create_arc(
     project_id: i32,
     arc_in: Json<ArcInCreateType>,
     user: User,
-    locale: UserLocale,
+    _locale: UserLocale,
     project_service: WebSocketProjectService,
-) -> PathResult<Json<ModelActionType<ArcOutType>>, UserLocale> {
+) -> PathResult<ModelActionType<ArcOutType>> {
     let conn = &mut db::establish_connection();
-    let model_action = match model_services::create_arc(
+    model_services::create_arc(
         conn,
         project_service,
         &user,
@@ -214,11 +181,7 @@ pub async fn create_arc(
         arc_in.into_inner(),
     )
     .await
-    {
-        Ok(model_action) => model_action,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(Ok(Json(model_action)), locale)
+    .to_path_result()
 }
 
 /// Change arc description
@@ -233,11 +196,11 @@ pub async fn change_arc_description(
     arc_id: i32,
     description: Json<String>,
     user: User,
-    locale: UserLocale,
+    _locale: UserLocale,
     project_service: WebSocketProjectService,
-) -> PathResult<Json<ModelActionType<ArcOutChangeDescriptionType>>, UserLocale> {
+) -> PathResult<ModelActionType<ArcOutChangeDescriptionType>> {
     let conn = &mut db::establish_connection();
-    let model_action = match model_services::change_arc_description(
+    model_services::change_arc_description(
         conn,
         project_service,
         &user,
@@ -246,11 +209,7 @@ pub async fn change_arc_description(
         description.into_inner(),
     )
     .await
-    {
-        Ok(model_action) => model_action,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(Ok(Json(model_action)), locale)
+    .to_path_result()
 }
 
 /// Change arc value
@@ -265,11 +224,11 @@ pub async fn change_arc_value(
     arc_id: i32,
     value: Json<f64>,
     user: User,
-    locale: UserLocale,
+    _locale: UserLocale,
     project_service: WebSocketProjectService,
-) -> PathResult<Json<ModelActionType<ArcOutChangeValueType>>, UserLocale> {
+) -> PathResult<ModelActionType<ArcOutChangeValueType>> {
     let conn = &mut db::establish_connection();
-    let model_action = match model_services::change_arc_value(
+    model_services::change_arc_value(
         conn,
         project_service,
         &user,
@@ -278,9 +237,5 @@ pub async fn change_arc_value(
         value.into_inner(),
     )
     .await
-    {
-        Ok(model_action) => model_action,
-        Err(app_error) => return PathResult::new(Err(app_error), locale),
-    };
-    PathResult::new(Ok(Json(model_action)), locale)
+    .to_path_result()
 }

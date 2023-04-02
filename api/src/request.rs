@@ -12,6 +12,7 @@ use rocket_okapi::gen::OpenApiGenerator;
 use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 use rocket_okapi::Result as RocketOkapiResult;
 use schemars::JsonSchema;
+use std::sync::Mutex;
 
 #[derive(JsonSchema)]
 pub struct DateTimeWrapper(pub DateTime<Utc>);
@@ -104,9 +105,10 @@ impl<'r> OpenApiFromRequest<'r> for &'r AcceptLanguage {
 }
 
 pub trait BaseLocale {
-    fn get_locale(&self) -> &str;
+    fn get_locale(&self) -> String;
 }
 
+#[derive(Clone)]
 pub struct Locale(pub String);
 
 impl Locale {
@@ -131,8 +133,8 @@ impl Locale {
 }
 
 impl BaseLocale for Locale {
-    fn get_locale(&self) -> &str {
-        &self.0
+    fn get_locale(&self) -> String {
+        self.0.to_owned()
     }
 }
 
@@ -142,7 +144,12 @@ impl<'r> FromRequest<'r> for Locale {
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         match request.guard::<&AcceptLanguage>().await {
-            Outcome::Success(accept_language) => Outcome::Success(Locale::new(accept_language)),
+            Outcome::Success(accept_language) => {
+                let locale = Locale::new(accept_language);
+                let requested_locales = request.guard::<&RequestedLocales>().await.unwrap();
+                *requested_locales.locale.lock().unwrap() = Some(locale.clone());
+                Outcome::Success(locale)
+            }
             Outcome::Failure(failure) => Outcome::Failure(failure),
             Outcome::Forward(forward) => Outcome::Forward(forward),
         }
@@ -159,6 +166,7 @@ impl<'r> OpenApiFromRequest<'r> for Locale {
     }
 }
 
+#[derive(Clone)]
 pub struct UserLocale(pub String);
 
 impl UserLocale {
@@ -171,14 +179,18 @@ impl UserLocale {
         ];
         let mut locale = String::from("en-US");
         if let Some(language) = &user.language {
-            locale = language.to_owned();
-        } else {
-            'outer: for identifier_locale in accept_language.0.iter().map(|i| i.to_string()) {
-                for available_locale in available_locales {
-                    if identifier_locale == available_locale.0 {
-                        locale = available_locale.1.to_owned();
-                        break 'outer;
-                    }
+            for available_locale in available_locales {
+                if language == available_locale.0 {
+                    locale = available_locale.1.to_owned();
+                    return UserLocale(locale);
+                }
+            }
+        }
+        for identifier_locale in accept_language.0.iter().map(|i| i.to_string()) {
+            for available_locale in available_locales {
+                if identifier_locale == available_locale.0 {
+                    locale = available_locale.1.to_owned();
+                    return UserLocale(locale);
                 }
             }
         }
@@ -187,8 +199,8 @@ impl UserLocale {
 }
 
 impl BaseLocale for UserLocale {
-    fn get_locale(&self) -> &str {
-        &self.0
+    fn get_locale(&self) -> String {
+        self.0.to_owned()
     }
 }
 
@@ -207,7 +219,10 @@ impl<'r> FromRequest<'r> for UserLocale {
             Outcome::Failure(failure) => return Outcome::Failure(failure),
             Outcome::Forward(forward) => return Outcome::Forward(forward),
         };
-        Outcome::Success(UserLocale::new(&user, &accept_language))
+        let user_locale = UserLocale::new(&user, &accept_language);
+        let requested_locales = request.guard::<&RequestedLocales>().await.unwrap();
+        *requested_locales.user_locale.lock().unwrap() = Some(user_locale.clone());
+        Outcome::Success(user_locale)
     }
 }
 
@@ -243,6 +258,51 @@ fn add_accept_language_header(
         },
         extensions: Object::default(),
     }))
+}
+
+pub struct RequestedLocales {
+    pub locale: Mutex<Option<Locale>>,
+    pub user_locale: Mutex<Option<UserLocale>>,
+}
+
+impl RequestedLocales {
+    fn new() -> Self {
+        Self {
+            locale: Mutex::new(None),
+            user_locale: Mutex::new(None),
+        }
+    }
+}
+
+impl BaseLocale for RequestedLocales {
+    fn get_locale(&self) -> String {
+        if let Some(locale) = self.locale.lock().unwrap().as_ref() {
+            return locale.get_locale();
+        }
+        if let Some(user_locale) = self.user_locale.lock().unwrap().as_ref() {
+            return user_locale.get_locale();
+        }
+        unreachable!()
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for &'r RequestedLocales {
+    type Error = ();
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        Outcome::Success(request.local_cache(|| RequestedLocales::new()))
+    }
+}
+
+impl<'r> OpenApiFromRequest<'r> for &'r RequestedLocales {
+    fn from_request_input(
+        _gen: &mut OpenApiGenerator,
+        _name: String,
+        _required: bool,
+    ) -> RocketOkapiResult<RequestHeaderInput> {
+        Ok(RequestHeaderInput::None)
+    }
 }
 
 #[rocket::async_trait]
