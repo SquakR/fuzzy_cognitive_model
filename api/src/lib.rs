@@ -4,6 +4,7 @@ extern crate rocket;
 extern crate rust_i18n;
 pub mod cookies;
 pub mod db;
+pub mod locale;
 pub mod models;
 pub mod pagination;
 pub mod request;

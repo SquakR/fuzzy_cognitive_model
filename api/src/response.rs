@@ -1,4 +1,5 @@
-use crate::request::{AcceptLanguage, Locale};
+use crate::locale::Locale;
+use crate::request::AcceptLanguage;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use okapi::openapi3::Responses;
 use rocket::catcher::BoxFuture;

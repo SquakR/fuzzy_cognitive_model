@@ -1,7 +1,8 @@
 use crate::cookies;
 use crate::db;
+use crate::locale::Locale;
 use crate::models::User;
-use crate::request::{AcceptLanguage, Locale, UserAgent};
+use crate::request::{AcceptLanguage, UserAgent};
 use crate::response::{
     AppError, PathAnyResult, PathEmptyResult, PathResult, ToPathEmptyResult, ToPathResult,
     ToServiceResult,

@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate rocket;
 use dotenvy::dotenv;
-use fuzzy_cognitive_model::request::LocaleFairing;
+use fuzzy_cognitive_model::locale::LocaleFairing;
 use fuzzy_cognitive_model::response;
 use fuzzy_cognitive_model::routes::MountRoutes;
 use fuzzy_cognitive_model::storage::Storage;
