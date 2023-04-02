@@ -1,7 +1,7 @@
 use crate::cookies;
 use crate::db;
 use crate::models::User;
-use crate::request::{AcceptLanguage, Locale, RequestedLocales, UserAgent, UserLocale};
+use crate::request::{AcceptLanguage, Locale, UserAgent};
 use crate::response::{
     AppError, PathAnyResult, PathEmptyResult, PathResult, ToPathEmptyResult, ToPathResult,
     ToServiceResult,
@@ -33,7 +33,6 @@ pub async fn create_user(
     user_in: Form<UserInCreateType<'_>>,
     cookies_jar: &CookieJar<'_>,
     storage: &State<Storage>,
-    _locale: Locale,
 ) -> PathResult<UserOutType> {
     if get_session_id!(cookies_jar).is_some() {
         return validation_error!("create_user_active_session_error");
@@ -50,7 +49,7 @@ pub fn get_users(
     search: Option<&str>,
     page: Option<u16>,
     per_page: Option<u16>,
-    _locale: UserLocale,
+    _user: User,
 ) -> PathResult<PaginationOutType<UserOutType>> {
     let conn = &mut db::establish_connection();
     let pagination_in = PaginationInType {
@@ -67,20 +66,18 @@ pub fn get_users(
 pub fn confirm_email(
     token: &str,
     accept_language: &AcceptLanguage,
-    _locale: Locale,
-    requested_locales: &RequestedLocales,
+    locale: &Locale,
 ) -> PathResult<UserOutType> {
     let conn = &mut db::establish_connection();
     let user = email_confirmation_services::confirm_email(conn, token)?;
-    *requested_locales.locale.lock().unwrap() = None;
-    *requested_locales.user_locale.lock().unwrap() = Some(UserLocale::new(&user, accept_language));
+    locale.set_from_user(&user, accept_language);
     Ok(Json(UserOutType::from(user)))
 }
 
 /// Get current user
 #[openapi(tag = "users")]
 #[get("/me")]
-pub fn get_me(user: User, _locale: UserLocale) -> PathResult<UserOutType> {
+pub fn get_me(user: User) -> PathResult<UserOutType> {
     Ok(Json(UserOutType::from(user)))
 }
 
@@ -91,7 +88,6 @@ pub async fn change_me(
     user_in: Form<UserInChangeType<'_>>,
     storage: &State<Storage>,
     user: User,
-    _locale: UserLocale,
 ) -> PathResult<UserOutType> {
     let conn = &mut db::establish_connection();
     let user = user_services::change_user(conn, storage, user, user_in.into_inner()).await?;
@@ -105,13 +101,12 @@ pub fn change_me_language(
     change_language: Json<ChangeLanguageType>,
     accept_language: &AcceptLanguage,
     user: User,
-    _locale: UserLocale,
-    requested_locales: &RequestedLocales,
+    locale: &Locale,
 ) -> PathResult<UserOutType> {
     let conn = &mut db::establish_connection();
     let user =
         user_services::change_user_language(conn, user, change_language.language.as_deref())?;
-    *requested_locales.user_locale.lock().unwrap() = Some(UserLocale::new(&user, accept_language));
+    locale.set_from_user(&user, accept_language);
     Ok(Json(UserOutType::from(user)))
 }
 
@@ -122,7 +117,6 @@ pub async fn change_me_password(
     change_password: Json<ChangePasswordType>,
     cookies_jar: &CookieJar<'_>,
     user: User,
-    _locale: UserLocale,
     project_service: WebSocketProjectService,
 ) -> PathEmptyResult {
     let session_id = match get_session_id!(cookies_jar) {
@@ -145,11 +139,7 @@ pub async fn change_me_password(
 /// Request user password reset
 #[openapi(tag = "users")]
 #[post("/request_password_reset/<email>")]
-pub async fn request_password_reset(
-    email: &str,
-    cookies_jar: &CookieJar<'_>,
-    _locale: Locale,
-) -> PathEmptyResult {
+pub async fn request_password_reset(email: &str, cookies_jar: &CookieJar<'_>) -> PathEmptyResult {
     if get_session_id!(cookies_jar).is_some() {
         return validation_error!("reset_password_active_session_error");
     }
@@ -162,7 +152,7 @@ pub async fn request_password_reset(
 /// Reset user password
 #[openapi(tag = "users")]
 #[patch("/reset_password", format = "json", data = "<reset_password>")]
-pub fn reset_password(reset_password: Json<ResetPasswordType>, _locale: Locale) -> PathEmptyResult {
+pub fn reset_password(reset_password: Json<ResetPasswordType>) -> PathEmptyResult {
     let conn = &mut db::establish_connection();
     password_services::reset_password(conn, reset_password.into_inner()).to_path_empty_result()
 }
@@ -175,7 +165,6 @@ pub fn sign_in(
     cookies_jar: &CookieJar<'_>,
     ip_address: SocketAddr,
     user_agent: UserAgent,
-    _locale: Locale,
 ) -> PathResult<SessionType> {
     if cookies::has_session_id(cookies_jar) {
         return validation_error!("sign_in_active_session_error");
@@ -198,7 +187,6 @@ pub fn sign_in(
 pub async fn sign_out_multiple(
     session_ids: Json<Vec<i32>>,
     user: User,
-    _locale: UserLocale,
     project_service: WebSocketProjectService,
 ) -> PathEmptyResult {
     let conn = &mut db::establish_connection();
@@ -215,7 +203,7 @@ pub async fn sign_out_multiple(
 #[patch("/sign_out")]
 pub async fn sign_out(
     cookies_jar: &CookieJar<'_>,
-    _locale: UserLocale,
+    _user: User,
     project_service: WebSocketProjectService,
 ) -> PathEmptyResult {
     let session_id = match get_session_id!(cookies_jar) {
@@ -233,11 +221,7 @@ pub async fn sign_out(
 /// Get user sessions
 #[openapi(tag = "users")]
 #[get("/sessions")]
-pub fn get_sessions(
-    cookies_jar: &CookieJar<'_>,
-    user: User,
-    _locale: UserLocale,
-) -> PathResult<Vec<SessionType>> {
+pub fn get_sessions(cookies_jar: &CookieJar<'_>, user: User) -> PathResult<Vec<SessionType>> {
     let session_id = match get_session_id!(cookies_jar) {
         Some(session_id) => session_id,
         None => return internal_server_error!(),
@@ -257,7 +241,7 @@ pub fn get_sessions(
 pub async fn get_user_avatar(
     path: PathBuf,
     storage: &State<Storage>,
-    _locale: UserLocale,
+    _user: User,
 ) -> PathAnyResult<NamedFile> {
     Ok(storage.get_user_avatar(path).await?)
 }

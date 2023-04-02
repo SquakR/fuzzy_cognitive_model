@@ -1,4 +1,4 @@
-use crate::request::{AcceptLanguage, BaseLocale, Locale, RequestedLocales};
+use crate::request::{AcceptLanguage, Locale};
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use okapi::openapi3::Responses;
 use rocket::catcher::BoxFuture;
@@ -124,16 +124,12 @@ impl<T> ToServiceResult<T> for Result<T, DieselError> {
 }
 
 impl<'r> Responder<'r, 'static> for AppError {
-    fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
-        let requested_locales = req.local_cache::<RequestedLocales, _>(|| unreachable!());
+    fn respond_to(self, request: &'r Request<'_>) -> response::Result<'static> {
+        let locale = request.local_cache::<Locale, _>(|| unreachable!());
         match self {
             AppError::ValidationError(get_message) => {
-                let mut response = get_message(&requested_locales.get_locale()).respond_to(req)?;
+                let mut response = get_message(&locale.get_locale()).respond_to(request)?;
                 response.set_status(Status::BadRequest);
-                response.set_header(Header::new(
-                    header::CONTENT_LANGUAGE.as_str(),
-                    requested_locales.get_locale().to_owned(),
-                ));
                 return Ok(response);
             }
             AppError::DieselError(diesel_error, not_found_key, unique_error_key) => {
@@ -141,48 +137,33 @@ impl<'r> Responder<'r, 'static> for AppError {
                     DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
                         let key = unique_error_key.unwrap().clone();
                         let result: PathEmptyResult = validation_error!(&key);
-                        result.respond_to(req)
+                        result.respond_to(request)
                     }
                     DieselError::NotFound => {
                         let result: PathEmptyResult = not_found_error!(not_found_key.unwrap());
-                        result.respond_to(req)
+                        result.respond_to(request)
                     }
                     _ => {
                         let result: PathEmptyResult = internal_server_error!();
-                        result.respond_to(req)
+                        result.respond_to(request)
                     }
                 }
             }
             AppError::ForbiddenError(forbidden_key) => {
                 let mut response =
-                    t!(&forbidden_key, locale = &requested_locales.get_locale()).respond_to(req)?;
+                    t!(&forbidden_key, locale = &locale.get_locale()).respond_to(request)?;
                 response.set_status(Status::Forbidden);
-                response.set_header(Header::new(
-                    header::CONTENT_LANGUAGE.as_str(),
-                    requested_locales.get_locale().to_owned(),
-                ));
                 return Ok(response);
             }
             AppError::NotFoundError(not_found_key) => {
                 let mut response =
-                    t!(&not_found_key, locale = &requested_locales.get_locale()).respond_to(req)?;
+                    t!(&not_found_key, locale = &locale.get_locale()).respond_to(request)?;
                 response.set_status(Status::NotFound);
-                response.set_header(Header::new(
-                    header::CONTENT_LANGUAGE.as_str(),
-                    requested_locales.get_locale().to_owned(),
-                ));
                 return Ok(response);
             }
             AppError::InternalServerError => {
-                let mut response = t!(
-                    "internal_server_error",
-                    locale = &requested_locales.get_locale()
-                )
-                .respond_to(req)?;
-                response.set_header(Header::new(
-                    header::CONTENT_LANGUAGE.as_str(),
-                    requested_locales.get_locale().to_owned(),
-                ));
+                let mut response = t!("internal_server_error", locale = &locale.get_locale())
+                    .respond_to(request)?;
                 response.set_status(Status::BadRequest);
                 return Ok(response);
             }
@@ -196,38 +177,40 @@ impl OpenApiResponderInner for AppError {
     }
 }
 
-pub fn handle_bad_request_error<'r>(status: Status, req: &'r Request<'_>) -> BoxFuture<'r> {
-    Box::pin(async move { get_response(status, req, "bad_request_error").await })
+pub fn handle_bad_request_error<'r>(status: Status, request: &'r Request<'_>) -> BoxFuture<'r> {
+    Box::pin(async move { get_response(status, request, "bad_request_error").await })
 }
 
-pub fn handle_unauthorized_error<'r>(status: Status, req: &'r Request<'_>) -> BoxFuture<'r> {
-    Box::pin(async move { get_response(status, req, "unauthorized_error").await })
+pub fn handle_unauthorized_error<'r>(status: Status, request: &'r Request<'_>) -> BoxFuture<'r> {
+    Box::pin(async move { get_response(status, request, "unauthorized_error").await })
 }
 
-pub fn handle_internal_server_error<'r>(status: Status, req: &'r Request<'_>) -> BoxFuture<'r> {
-    Box::pin(async move { get_response(status, req, "internal_server_error").await })
+pub fn handle_internal_server_error<'r>(status: Status, request: &'r Request<'_>) -> BoxFuture<'r> {
+    Box::pin(async move { get_response(status, request, "internal_server_error").await })
 }
 
-async fn get_request_locale<'r>(req: &'r Request<'_>) -> Locale {
-    match RocketAcceptLanguage::from_request(req).await {
+async fn get_request_locale<'r>(request: &'r Request<'_>) -> Locale {
+    let locale = Locale::new();
+    match RocketAcceptLanguage::from_request(request).await {
         Outcome::Success(accept_language) => {
-            Locale::new(&AcceptLanguage(accept_language.accept_language))
+            locale.set_from_accept_language(&AcceptLanguage(accept_language.accept_language));
         }
-        _ => Locale(String::from("en-US")),
+        _ => locale.set_from_string(String::from("en-US")),
     }
+    locale
 }
 
 async fn get_response<'r>(
     status: Status,
-    req: &'r Request<'_>,
+    request: &'r Request<'_>,
     key: &str,
 ) -> Result<Response<'r>, Status> {
-    let locale = get_request_locale(req).await;
+    let locale = get_request_locale(request).await;
     let message = t!(key, locale = &locale.get_locale());
-    let mut response = (status, message).respond_to(req).unwrap();
+    let mut response = (status, message).respond_to(request).unwrap();
     response.set_header(Header::new(
         header::CONTENT_LANGUAGE.as_str(),
-        locale.get_locale().to_owned(),
+        locale.get_locale(),
     ));
     Ok(response)
 }

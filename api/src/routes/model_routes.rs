@@ -1,6 +1,5 @@
 use crate::db;
 use crate::models::User;
-use crate::request::UserLocale;
 use crate::response::{PathResult, ToPathResult};
 use crate::services::model_services;
 use crate::types::{
@@ -16,7 +15,7 @@ use rocket_okapi::openapi;
 /// Get model
 #[openapi(tag = "model")]
 #[get("/project/<project_id>")]
-pub fn get_model(project_id: i32, user: User, _locale: UserLocale) -> PathResult<ModelOutType> {
+pub fn get_model(project_id: i32, user: User) -> PathResult<ModelOutType> {
     let conn = &mut db::establish_connection();
     model_services::get_model(conn, &user, project_id).to_path_result()
 }
@@ -27,7 +26,6 @@ pub fn get_model(project_id: i32, user: User, _locale: UserLocale) -> PathResult
 pub async fn get_active_users(
     project_id: i32,
     user: User,
-    _locale: UserLocale,
     project_service: WebSocketProjectService,
 ) -> PathResult<Vec<UserOutType>> {
     let conn = &mut db::establish_connection();
@@ -47,7 +45,6 @@ pub async fn create_vertex(
     project_id: i32,
     vertex_in: Json<VertexInCreateType>,
     user: User,
-    _locale: UserLocale,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<VertexOutType>> {
     let conn = &mut db::establish_connection();
@@ -74,7 +71,6 @@ pub async fn change_vertex_description(
     vertex_id: i32,
     vertex_in: Json<VertexInChangeDescriptionType>,
     user: User,
-    _locale: UserLocale,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<VertexOutChangeDescriptionType>> {
     let conn = &mut db::establish_connection();
@@ -102,7 +98,6 @@ pub async fn change_vertex_value(
     vertex_id: i32,
     value: Json<Option<f64>>,
     user: User,
-    _locale: UserLocale,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<VertexOutChangeValueType>> {
     let conn = &mut db::establish_connection();
@@ -130,7 +125,6 @@ pub async fn move_vertex(
     vertex_id: i32,
     vertex_in: Json<VertexInMoveType>,
     user: User,
-    _locale: UserLocale,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<VertexOutMoveType>> {
     let conn = &mut db::establish_connection();
@@ -153,7 +147,6 @@ pub async fn delete_vertex(
     project_id: i32,
     vertex_id: i32,
     user: User,
-    _locale: UserLocale,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<()>> {
     let conn = &mut db::establish_connection();
@@ -169,7 +162,6 @@ pub async fn create_arc(
     project_id: i32,
     arc_in: Json<ArcInCreateType>,
     user: User,
-    _locale: UserLocale,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<ArcOutType>> {
     let conn = &mut db::establish_connection();
@@ -196,7 +188,6 @@ pub async fn change_arc_description(
     arc_id: i32,
     description: Json<String>,
     user: User,
-    _locale: UserLocale,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<ArcOutChangeDescriptionType>> {
     let conn = &mut db::establish_connection();
@@ -224,7 +215,6 @@ pub async fn change_arc_value(
     arc_id: i32,
     value: Json<f64>,
     user: User,
-    _locale: UserLocale,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<ArcOutChangeValueType>> {
     let conn = &mut db::establish_connection();

@@ -1,7 +1,7 @@
 mod model_routes;
 mod project_routes;
 mod user_routes;
-use okapi::openapi3::{OpenApi, RefOr};
+use okapi::openapi3::{Object, OpenApi, Parameter, ParameterValue, RefOr, SchemaObject};
 use rocket::{Build, Rocket};
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::{openapi_routes, openapi_spec};
@@ -28,6 +28,40 @@ pub fn patch_wrong_content_type(spec: &mut OpenApi, key: &str, operation: Operat
     }
 }
 
+macro_rules! add_accept_language_header {
+    ($path:expr, $operation:ident) => {
+        if let Some(get) = &mut $path.$operation {
+            get.parameters.push(RefOr::Object(Parameter {
+                name: "Accept-Language".to_owned(),
+                location: "header".to_owned(),
+                description: None,
+                required: true,
+                deprecated: false,
+                allow_empty_value: false,
+                value: ParameterValue::Schema {
+                    style: None,
+                    explode: None,
+                    allow_reserved: false,
+                    schema: SchemaObject::default(),
+                    example: None,
+                    examples: None,
+                },
+                extensions: Object::default(),
+            }))
+        }
+    };
+}
+
+pub fn add_accept_language_header(spec: &mut OpenApi) -> () {
+    for (_, path) in spec.paths.iter_mut() {
+        add_accept_language_header!(path, get);
+        add_accept_language_header!(path, post);
+        add_accept_language_header!(path, put);
+        add_accept_language_header!(path, patch);
+        add_accept_language_header!(path, delete);
+    }
+}
+
 macro_rules! get_routes {
     ($first_route:expr, $($route:expr),*) => {{
         let settings = OpenApiSettings::new();
@@ -35,6 +69,7 @@ macro_rules! get_routes {
         spec.info.title = String::from("Fuzzy Cognitive Model");
         patch_wrong_content_type(&mut spec, "/user", Operation::Post);
         patch_wrong_content_type(&mut spec, "/me", Operation::Put);
+        add_accept_language_header(&mut spec);
         openapi_routes![$first_route $(,$route)*](Some(spec), &settings)
     }};
 }
