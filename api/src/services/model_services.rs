@@ -184,7 +184,7 @@ pub async fn delete_vertex(
     user: &User,
     project_id: i32,
     vertex_id: i32,
-) -> ServiceResult<ModelActionType<()>> {
+) -> ServiceResult<ModelActionType<i32>> {
     let mut project = project_services::find_project_by_id(conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
@@ -195,7 +195,7 @@ pub async fn delete_vertex(
         return validation_error!("vertex_not_found_error");
     }
     project = project_services::update_project(conn, project_id, Utc::now()).to_service_result()?;
-    let model_action = ModelActionType::new(&project, String::from("delete_vertex"), ());
+    let model_action = ModelActionType::new(&project, String::from("delete_vertex"), vertex_id);
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
@@ -279,6 +279,28 @@ pub async fn change_arc_value(
         project_services::update_project(conn, project_id, arc.updated_at).to_service_result()?;
     let arc_out = ArcOutChangeValueType::from(arc);
     let model_action = ModelActionType::new(&project, String::from("change_arc_value"), arc_out);
+    project_service.notify(model_action.clone()).await;
+    Ok(model_action)
+}
+
+pub async fn delete_arc(
+    conn: &mut PgConnection,
+    project_service: WebSocketProjectService,
+    user: &User,
+    project_id: i32,
+    arc_id: i32,
+) -> ServiceResult<ModelActionType<i32>> {
+    let mut project = project_services::find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_change_model(conn, &project, user.id)?;
+    let deleted_number = diesel::delete(arcs::table.filter(arcs::id.eq(arc_id)))
+        .execute(conn)
+        .to_service_result()?;
+    if deleted_number == 0 {
+        return validation_error!("arc_not_found_error");
+    }
+    project = project_services::update_project(conn, project_id, Utc::now()).to_service_result()?;
+    let model_action = ModelActionType::new(&project, String::from("delete_arc"), arc_id);
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
 }

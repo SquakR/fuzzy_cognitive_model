@@ -148,7 +148,7 @@ pub async fn delete_vertex(
     vertex_id: i32,
     user: User,
     project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<()>> {
+) -> PathResult<ModelActionType<i32>> {
     let conn = &mut db::establish_connection();
     model_services::delete_vertex(conn, project_service, &user, project_id, vertex_id)
         .await
@@ -228,4 +228,19 @@ pub async fn change_arc_value(
     )
     .await
     .to_path_result()
+}
+
+/// Delete arc
+#[openapi(tag = "model")]
+#[delete("/project/<project_id>/arc/<arc_id>")]
+pub async fn delete_arc(
+    project_id: i32,
+    arc_id: i32,
+    user: User,
+    project_service: WebSocketProjectService,
+) -> PathResult<ModelActionType<i32>> {
+    let conn = &mut db::establish_connection();
+    model_services::delete_arc(conn, project_service, &user, project_id, arc_id)
+        .await
+        .to_path_result()
 }
