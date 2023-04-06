@@ -62,12 +62,11 @@ pub async fn create_vertex(
 /// Change vertex description
 #[openapi(tag = "model")]
 #[patch(
-    "/project/<project_id>/vertex/<vertex_id>/change_description",
+    "/vertices/<vertex_id>/change_description",
     format = "json",
     data = "<vertex_in>"
 )]
 pub async fn change_vertex_description(
-    project_id: i32,
     vertex_id: i32,
     vertex_in: Json<VertexInChangeDescriptionType>,
     user: User,
@@ -78,7 +77,6 @@ pub async fn change_vertex_description(
         conn,
         project_service,
         &user,
-        project_id,
         vertex_id,
         vertex_in.into_inner(),
     )
@@ -89,39 +87,26 @@ pub async fn change_vertex_description(
 /// Change vertex value
 #[openapi(tag = "model")]
 #[patch(
-    "/project/<project_id>/vertex/<vertex_id>/change_value",
+    "/vertices/<vertex_id>/change_value",
     format = "json",
     data = "<value>"
 )]
 pub async fn change_vertex_value(
-    project_id: i32,
     vertex_id: i32,
     value: Json<Option<f64>>,
     user: User,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<VertexOutChangeValueType>> {
     let conn = &mut db::establish_connection();
-    model_services::change_vertex_value(
-        conn,
-        project_service,
-        &user,
-        project_id,
-        vertex_id,
-        value.into_inner(),
-    )
-    .await
-    .to_path_result()
+    model_services::change_vertex_value(conn, project_service, &user, vertex_id, value.into_inner())
+        .await
+        .to_path_result()
 }
 
 /// Move vertex
 #[openapi(tag = "model")]
-#[patch(
-    "/project/<project_id>/vertex/<vertex_id>/move_vertex",
-    format = "json",
-    data = "<vertex_in>"
-)]
+#[patch("/vertices/<vertex_id>/move", format = "json", data = "<vertex_in>")]
 pub async fn move_vertex(
-    project_id: i32,
     vertex_id: i32,
     vertex_in: Json<VertexInMoveType>,
     user: User,
@@ -132,7 +117,6 @@ pub async fn move_vertex(
         conn,
         project_service,
         &user,
-        project_id,
         vertex_id,
         vertex_in.into_inner(),
     )
@@ -142,15 +126,14 @@ pub async fn move_vertex(
 
 /// Delete vertex
 #[openapi(tag = "model")]
-#[delete("/project/<project_id>/vertex/<vertex_id>")]
+#[delete("/vertices/<vertex_id>")]
 pub async fn delete_vertex(
-    project_id: i32,
     vertex_id: i32,
     user: User,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<i32>> {
     let conn = &mut db::establish_connection();
-    model_services::delete_vertex(conn, project_service, &user, project_id, vertex_id)
+    model_services::delete_vertex(conn, project_service, &user, vertex_id)
         .await
         .to_path_result()
 }
@@ -179,12 +162,11 @@ pub async fn create_arc(
 /// Change arc description
 #[openapi(tag = "model")]
 #[patch(
-    "/project/<project_id>/arc/<arc_id>/change_description",
+    "/arcs/<arc_id>/change_description",
     format = "json",
     data = "<description>"
 )]
 pub async fn change_arc_description(
-    project_id: i32,
     arc_id: i32,
     description: Json<String>,
     user: User,
@@ -195,7 +177,6 @@ pub async fn change_arc_description(
         conn,
         project_service,
         &user,
-        project_id,
         arc_id,
         description.into_inner(),
     )
@@ -205,42 +186,29 @@ pub async fn change_arc_description(
 
 /// Change arc value
 #[openapi(tag = "model")]
-#[patch(
-    "/project/<project_id>/arc/<arc_id>/change_value",
-    format = "json",
-    data = "<value>"
-)]
+#[patch("/arcs/<arc_id>/change_value", format = "json", data = "<value>")]
 pub async fn change_arc_value(
-    project_id: i32,
     arc_id: i32,
     value: Json<f64>,
     user: User,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<ArcOutChangeValueType>> {
     let conn = &mut db::establish_connection();
-    model_services::change_arc_value(
-        conn,
-        project_service,
-        &user,
-        project_id,
-        arc_id,
-        value.into_inner(),
-    )
-    .await
-    .to_path_result()
+    model_services::change_arc_value(conn, project_service, &user, arc_id, value.into_inner())
+        .await
+        .to_path_result()
 }
 
 /// Delete arc
 #[openapi(tag = "model")]
-#[delete("/project/<project_id>/arc/<arc_id>")]
+#[delete("/arcs/<arc_id>")]
 pub async fn delete_arc(
-    project_id: i32,
     arc_id: i32,
     user: User,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<i32>> {
     let conn = &mut db::establish_connection();
-    model_services::delete_arc(conn, project_service, &user, project_id, arc_id)
+    model_services::delete_arc(conn, project_service, &user, arc_id)
         .await
         .to_path_result()
 }

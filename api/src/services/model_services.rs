@@ -64,6 +64,22 @@ pub fn find_vertex_by_id(conn: &mut PgConnection, vertex_id: i32) -> QueryResult
         .get_result::<Vertex>(conn)
 }
 
+pub fn find_project_by_vertex_id(conn: &mut PgConnection, vertex_id: i32) -> QueryResult<Project> {
+    vertices::table
+        .inner_join(projects::table)
+        .select(projects::all_columns)
+        .filter(vertices::id.eq(vertex_id))
+        .get_result::<Project>(conn)
+}
+
+pub fn find_project_by_arc_id(conn: &mut PgConnection, arc_id: i32) -> QueryResult<Project> {
+    arcs::table
+        .inner_join(projects::table)
+        .select(projects::all_columns)
+        .filter(arcs::id.eq(arc_id))
+        .get_result::<Project>(conn)
+}
+
 pub async fn create_vertex(
     conn: &mut PgConnection,
     project_service: WebSocketProjectService,
@@ -98,11 +114,10 @@ pub async fn change_vertex_description(
     conn: &mut PgConnection,
     project_service: WebSocketProjectService,
     user: &User,
-    project_id: i32,
     vertex_id: i32,
     vertex_in: VertexInChangeDescriptionType,
 ) -> ServiceResult<ModelActionType<VertexOutChangeDescriptionType>> {
-    let mut project = project_services::find_project_by_id(conn, project_id)
+    let mut project = find_project_by_vertex_id(conn, vertex_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
     let vertex = diesel::update(vertices::table)
@@ -113,7 +128,7 @@ pub async fn change_vertex_description(
         ))
         .get_result::<Vertex>(conn)
         .to_service_result_find(String::from("vertex_not_found_error"))?;
-    project = project_services::update_project(conn, project_id, vertex.updated_at)
+    project = project_services::update_project(conn, project.id, vertex.updated_at)
         .to_service_result()?;
     let vertex_out = VertexOutChangeDescriptionType::from(vertex);
     let model_action = ModelActionType::new(
@@ -129,11 +144,10 @@ pub async fn change_vertex_value(
     conn: &mut PgConnection,
     project_service: WebSocketProjectService,
     user: &User,
-    project_id: i32,
     vertex_id: i32,
     value: Option<f64>,
 ) -> ServiceResult<ModelActionType<VertexOutChangeValueType>> {
-    let mut project = project_services::find_project_by_id(conn, project_id)
+    let mut project = find_project_by_vertex_id(conn, vertex_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
     check_vertex_value(&project, value.clone())?;
@@ -142,7 +156,7 @@ pub async fn change_vertex_value(
         .set((vertices::value.eq(value),))
         .get_result::<Vertex>(conn)
         .to_service_result_find(String::from("vertex_not_found_error"))?;
-    project = project_services::update_project(conn, project_id, vertex.updated_at)
+    project = project_services::update_project(conn, project.id, vertex.updated_at)
         .to_service_result()?;
     let vertex_out = VertexOutChangeValueType::from(vertex);
     let model_action =
@@ -155,11 +169,10 @@ pub async fn move_vertex(
     conn: &mut PgConnection,
     project_service: WebSocketProjectService,
     user: &User,
-    project_id: i32,
     vertex_id: i32,
     vertex_in: VertexInMoveType,
 ) -> ServiceResult<ModelActionType<VertexOutMoveType>> {
-    let mut project = project_services::find_project_by_id(conn, project_id)
+    let mut project = find_project_by_vertex_id(conn, vertex_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
     let vertex = diesel::update(vertices::table)
@@ -170,7 +183,7 @@ pub async fn move_vertex(
         ))
         .get_result::<Vertex>(conn)
         .to_service_result_find(String::from("vertex_not_found_error"))?;
-    project = project_services::update_project(conn, project_id, vertex.updated_at)
+    project = project_services::update_project(conn, project.id, vertex.updated_at)
         .to_service_result()?;
     let vertex_out = VertexOutMoveType::from(vertex);
     let model_action = ModelActionType::new(&project, String::from("move_vertex"), vertex_out);
@@ -182,10 +195,9 @@ pub async fn delete_vertex(
     conn: &mut PgConnection,
     project_service: WebSocketProjectService,
     user: &User,
-    project_id: i32,
     vertex_id: i32,
 ) -> ServiceResult<ModelActionType<i32>> {
-    let mut project = project_services::find_project_by_id(conn, project_id)
+    let mut project = find_project_by_vertex_id(conn, vertex_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
     let deleted_number = diesel::delete(vertices::table.filter(vertices::id.eq(vertex_id)))
@@ -194,7 +206,7 @@ pub async fn delete_vertex(
     if deleted_number == 0 {
         return validation_error!("vertex_not_found_error");
     }
-    project = project_services::update_project(conn, project_id, Utc::now()).to_service_result()?;
+    project = project_services::update_project(conn, project.id, Utc::now()).to_service_result()?;
     let model_action = ModelActionType::new(&project, String::from("delete_vertex"), vertex_id);
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
@@ -237,11 +249,10 @@ pub async fn change_arc_description(
     conn: &mut PgConnection,
     project_service: WebSocketProjectService,
     user: &User,
-    project_id: i32,
     arc_id: i32,
     description: String,
 ) -> ServiceResult<ModelActionType<ArcOutChangeDescriptionType>> {
-    let mut project = project_services::find_project_by_id(conn, project_id)
+    let mut project = find_project_by_arc_id(conn, arc_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
     let arc = diesel::update(arcs::table)
@@ -250,7 +261,7 @@ pub async fn change_arc_description(
         .get_result::<Arc>(conn)
         .to_service_result_find(String::from("arc_not_found_error"))?;
     project =
-        project_services::update_project(conn, project_id, arc.updated_at).to_service_result()?;
+        project_services::update_project(conn, project.id, arc.updated_at).to_service_result()?;
     let arc_out = ArcOutChangeDescriptionType::from(arc);
     let model_action =
         ModelActionType::new(&project, String::from("change_arc_description"), arc_out);
@@ -262,11 +273,10 @@ pub async fn change_arc_value(
     conn: &mut PgConnection,
     project_service: WebSocketProjectService,
     user: &User,
-    project_id: i32,
     arc_id: i32,
     value: f64,
 ) -> ServiceResult<ModelActionType<ArcOutChangeValueType>> {
-    let mut project = project_services::find_project_by_id(conn, project_id)
+    let mut project = find_project_by_arc_id(conn, arc_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
     check_arc_value(&project, value)?;
@@ -276,7 +286,7 @@ pub async fn change_arc_value(
         .get_result::<Arc>(conn)
         .to_service_result_find(String::from("arc_not_found_error"))?;
     project =
-        project_services::update_project(conn, project_id, arc.updated_at).to_service_result()?;
+        project_services::update_project(conn, project.id, arc.updated_at).to_service_result()?;
     let arc_out = ArcOutChangeValueType::from(arc);
     let model_action = ModelActionType::new(&project, String::from("change_arc_value"), arc_out);
     project_service.notify(model_action.clone()).await;
@@ -287,10 +297,9 @@ pub async fn delete_arc(
     conn: &mut PgConnection,
     project_service: WebSocketProjectService,
     user: &User,
-    project_id: i32,
     arc_id: i32,
 ) -> ServiceResult<ModelActionType<i32>> {
-    let mut project = project_services::find_project_by_id(conn, project_id)
+    let mut project = find_project_by_arc_id(conn, arc_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
     let deleted_number = diesel::delete(arcs::table.filter(arcs::id.eq(arc_id)))
@@ -299,7 +308,7 @@ pub async fn delete_arc(
     if deleted_number == 0 {
         return validation_error!("arc_not_found_error");
     }
-    project = project_services::update_project(conn, project_id, Utc::now()).to_service_result()?;
+    project = project_services::update_project(conn, project.id, Utc::now()).to_service_result()?;
     let model_action = ModelActionType::new(&project, String::from("delete_arc"), arc_id);
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
