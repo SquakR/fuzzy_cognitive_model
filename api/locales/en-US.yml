@@ -14,6 +14,7 @@ vertex_not_found_error: "Vertex record not found."
 arc_not_found_error: "Arc record not found."
 source_vertex_not_found_error: "Source vertex record not found."
 target_vertex_not_found_error: "Target vertex record not found."
+control_vertex_not_found_error: "Control vertex record not found."
 
 invalid_token_error: "Invalid token."
 link_is_not_active_error: "The link is not active."
@@ -80,3 +81,6 @@ invalid_vertex_value_error: "Invalid vertex value, expected `%{expected}`, but g
 invalid_arc_value_error: "Invalid arc value, expected `%{expected}`, but got `%{got}`."
 invalid_arc_value_symbolic_error: "Invalid arc value, expected `0.0` or `1.0`, but got `%{got}`."
 arc_duplication_error: "Unable to create arc because it already exists."
+
+vertex_already_control_error: "The vertex is already a control."
+vertex_not_control_error: "The vertex is not a control."

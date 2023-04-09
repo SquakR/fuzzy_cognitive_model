@@ -2,6 +2,7 @@ use crate::authenticate;
 use crate::db;
 use crate::locale::Locale;
 use crate::models::User;
+use crate::plugins::Plugins;
 use crate::web_socket::WebSocketProjectService;
 use chrono::{DateTime, Utc};
 use rocket::form::{self, FromFormField, ValueField};
@@ -151,6 +152,26 @@ impl<'r> FromRequest<'r> for WebSocketProjectService {
 }
 
 impl<'r> OpenApiFromRequest<'r> for WebSocketProjectService {
+    fn from_request_input(
+        _gen: &mut OpenApiGenerator,
+        _name: String,
+        _required: bool,
+    ) -> RocketOkapiResult<RequestHeaderInput> {
+        Ok(RequestHeaderInput::None)
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for &'r Plugins {
+    type Error = ();
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let plugins_emitter = request.local_cache::<Plugins, _>(|| unreachable!());
+        Outcome::Success(plugins_emitter)
+    }
+}
+
+impl<'r> OpenApiFromRequest<'r> for &'r Plugins {
     fn from_request_input(
         _gen: &mut OpenApiGenerator,
         _name: String,

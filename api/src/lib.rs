@@ -7,6 +7,7 @@ pub mod db;
 pub mod locale;
 pub mod models;
 pub mod pagination;
+pub mod plugins;
 pub mod request;
 pub mod response;
 pub mod routes;

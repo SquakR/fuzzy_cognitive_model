@@ -1,6 +1,7 @@
 mod model_routes;
 mod project_routes;
 mod user_routes;
+use crate::plugins::control_vertices::routes as control_vertices_routes;
 use okapi::openapi3::{Object, OpenApi, Parameter, ParameterValue, RefOr, SchemaObject};
 use rocket::{Build, Rocket};
 use rocket_okapi::settings::OpenApiSettings;
@@ -121,7 +122,8 @@ impl MountRoutes for Rocket<Build> {
                 model_routes::create_arc,
                 model_routes::change_arc_description,
                 model_routes::change_arc_value,
-                model_routes::delete_arc
+                model_routes::delete_arc,
+                control_vertices_routes::change_vertex_is_control
             ),
         )
     }

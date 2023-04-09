@@ -1,5 +1,6 @@
 use crate::db;
 use crate::models::{ProjectUserStatusValue, User};
+use crate::plugins::Plugins;
 use crate::response::{
     PathEmptyResult, PathResult, ToPathEmptyResult, ToPathResult, ToServiceResult,
 };
@@ -140,14 +141,19 @@ pub fn change_project(
 
 /// Set project plugins
 #[openapi(tag = "projects")]
-#[post("/project/<project_id>/plugins", format = "json", data = "<plugins>")]
+#[post(
+    "/project/<project_id>/plugins",
+    format = "json",
+    data = "<new_plugins>"
+)]
 pub fn set_project_plugins(
     project_id: i32,
-    plugins: Json<Vec<String>>,
+    new_plugins: Json<Vec<String>>,
     user: User,
+    plugins: &Plugins,
 ) -> PathResult<Vec<String>> {
     let conn = &mut db::establish_connection();
-    plugin_services::set_project_plugins(conn, &user, project_id, plugins.into_inner())
+    plugin_services::set_project_plugins(conn, plugins, &user, project_id, new_plugins.into_inner())
         .to_path_result()
 }
 
@@ -156,12 +162,12 @@ pub fn set_project_plugins(
 #[post(
     "/project/<project_id>/user/<user_id>/permissions",
     format = "json",
-    data = "<permissions>"
+    data = "<new_permissions>"
 )]
 pub fn set_project_user_permissions(
     project_id: i32,
     user_id: i32,
-    permissions: Json<Vec<String>>,
+    new_permissions: Json<Vec<String>>,
     user: User,
 ) -> PathResult<Vec<String>> {
     let conn = &mut db::establish_connection();
@@ -170,7 +176,7 @@ pub fn set_project_user_permissions(
         &user,
         project_id,
         user_id,
-        permissions.into_inner(),
+        new_permissions.into_inner(),
     )
     .to_path_result()
 }

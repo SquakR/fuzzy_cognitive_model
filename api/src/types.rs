@@ -8,6 +8,7 @@ use rocket_okapi::JsonSchema;
 use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Metadata, ObjectValidation, Schema, SchemaObject};
 use schemars::{Map, Set};
+use serde_json::Value;
 
 /// Type of user (expert or researcher)
 #[derive(Serialize, JsonSchema)]
@@ -372,6 +373,8 @@ pub struct VertexOutType {
     pub x_position: f64,
     /// Vertex position in y coordinate
     pub y_position: f64,
+    /// Vertex plugins data
+    pub plugins_data: Value,
     /// Vertex creation time
     pub created_at: DateTime<Utc>,
     /// Vertex update time

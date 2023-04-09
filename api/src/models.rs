@@ -59,7 +59,7 @@ pub struct Session {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Queryable, Identifiable)]
+#[derive(Queryable, Identifiable, Clone)]
 pub struct Project {
     pub id: i32,
     pub name: String,
@@ -139,7 +139,9 @@ pub struct ProjectPlugin {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, PartialEq, diesel_derive_enum::DbEnum, Serialize, Deserialize, JsonSchema)]
+#[derive(
+    Debug, PartialEq, diesel_derive_enum::DbEnum, Clone, Serialize, Deserialize, JsonSchema,
+)]
 #[serde(rename_all = "snake_case")]
 #[ExistingTypePath = "crate::schema::sql_types::VertexValueType"]
 pub enum VertexValueType {
@@ -161,7 +163,9 @@ pub struct Vertex {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, PartialEq, diesel_derive_enum::DbEnum, Serialize, Deserialize, JsonSchema)]
+#[derive(
+    Debug, PartialEq, diesel_derive_enum::DbEnum, Clone, Serialize, Deserialize, JsonSchema,
+)]
 #[serde(rename_all = "snake_case")]
 #[ExistingTypePath = "crate::schema::sql_types::ArcValueType"]
 pub enum ArcValueType {

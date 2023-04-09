@@ -241,11 +241,8 @@ impl ProjectOutType {
             updated_at: project.updated_at,
             vertex_value_type: project.vertex_value_type,
             arc_value_type: project.arc_value_type,
-            plugins: plugin_services::find_project_plugins(conn, project.id)
-                .to_service_result()?
-                .into_iter()
-                .map(|plugin| plugin.name)
-                .collect(),
+            plugins: plugin_services::find_project_plugin_names(conn, project.id)
+                .to_service_result()?,
         })
     }
     pub fn from_projects(

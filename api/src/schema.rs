@@ -28,6 +28,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    control_vertices (vertex_id) {
+        vertex_id -> Int4,
+        is_control -> Bool,
+    }
+}
+
+diesel::table! {
     email_confirmations (id) {
         id -> Int4,
         user_id -> Int4,
@@ -170,6 +177,7 @@ diesel::table! {
 }
 
 diesel::joinable!(arcs -> projects (project_id));
+diesel::joinable!(control_vertices -> vertices (vertex_id));
 diesel::joinable!(email_confirmations -> users (user_id));
 diesel::joinable!(password_resets -> users (user_id));
 diesel::joinable!(project_plugins -> plugins (plugin_name));
@@ -183,6 +191,7 @@ diesel::joinable!(vertices -> projects (project_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     arcs,
+    control_vertices,
     email_confirmations,
     password_resets,
     permissions,

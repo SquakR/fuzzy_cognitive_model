@@ -12,17 +12,20 @@ pub fn set_project_user_permissions(
     user: &User,
     project_id: i32,
     user_id: i32,
-    permissions: Vec<String>,
+    new_permissions: Vec<String>,
 ) -> ServiceResult<Vec<String>> {
     let project = project_services::find_project_by_id(conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     can_change_permissions(conn, &project, user.id)?;
     let all_permissions = get_permission_keys(conn)?;
-    if let Some(index) = permissions
+    if let Some(index) = new_permissions
         .iter()
         .position(|permission| !all_permissions.contains(permission))
     {
-        return validation_error!("invalid_permission_error", permission = &permissions[index]);
+        return validation_error!(
+            "invalid_permission_error",
+            permission = &new_permissions[index]
+        );
     }
     let project_user = project_user_services::find_project_user(conn, project_id, user_id)
         .to_service_result_find(String::from("project_user_not_found_error"))?;
@@ -38,7 +41,7 @@ pub fn set_project_user_permissions(
     conn.transaction(|conn| {
         delete_project_user_permissions(conn, project_user.id)?;
         let mut insert_rows = vec![];
-        for key in permissions {
+        for key in new_permissions {
             insert_rows.push((
                 project_user_permissions::project_user_id.eq(project_user.id),
                 project_user_permissions::permission_key.eq(key),

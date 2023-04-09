@@ -1,4 +1,5 @@
 use crate::models::{Arc, ArcValueType, Project, User, Vertex, VertexValueType};
+use crate::plugins::Plugins;
 use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{arcs, projects, vertices};
 use crate::services::{permission_services, project_services};
@@ -10,14 +11,17 @@ use crate::types::{
 };
 use crate::validation_error;
 use crate::web_socket::WebSocketProjectService;
+use chrono::DateTime;
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::PgConnection;
 use schemars::JsonSchema;
 use serde::Serialize;
+use serde_json::{Map, Value};
 
 pub fn get_model(
     conn: &mut PgConnection,
+    plugins: &Plugins,
     user: &User,
     project_id: i32,
 ) -> ServiceResult<ModelOutType> {
@@ -35,11 +39,13 @@ pub fn get_model(
         .into_iter()
         .map(ArcOutType::from)
         .collect();
-    Ok(ModelOutType {
+    let mut model_out = ModelOutType {
         project,
         vertices,
         arcs,
-    })
+    };
+    model_out = plugins.get_model_emitter.lock().unwrap().emit(model_out)?;
+    Ok(model_out)
 }
 
 pub fn find_project_vertices(conn: &mut PgConnection, project_id: i32) -> QueryResult<Vec<Vertex>> {
@@ -82,6 +88,7 @@ pub fn find_project_by_arc_id(conn: &mut PgConnection, arc_id: i32) -> QueryResu
 
 pub async fn create_vertex(
     conn: &mut PgConnection,
+    plugins: &Plugins,
     project_service: WebSocketProjectService,
     user: &User,
     project_id: i32,
@@ -104,10 +111,30 @@ pub async fn create_vertex(
         .to_service_result()?;
     project = project_services::update_project(conn, project_id, vertex.created_at)
         .to_service_result()?;
-    let vertex_out = VertexOutType::from(vertex);
+    let vertex_out = plugins
+        .add_vertex_emitter
+        .lock()
+        .unwrap()
+        .emit(project.clone(), VertexOutType::from(vertex))?;
     let model_action = ModelActionType::new(&project, String::from("create_vertex"), vertex_out);
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
+}
+
+pub fn update_vertex(
+    conn: &mut PgConnection,
+    vertex_id: i32,
+    project_id: i32,
+    updated_at: DateTime<Utc>,
+) -> QueryResult<(Vertex, Project)> {
+    conn.transaction(|conn| {
+        let vertex = diesel::update(vertices::table)
+            .filter(vertices::id.eq(vertex_id))
+            .set(vertices::updated_at.eq(updated_at))
+            .get_result::<Vertex>(conn)?;
+        let project = project_services::update_project(conn, project_id, updated_at)?;
+        Ok((vertex, project))
+    })
 }
 
 pub async fn change_vertex_description(
@@ -372,7 +399,7 @@ impl<T> ModelActionType<T>
 where
     T: Clone + Serialize + JsonSchema,
 {
-    fn new(project: &Project, name: String, data: T) -> Self {
+    pub fn new(project: &Project, name: String, data: T) -> Self {
         Self {
             project_id: project.id,
             project_updated_at: project.updated_at,
@@ -392,6 +419,7 @@ impl From<Vertex> for VertexOutType {
             project_id: vertex.project_id,
             x_position: vertex.x_position,
             y_position: vertex.y_position,
+            plugins_data: Value::Object(Map::new()),
             created_at: vertex.created_at,
             updated_at: vertex.updated_at,
         }

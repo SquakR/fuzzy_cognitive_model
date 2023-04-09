@@ -1,5 +1,6 @@
 use crate::db;
 use crate::models::User;
+use crate::plugins::Plugins;
 use crate::response::{PathResult, ToPathResult};
 use crate::services::model_services;
 use crate::types::{
@@ -15,9 +16,9 @@ use rocket_okapi::openapi;
 /// Get model
 #[openapi(tag = "model")]
 #[get("/project/<project_id>")]
-pub fn get_model(project_id: i32, user: User) -> PathResult<ModelOutType> {
+pub fn get_model(project_id: i32, user: User, plugins: &Plugins) -> PathResult<ModelOutType> {
     let conn = &mut db::establish_connection();
-    model_services::get_model(conn, &user, project_id).to_path_result()
+    model_services::get_model(conn, plugins, &user, project_id).to_path_result()
 }
 
 /// Get model active users
@@ -45,11 +46,13 @@ pub async fn create_vertex(
     project_id: i32,
     vertex_in: Json<VertexInCreateType>,
     user: User,
+    plugins: &Plugins,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<VertexOutType>> {
     let conn = &mut db::establish_connection();
     model_services::create_vertex(
         conn,
+        plugins,
         project_service,
         &user,
         project_id,

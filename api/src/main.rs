@@ -2,6 +2,7 @@
 extern crate rocket;
 use dotenvy::dotenv;
 use fuzzy_cognitive_model::locale::LocaleFairing;
+use fuzzy_cognitive_model::plugins::{ControlVerticesPlugin, PluginsFairing};
 use fuzzy_cognitive_model::response;
 use fuzzy_cognitive_model::routes::MountRoutes;
 use fuzzy_cognitive_model::storage::Storage;
@@ -53,5 +54,7 @@ fn rocket() -> _ {
         .mount("/api/v1/docs", make_swagger_ui(&get_docs()))
         .attach(cors)
         .attach(LocaleFairing)
+        .attach(PluginsFairing)
+        .attach(ControlVerticesPlugin)
         .attach(web_socket_listener)
 }
