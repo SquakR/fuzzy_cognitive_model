@@ -4,10 +4,10 @@ use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{arcs, projects, vertices};
 use crate::services::{permission_services, project_services};
 use crate::types::{
-    ArcInCreateType, ArcOutChangeDescriptionType, ArcOutChangeValueType, ArcOutType,
-    ModelActionType, ModelOutType, ProjectOutType, VertexInChangeDescriptionType,
+    ArcInCreateType, ArcOutChangeDescriptionType, ArcOutChangeValueType, ArcOutDeleteType,
+    ArcOutType, ModelActionType, ModelOutType, ProjectOutType, VertexInChangeDescriptionType,
     VertexInCreateType, VertexInMoveType, VertexOutChangeDescriptionType, VertexOutChangeValueType,
-    VertexOutMoveType, VertexOutType,
+    VertexOutDeleteType, VertexOutMoveType, VertexOutType,
 };
 use crate::validation_error;
 use crate::web_socket::WebSocketProjectService;
@@ -235,7 +235,7 @@ pub async fn delete_vertex(
     project_service: WebSocketProjectService,
     user: &User,
     vertex_id: i32,
-) -> ServiceResult<ModelActionType<i32>> {
+) -> ServiceResult<ModelActionType<VertexOutDeleteType>> {
     let project = find_project_by_vertex_id(conn, vertex_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
@@ -254,7 +254,14 @@ pub async fn delete_vertex(
     if deleted_number == 0 {
         return validation_error!("vertex_not_found_error");
     }
-    let model_action = ModelActionType::new(&project, String::from("delete_vertex"), vertex_id);
+    let model_action = ModelActionType::new(
+        &project,
+        String::from("delete_vertex"),
+        VertexOutDeleteType {
+            id: vertex_id,
+            updated_at: project.updated_at,
+        },
+    );
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
@@ -354,7 +361,7 @@ pub async fn delete_arc(
     project_service: WebSocketProjectService,
     user: &User,
     arc_id: i32,
-) -> ServiceResult<ModelActionType<i32>> {
+) -> ServiceResult<ModelActionType<ArcOutDeleteType>> {
     let project = find_project_by_arc_id(conn, arc_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
@@ -373,7 +380,14 @@ pub async fn delete_arc(
     if deleted_number == 0 {
         return validation_error!("arc_not_found_error");
     }
-    let model_action = ModelActionType::new(&project, String::from("delete_arc"), arc_id);
+    let model_action = ModelActionType::new(
+        &project,
+        String::from("delete_arc"),
+        ArcOutDeleteType {
+            id: arc_id,
+            updated_at: project.updated_at,
+        },
+    );
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
 }

@@ -456,6 +456,15 @@ pub struct VertexInMoveType {
     pub y_position: f64,
 }
 
+/// Type of result of deleting vertex
+#[derive(Clone, Serialize, JsonSchema)]
+pub struct VertexOutDeleteType {
+    /// Vertex identifier
+    pub id: i32,
+    /// project update time
+    pub updated_at: DateTime<Utc>,
+}
+
 /// Type of arc
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -513,6 +522,15 @@ pub struct ArcOutChangeValueType {
     /// Arc value
     pub value: f64,
     /// Arc update time
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Type of result of deleting arc
+#[derive(Clone, Serialize, JsonSchema)]
+pub struct ArcOutDeleteType {
+    /// Arc identifier
+    pub id: i32,
+    /// project update time
     pub updated_at: DateTime<Utc>,
 }
 

@@ -4,10 +4,10 @@ use crate::plugins::Plugins;
 use crate::response::{PathResult, ToPathResult};
 use crate::services::model_services;
 use crate::types::{
-    ArcInCreateType, ArcOutChangeDescriptionType, ArcOutChangeValueType, ArcOutType,
-    ModelActionType, ModelOutType, UserOutType, VertexInChangeDescriptionType, VertexInCreateType,
-    VertexInMoveType, VertexOutChangeDescriptionType, VertexOutChangeValueType, VertexOutMoveType,
-    VertexOutType,
+    ArcInCreateType, ArcOutChangeDescriptionType, ArcOutChangeValueType, ArcOutDeleteType,
+    ArcOutType, ModelActionType, ModelOutType, UserOutType, VertexInChangeDescriptionType,
+    VertexInCreateType, VertexInMoveType, VertexOutChangeDescriptionType, VertexOutChangeValueType,
+    VertexOutDeleteType, VertexOutMoveType, VertexOutType,
 };
 use crate::web_socket::WebSocketProjectService;
 use rocket::serde::json::Json;
@@ -134,7 +134,7 @@ pub async fn delete_vertex(
     vertex_id: i32,
     user: User,
     project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<i32>> {
+) -> PathResult<ModelActionType<VertexOutDeleteType>> {
     let conn = &mut db::establish_connection();
     model_services::delete_vertex(conn, project_service, &user, vertex_id)
         .await
@@ -209,7 +209,7 @@ pub async fn delete_arc(
     arc_id: i32,
     user: User,
     project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<i32>> {
+) -> PathResult<ModelActionType<ArcOutDeleteType>> {
     let conn = &mut db::establish_connection();
     model_services::delete_arc(conn, project_service, &user, arc_id)
         .await
