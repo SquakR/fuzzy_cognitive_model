@@ -4,10 +4,11 @@ use crate::plugins::Plugins;
 use crate::response::{PathResult, ToPathResult};
 use crate::services::model_services;
 use crate::types::{
-    ArcInCreateType, ArcOutChangeDescriptionType, ArcOutChangeValueType, ArcOutDeleteType,
-    ArcOutType, ModelActionType, ModelOutType, UserOutType, VertexInChangeDescriptionType,
-    VertexInCreateType, VertexInMoveType, VertexOutChangeDescriptionType, VertexOutChangeValueType,
-    VertexOutDeleteType, VertexOutMoveType, VertexOutType,
+    ConceptInChangeDescriptionType, ConceptInCreateType, ConceptInMoveType,
+    ConceptOutChangeDescriptionType, ConceptOutChangeValueType, ConceptOutDeleteType,
+    ConceptOutMoveType, ConceptOutType, ConnectionInCreateType, ConnectionOutChangeDescriptionType,
+    ConnectionOutChangeValueType, ConnectionOutDeleteType, ConnectionOutType, ModelActionType,
+    ModelOutType, UserOutType,
 };
 use crate::web_socket::WebSocketProjectService;
 use rocket::serde::json::Json;
@@ -39,179 +40,203 @@ pub async fn get_active_users(
     Ok(Json(users))
 }
 
-/// Create new vertex
+/// Create new concept
 #[openapi(tag = "model")]
-#[post("/project/<project_id>/vertex", format = "json", data = "<vertex_in>")]
-pub async fn create_vertex(
+#[post(
+    "/project/<project_id>/concept",
+    format = "json",
+    data = "<concept_in>"
+)]
+pub async fn create_concept(
     project_id: i32,
-    vertex_in: Json<VertexInCreateType>,
+    concept_in: Json<ConceptInCreateType>,
     user: User,
     plugins: &Plugins,
     project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<VertexOutType>> {
+) -> PathResult<ModelActionType<ConceptOutType>> {
     let conn = &mut db::establish_connection();
-    model_services::create_vertex(
+    model_services::create_concept(
         conn,
         plugins,
         project_service,
         &user,
         project_id,
-        vertex_in.into_inner(),
+        concept_in.into_inner(),
     )
     .await
     .to_path_result()
 }
 
-/// Change vertex description
+/// Change concept description
 #[openapi(tag = "model")]
 #[patch(
-    "/vertices/<vertex_id>/change_description",
+    "/concepts/<concept_id>/change_description",
     format = "json",
-    data = "<vertex_in>"
+    data = "<concept_in>"
 )]
-pub async fn change_vertex_description(
-    vertex_id: i32,
-    vertex_in: Json<VertexInChangeDescriptionType>,
+pub async fn change_concept_description(
+    concept_id: i32,
+    concept_in: Json<ConceptInChangeDescriptionType>,
     user: User,
     project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<VertexOutChangeDescriptionType>> {
+) -> PathResult<ModelActionType<ConceptOutChangeDescriptionType>> {
     let conn = &mut db::establish_connection();
-    model_services::change_vertex_description(
+    model_services::change_concept_description(
         conn,
         project_service,
         &user,
-        vertex_id,
-        vertex_in.into_inner(),
+        concept_id,
+        concept_in.into_inner(),
     )
     .await
     .to_path_result()
 }
 
-/// Change vertex value
+/// Change concept value
 #[openapi(tag = "model")]
 #[patch(
-    "/vertices/<vertex_id>/change_value",
+    "/concepts/<concept_id>/change_value",
     format = "json",
     data = "<value>"
 )]
-pub async fn change_vertex_value(
-    vertex_id: i32,
+pub async fn change_concept_value(
+    concept_id: i32,
     value: Json<Option<f64>>,
     user: User,
     project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<VertexOutChangeValueType>> {
+) -> PathResult<ModelActionType<ConceptOutChangeValueType>> {
     let conn = &mut db::establish_connection();
-    model_services::change_vertex_value(conn, project_service, &user, vertex_id, value.into_inner())
-        .await
-        .to_path_result()
-}
-
-/// Move vertex
-#[openapi(tag = "model")]
-#[patch("/vertices/<vertex_id>/move", format = "json", data = "<vertex_in>")]
-pub async fn move_vertex(
-    vertex_id: i32,
-    vertex_in: Json<VertexInMoveType>,
-    user: User,
-    project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<VertexOutMoveType>> {
-    let conn = &mut db::establish_connection();
-    model_services::move_vertex(
+    model_services::change_concept_value(
         conn,
         project_service,
         &user,
-        vertex_id,
-        vertex_in.into_inner(),
+        concept_id,
+        value.into_inner(),
     )
     .await
     .to_path_result()
 }
 
-/// Delete vertex
+/// Move concept
 #[openapi(tag = "model")]
-#[delete("/vertices/<vertex_id>")]
-pub async fn delete_vertex(
-    vertex_id: i32,
+#[patch("/concepts/<concept_id>/move", format = "json", data = "<concept_in>")]
+pub async fn move_concept(
+    concept_id: i32,
+    concept_in: Json<ConceptInMoveType>,
     user: User,
     project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<VertexOutDeleteType>> {
+) -> PathResult<ModelActionType<ConceptOutMoveType>> {
     let conn = &mut db::establish_connection();
-    model_services::delete_vertex(conn, project_service, &user, vertex_id)
+    model_services::move_concept(
+        conn,
+        project_service,
+        &user,
+        concept_id,
+        concept_in.into_inner(),
+    )
+    .await
+    .to_path_result()
+}
+
+/// Delete concept
+#[openapi(tag = "model")]
+#[delete("/concepts/<concept_id>")]
+pub async fn delete_concept(
+    concept_id: i32,
+    user: User,
+    project_service: WebSocketProjectService,
+) -> PathResult<ModelActionType<ConceptOutDeleteType>> {
+    let conn = &mut db::establish_connection();
+    model_services::delete_concept(conn, project_service, &user, concept_id)
         .await
         .to_path_result()
 }
 
-/// Create new arc
+/// Create new connection
 #[openapi(tag = "model")]
-#[post("/project/<project_id>/arc", format = "json", data = "<arc_in>")]
-pub async fn create_arc(
+#[post(
+    "/project/<project_id>/connection",
+    format = "json",
+    data = "<connection_in>"
+)]
+pub async fn create_connection(
     project_id: i32,
-    arc_in: Json<ArcInCreateType>,
+    connection_in: Json<ConnectionInCreateType>,
     user: User,
     project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<ArcOutType>> {
+) -> PathResult<ModelActionType<ConnectionOutType>> {
     let conn = &mut db::establish_connection();
-    model_services::create_arc(
+    model_services::create_connection(
         conn,
         project_service,
         &user,
         project_id,
-        arc_in.into_inner(),
+        connection_in.into_inner(),
     )
     .await
     .to_path_result()
 }
 
-/// Change arc description
+/// Change connection description
 #[openapi(tag = "model")]
 #[patch(
-    "/arcs/<arc_id>/change_description",
+    "/connections/<connection_id>/change_description",
     format = "json",
     data = "<description>"
 )]
-pub async fn change_arc_description(
-    arc_id: i32,
+pub async fn change_connection_description(
+    connection_id: i32,
     description: Json<String>,
     user: User,
     project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<ArcOutChangeDescriptionType>> {
+) -> PathResult<ModelActionType<ConnectionOutChangeDescriptionType>> {
     let conn = &mut db::establish_connection();
-    model_services::change_arc_description(
+    model_services::change_connection_description(
         conn,
         project_service,
         &user,
-        arc_id,
+        connection_id,
         description.into_inner(),
     )
     .await
     .to_path_result()
 }
 
-/// Change arc value
+/// Change connection value
 #[openapi(tag = "model")]
-#[patch("/arcs/<arc_id>/change_value", format = "json", data = "<value>")]
-pub async fn change_arc_value(
-    arc_id: i32,
+#[patch(
+    "/connections/<connection_id>/change_value",
+    format = "json",
+    data = "<value>"
+)]
+pub async fn change_connection_value(
+    connection_id: i32,
     value: Json<f64>,
     user: User,
     project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<ArcOutChangeValueType>> {
+) -> PathResult<ModelActionType<ConnectionOutChangeValueType>> {
     let conn = &mut db::establish_connection();
-    model_services::change_arc_value(conn, project_service, &user, arc_id, value.into_inner())
-        .await
-        .to_path_result()
+    model_services::change_connection_value(
+        conn,
+        project_service,
+        &user,
+        connection_id,
+        value.into_inner(),
+    )
+    .await
+    .to_path_result()
 }
 
-/// Delete arc
+/// Delete connection
 #[openapi(tag = "model")]
-#[delete("/arcs/<arc_id>")]
-pub async fn delete_arc(
-    arc_id: i32,
+#[delete("/connections/<connection_id>")]
+pub async fn delete_connection(
+    connection_id: i32,
     user: User,
     project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<ArcOutDeleteType>> {
+) -> PathResult<ModelActionType<ConnectionOutDeleteType>> {
     let conn = &mut db::establish_connection();
-    model_services::delete_arc(conn, project_service, &user, arc_id)
+    model_services::delete_connection(conn, project_service, &user, connection_id)
         .await
         .to_path_result()
 }

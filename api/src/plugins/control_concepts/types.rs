@@ -1,12 +1,12 @@
 use rocket::serde::Serialize;
 use rocket_okapi::JsonSchema;
 
-/// Type of control vertex
+/// Type of control concept
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct ControlVertexOutType {
-    /// Vertex identifier
-    pub vertex_id: i32,
-    /// Whether vertex is control
+pub struct ControlConceptOutType {
+    /// Concept identifier
+    pub concept_id: i32,
+    /// Whether concept is control
     pub is_control: bool,
 }

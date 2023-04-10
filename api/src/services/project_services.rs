@@ -26,8 +26,8 @@ pub fn create_project(
                 projects::description.eq(project_in.description),
                 projects::is_public.eq(project_in.is_public),
                 projects::is_archived.eq(project_in.is_archived),
-                projects::vertex_value_type.eq(project_in.vertex_value_type),
-                projects::arc_value_type.eq(project_in.arc_value_type),
+                projects::concept_value_type.eq(project_in.concept_value_type),
+                projects::connection_value_type.eq(project_in.connection_value_type),
             ))
             .get_result::<Project>(conn)?;
         let project_user = diesel::insert_into(project_users::table)
@@ -163,18 +163,18 @@ pub fn change_project(
     let project_plugins =
         plugin_services::find_project_plugins(conn, project_id).to_service_result()?;
     for project_plugin in project_plugins {
-        if let Some(vertex_value_type) = &project_plugin.vertex_value_type {
-            if project_in.vertex_value_type != *vertex_value_type {
+        if let Some(concept_value_type) = &project_plugin.concept_value_type {
+            if project_in.concept_value_type != *concept_value_type {
                 return validation_error!(
-                    "change_project_vertex_value_type_error",
+                    "change_project_concept_value_type_error",
                     plugin_name = project_plugin.name
                 );
             }
         }
-        if let Some(arc_value_type) = &project_plugin.arc_value_type {
-            if project_in.arc_value_type != *arc_value_type {
+        if let Some(connection_value_type) = &project_plugin.connection_value_type {
+            if project_in.connection_value_type != *connection_value_type {
                 return validation_error!(
-                    "change_project_arc_value_type_error",
+                    "change_project_connection_value_type_error",
                     plugin_name = project_plugin.name
                 );
             }
@@ -187,8 +187,8 @@ pub fn change_project(
             projects::description.eq(project_in.description),
             projects::is_public.eq(project_in.is_public),
             projects::is_archived.eq(project_in.is_archived),
-            projects::vertex_value_type.eq(project_in.vertex_value_type),
-            projects::arc_value_type.eq(project_in.arc_value_type),
+            projects::concept_value_type.eq(project_in.concept_value_type),
+            projects::connection_value_type.eq(project_in.connection_value_type),
         ))
         .get_result::<Project>(conn)
         .to_service_result()
@@ -239,8 +239,8 @@ impl ProjectOutType {
             is_archived: project.is_archived,
             created_at: project.created_at,
             updated_at: project.updated_at,
-            vertex_value_type: project.vertex_value_type,
-            arc_value_type: project.arc_value_type,
+            concept_value_type: project.concept_value_type,
+            connection_value_type: project.connection_value_type,
             plugins: plugin_services::find_project_plugin_names(conn, project.id)
                 .to_service_result()?,
         })
@@ -264,8 +264,8 @@ impl ProjectOutType {
                 is_archived: project.is_archived,
                 created_at: project.created_at,
                 updated_at: project.updated_at,
-                vertex_value_type: project.vertex_value_type,
-                arc_value_type: project.arc_value_type,
+                concept_value_type: project.concept_value_type,
+                connection_value_type: project.connection_value_type,
                 plugins: project_plugins.into_iter().rev().collect(),
             })
         }

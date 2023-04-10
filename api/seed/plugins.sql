@@ -1,20 +1,20 @@
 INSERT INTO plugins (
     name,
     description,
-    vertex_value_type,
-    arc_value_type
+    concept_value_type,
+    connection_value_type
   )
 VALUES (
-    'Control Vertices',
-    'The plugin adds the ability to select control vertices.',
+    'Control Concepts',
+    'The plugin adds the ability to select control concepts.',
     null,
     null
   );
 INSERT INTO plugins (
     name,
     description,
-    vertex_value_type,
-    arc_value_type
+    concept_value_type,
+    connection_value_type
   )
 VALUES (
     'Adjustment With Genetic Algorithms',

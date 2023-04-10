@@ -10,11 +10,11 @@ file_not_found_error: "Не найден файл."
 project_not_found_error: "Не найдена запись проекта."
 project_user_not_found_error: "Не найдена запись пользователя проекта."
 last_status_not_found_error: "Не найдена запись последнего статуса пользователя в проекте."
-vertex_not_found_error: "Не найдена запись вершины."
-arc_not_found_error: "Не найдена запись дуги."
-source_vertex_not_found_error: "Не найдена запись начальной вершины."
-target_vertex_not_found_error: "Не найдена запись конечной вершины."
-control_vertex_not_found_error: "Не найдена запись управляющей вершины."
+concept_not_found_error: "Не найдена запись концепта."
+connection_not_found_error: "Не найдена запись связи."
+source_concept_not_found_error: "Не найдена запись начального концепта."
+target_concept_not_found_error: "Не найдена запись конечного концепта."
+control_concept_not_found_error: "Не найдена запись управляющего концепта."
 
 invalid_token_error: "Невалидный токен."
 link_is_not_active_error: "Ссылка не является активной."
@@ -41,8 +41,8 @@ view_project_forbidden_error: "Недостаточно прав для прос
 view_project_users_forbidden_error: "Недостаточно прав для просмотра пользователей проекта."
 
 change_project_forbidden_error: "Недостаточно прав для изменения проекта."
-change_project_vertex_value_type_error: "Невозможно изменить тип значения вершины из-за плагина: `%{plugin_name}`."
-change_project_arc_value_type_error: "Невозможно изменить тип значения дуги из-за плагина: `%{plugin_name}`."
+change_project_concept_value_type_error: "Невозможно изменить тип значения концепта из-за плагина: `%{plugin_name}`."
+change_project_connection_value_type_error: "Невозможно изменить тип значения связи из-за плагина: `%{plugin_name}`."
 
 change_archived_project_error: "Невозможно изменить архивированный проект."
 
@@ -76,11 +76,11 @@ invalid_status_error: "Неверный статус: `%{status}`"
 
 change_model_forbidden_error: "Недостаточно прав для изменения модели проекта."
 
-invalid_vertex_value_error: "Неверное значение вершины, ожидалось `%{expected}`, но получено `%{got}`."
+invalid_concept_value_error: "Неверное значение концепта, ожидалось `%{expected}`, но получено `%{got}`."
 
-invalid_arc_value_error: "Неверное значение дуги, ожидалось `%{expected}`, но получено `%{got}`."
-invalid_arc_value_symbolic_error: "Неверное значение дуги, ожидалось `0.0` или `1.0`, но получено `%{got}`."
-arc_duplication_error: "Невозможно создать дугу, т.к. она уже существует."
+invalid_connection_value_error: "Неверное значение связи, ожидалось `%{expected}`, но получено `%{got}`."
+invalid_connection_value_symbolic_error: "Неверное значение связи, ожидалось `0.0` или `1.0`, но получено `%{got}`."
+connection_duplication_error: "Невозможно создать связь, т.к. она уже существует."
 
-vertex_already_control_error: "Вершина уже является управляющей."
-vertex_not_control_error: "Вершина не является управляющей."
+concept_already_control_error: "Концепт уже является управляющим."
+concept_not_control_error: "Концепт не является управляющим."

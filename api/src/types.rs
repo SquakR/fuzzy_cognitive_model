@@ -1,4 +1,4 @@
-use crate::models::{ArcValueType, ProjectUserStatusValue, VertexValueType};
+use crate::models::{ConceptValueType, ConnectionValueType, ProjectUserStatusValue};
 use crate::request::DateTimeWrapper;
 use chrono::{DateTime, Utc};
 use rocket::form::FromForm;
@@ -204,10 +204,10 @@ pub struct ProjectOutType {
     pub created_at: DateTime<Utc>,
     /// Project update time
     pub updated_at: DateTime<Utc>,
-    /// Project vertex value type
-    pub vertex_value_type: VertexValueType,
-    /// Project arc value type
-    pub arc_value_type: ArcValueType,
+    /// Project concept value type
+    pub concept_value_type: ConceptValueType,
+    /// Project connection value type
+    pub connection_value_type: ConnectionValueType,
     /// Project plugins
     pub plugins: Vec<String>,
 }
@@ -224,10 +224,10 @@ pub struct ProjectInType {
     pub is_public: bool,
     /// Is project archived
     pub is_archived: bool,
-    /// Project vertex value type
-    pub vertex_value_type: VertexValueType,
-    /// Project arc value type
-    pub arc_value_type: ArcValueType,
+    /// Project concept value type
+    pub concept_value_type: ConceptValueType,
+    /// Project connection value type
+    pub connection_value_type: ConnectionValueType,
 }
 
 #[derive(JsonSchema, FromFormField)]
@@ -249,10 +249,10 @@ pub struct PluginType {
     pub name: String,
     /// Plugin description
     pub description: String,
-    /// Plugin vertex value type
-    pub vertex_value_type: Option<VertexValueType>,
-    /// Plugin arc value type
-    pub arc_value_type: Option<ArcValueType>,
+    /// Plugin concept value type
+    pub concept_value_type: Option<ConceptValueType>,
+    /// Plugin connection value type
+    pub connection_value_type: Option<ConnectionValueType>,
 }
 
 /// Type of project permission
@@ -308,7 +308,7 @@ pub struct ProjectsInType {
     /// Search string
     pub search: Option<String>,
     /// Is project archived
-    #[field(name = "isArchived")]
+    #[field(name = "isConnectionhived")]
     pub is_archived: Option<bool>,
     /// Start of created at interval
     #[field(name = "createdAtStart")]
@@ -355,180 +355,180 @@ pub struct ModelActionType<T: Clone + Serialize + JsonSchema> {
     pub data: T,
 }
 
-/// Type of vertex
+/// Type of concept
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct VertexOutType {
-    /// Vertex identifier
+pub struct ConceptOutType {
+    /// Concept identifier
     pub id: i32,
-    /// Vertex name
+    /// Concept name
     pub name: String,
-    /// Vertex description
+    /// Concept description
     pub description: String,
-    /// Vertex value
+    /// Concept value
     pub value: Option<f64>,
-    /// Vertex project identifier
+    /// Concept project identifier
     pub project_id: i32,
-    /// Vertex position in x coordinate
+    /// Concept position in x coordinate
     pub x_position: f64,
-    /// Vertex position in y coordinate
+    /// Concept position in y coordinate
     pub y_position: f64,
-    /// Vertex plugins data
+    /// Concept plugins data
     pub plugins_data: Value,
-    /// Vertex creation time
+    /// Concept creation time
     pub created_at: DateTime<Utc>,
-    /// Vertex update time
+    /// Concept update time
     pub updated_at: DateTime<Utc>,
 }
 
-/// Type of vertex to create
+/// Type of concept to create
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct VertexInCreateType {
-    /// Vertex name
+pub struct ConceptInCreateType {
+    /// Concept name
     pub name: String,
-    /// Vertex description
+    /// Concept description
     pub description: String,
-    /// Vertex value
+    /// Concept value
     pub value: Option<f64>,
-    /// Vertex position in x coordinate
+    /// Concept position in x coordinate
     pub x_position: f64,
-    /// Vertex position in y coordinate
+    /// Concept position in y coordinate
     pub y_position: f64,
 }
 
-/// Type of result of changing vertex description
+/// Type of result of changing concept description
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct VertexOutChangeDescriptionType {
-    /// Vertex identifier
+pub struct ConceptOutChangeDescriptionType {
+    /// Concept identifier
     pub id: i32,
-    /// Vertex name
+    /// Concept name
     pub name: String,
-    /// Vertex description
+    /// Concept description
     pub description: String,
-    /// Vertex update time
+    /// Concept update time
     pub updated_at: DateTime<Utc>,
 }
 
-/// Type of vertex to change
+/// Type of concept to change
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct VertexInChangeDescriptionType {
-    /// Vertex name
+pub struct ConceptInChangeDescriptionType {
+    /// Concept name
     pub name: String,
-    /// Vertex description
+    /// Concept description
     pub description: String,
 }
 
-/// Type of result of changing vertex value
+/// Type of result of changing concept value
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct VertexOutChangeValueType {
-    /// Vertex identifier
+pub struct ConceptOutChangeValueType {
+    /// Concept identifier
     pub id: i32,
-    /// Vertex value
+    /// Concept value
     pub value: Option<f64>,
-    /// Vertex update time
+    /// Concept update time
     pub updated_at: DateTime<Utc>,
 }
 
-/// Type of result of moving vertex
+/// Type of result of moving concept
 #[derive(Clone, Serialize, JsonSchema)]
-pub struct VertexOutMoveType {
-    /// Vertex identifier
+pub struct ConceptOutMoveType {
+    /// Concept identifier
     pub id: i32,
-    /// Vertex position in x coordinate
+    /// Concept position in x coordinate
     pub x_position: f64,
-    /// Vertex position in y coordinate
+    /// Concept position in y coordinate
     pub y_position: f64,
-    /// Vertex update time
+    /// Concept update time
     pub updated_at: DateTime<Utc>,
 }
 
-/// Type of vertex to mode
+/// Type of concept to mode
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct VertexInMoveType {
-    /// Vertex position in x coordinate
+pub struct ConceptInMoveType {
+    /// Concept position in x coordinate
     pub x_position: f64,
-    /// Vertex position in y coordinate
+    /// Concept position in y coordinate
     pub y_position: f64,
 }
 
-/// Type of result of deleting vertex
+/// Type of result of deleting concept
 #[derive(Clone, Serialize, JsonSchema)]
-pub struct VertexOutDeleteType {
-    /// Vertex identifier
+pub struct ConceptOutDeleteType {
+    /// Concept identifier
     pub id: i32,
     /// project update time
     pub updated_at: DateTime<Utc>,
 }
 
-/// Type of arc
+/// Type of connection
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct ArcOutType {
-    /// Arc identifier
+pub struct ConnectionOutType {
+    /// Connection identifier
     pub id: i32,
-    /// Arc description
+    /// Connection description
     pub description: String,
-    /// Arc value
+    /// Connection value
     pub value: f64,
-    /// Arc source vertex identifier
+    /// Connection source concept identifier
     pub source_id: i32,
-    /// Arc target vertex identifier
+    /// Connection target concept identifier
     pub target_id: i32,
-    /// Arc project identifier
+    /// Connection project identifier
     pub project_id: i32,
-    /// Arc creation time
+    /// Connection creation time
     pub created_at: DateTime<Utc>,
-    /// Arc update time
+    /// Connection update time
     pub updated_at: DateTime<Utc>,
 }
 
-/// Type of arc to create
+/// Type of connection to create
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct ArcInCreateType {
-    /// Arc description
+pub struct ConnectionInCreateType {
+    /// Connection description
     pub description: String,
-    /// Arc value
+    /// Connection value
     pub value: f64,
-    /// Arc source vertex identifier
+    /// Connection source concept identifier
     pub source_id: i32,
-    /// Arc target vertex identifier
+    /// Connection target concept identifier
     pub target_id: i32,
 }
 
-/// Type of result of changing arc description
+/// Type of result of changing connection description
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct ArcOutChangeDescriptionType {
-    /// Arc identifier
+pub struct ConnectionOutChangeDescriptionType {
+    /// Connection identifier
     pub id: i32,
-    /// Arc description
+    /// Connection description
     pub description: String,
-    /// Arc update time
+    /// Connection update time
     pub updated_at: DateTime<Utc>,
 }
 
-/// Type of result of changing arc value
+/// Type of result of changing connection value
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct ArcOutChangeValueType {
-    /// Arc identifier
+pub struct ConnectionOutChangeValueType {
+    /// Connection identifier
     pub id: i32,
-    /// Arc value
+    /// Connection value
     pub value: f64,
-    /// Arc update time
+    /// Connection update time
     pub updated_at: DateTime<Utc>,
 }
 
-/// Type of result of deleting arc
+/// Type of result of deleting connection
 #[derive(Clone, Serialize, JsonSchema)]
-pub struct ArcOutDeleteType {
-    /// Arc identifier
+pub struct ConnectionOutDeleteType {
+    /// Connection identifier
     pub id: i32,
     /// project update time
     pub updated_at: DateTime<Utc>,
@@ -540,10 +540,10 @@ pub struct ArcOutDeleteType {
 pub struct ModelOutType {
     /// Model project
     pub project: ProjectOutType,
-    /// Model vertices
-    pub vertices: Vec<VertexOutType>,
-    /// Model arcs
-    pub arcs: Vec<ArcOutType>,
+    /// Model concepts
+    pub concepts: Vec<ConceptOutType>,
+    /// Model connections
+    pub connections: Vec<ConnectionOutType>,
 }
 
 /// Interval input type

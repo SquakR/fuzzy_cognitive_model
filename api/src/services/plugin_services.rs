@@ -95,13 +95,13 @@ fn check_plugins(
             .find(|plugin| plugin.name == *plugin_name)
             .unwrap();
         let mut incompatible = false;
-        if let Some(vertex_value_type) = &plugin.vertex_value_type {
-            if project.vertex_value_type != *vertex_value_type {
+        if let Some(concept_value_type) = &plugin.concept_value_type {
+            if project.concept_value_type != *concept_value_type {
                 incompatible = true;
             }
         }
-        if let Some(arc_value_type) = &plugin.arc_value_type {
-            if project.arc_value_type != *arc_value_type {
+        if let Some(connection_value_type) = &plugin.connection_value_type {
+            if project.connection_value_type != *connection_value_type {
                 incompatible = true
             }
         }
@@ -144,8 +144,8 @@ impl From<Plugin> for PluginType {
         Self {
             name: plugin.name,
             description: plugin.description,
-            vertex_value_type: plugin.vertex_value_type,
-            arc_value_type: plugin.arc_value_type,
+            concept_value_type: plugin.concept_value_type,
+            connection_value_type: plugin.connection_value_type,
         }
     }
 }

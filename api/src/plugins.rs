@@ -1,13 +1,13 @@
 pub mod adjustment;
-pub mod control_vertices;
+pub mod control_concepts;
 
 pub use adjustment::AdjustmentPlugin;
-pub use control_vertices::ControlVerticesPlugin;
+pub use control_concepts::ControlConceptsPlugin;
 
 use crate::models::Project;
 use crate::response::{ServiceResult, ToServiceResult};
 use crate::services::plugin_services;
-use crate::types::{ModelOutType, VertexOutType};
+use crate::types::{ConceptOutType, ModelOutType};
 use diesel::PgConnection;
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::{Data, Request};
@@ -32,15 +32,15 @@ pub trait Plugin {
 pub struct Plugins {
     pub plugins: HashMap<String, Arc<Mutex<Box<dyn Plugin + Sync + Send>>>>,
     pub get_model_emitter: Mutex<GetModelEmitter>,
-    pub add_vertex_emitter: Mutex<AddVertexEmitter>,
+    pub add_concept_emitter: Mutex<AddConceptEmitter>,
 }
 
 impl Plugins {
     fn new() -> Self {
         let mut plugins = HashMap::<String, Arc<Mutex<Box<dyn Plugin + Sync + Send>>>>::new();
         plugins.insert(
-            String::from("Control Vertices"),
-            Arc::new(Mutex::new(Box::new(ControlVerticesPlugin))),
+            String::from("Control Concepts"),
+            Arc::new(Mutex::new(Box::new(ControlConceptsPlugin))),
         );
         plugins.insert(
             String::from("Adjustment With Genetic Algorithms"),
@@ -49,7 +49,7 @@ impl Plugins {
         Self {
             plugins,
             get_model_emitter: Mutex::new(GetModelEmitter::new()),
-            add_vertex_emitter: Mutex::new(AddVertexEmitter::new()),
+            add_concept_emitter: Mutex::new(AddConceptEmitter::new()),
         }
     }
 }
@@ -78,12 +78,12 @@ impl GetModelEmitter {
     }
 }
 
-pub struct AddVertexEmitter {
+pub struct AddConceptEmitter {
     listeners:
-        Vec<Mutex<Box<dyn Fn(Project, VertexOutType) -> ServiceResult<VertexOutType> + Send>>>,
+        Vec<Mutex<Box<dyn Fn(Project, ConceptOutType) -> ServiceResult<ConceptOutType> + Send>>>,
 }
 
-impl AddVertexEmitter {
+impl AddConceptEmitter {
     fn new() -> Self {
         Self {
             listeners: Vec::new(),
@@ -91,19 +91,19 @@ impl AddVertexEmitter {
     }
     pub fn on(
         &mut self,
-        callback: impl Fn(Project, VertexOutType) -> ServiceResult<VertexOutType> + Send + 'static,
+        callback: impl Fn(Project, ConceptOutType) -> ServiceResult<ConceptOutType> + Send + 'static,
     ) -> () {
         self.listeners.push(Mutex::new(Box::new(callback)));
     }
     pub fn emit(
         &self,
         project: Project,
-        mut vertex_out: VertexOutType,
-    ) -> ServiceResult<VertexOutType> {
+        mut concept_out: ConceptOutType,
+    ) -> ServiceResult<ConceptOutType> {
         for callback in &self.listeners {
-            vertex_out = callback.lock().unwrap()(project.clone(), vertex_out)?;
+            concept_out = callback.lock().unwrap()(project.clone(), concept_out)?;
         }
-        Ok(vertex_out)
+        Ok(concept_out)
     }
 }
 

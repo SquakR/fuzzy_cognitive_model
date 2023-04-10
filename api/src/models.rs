@@ -1,7 +1,7 @@
 use crate::schema::{
-    arcs, email_confirmations, password_resets, permissions, plugins, project_plugins,
-    project_user_permissions, project_user_statuses, project_users, projects, sessions, users,
-    vertices,
+    concepts, connections, email_confirmations, password_resets, permissions, plugins,
+    project_plugins, project_user_permissions, project_user_statuses, project_users, projects,
+    sessions, users,
 };
 use chrono::{DateTime, Utc};
 use diesel::{Associations, Identifiable, Queryable};
@@ -68,8 +68,8 @@ pub struct Project {
     pub is_archived: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-    pub vertex_value_type: VertexValueType,
-    pub arc_value_type: ArcValueType,
+    pub concept_value_type: ConceptValueType,
+    pub connection_value_type: ConnectionValueType,
 }
 
 #[derive(Queryable, Identifiable, Associations)]
@@ -125,8 +125,8 @@ pub struct ProjectUserPermission {
 pub struct Plugin {
     pub name: String,
     pub description: String,
-    pub vertex_value_type: Option<VertexValueType>,
-    pub arc_value_type: Option<ArcValueType>,
+    pub concept_value_type: Option<ConceptValueType>,
+    pub connection_value_type: Option<ConnectionValueType>,
 }
 
 #[derive(Queryable, Identifiable)]
@@ -143,15 +143,15 @@ pub struct ProjectPlugin {
     Debug, PartialEq, diesel_derive_enum::DbEnum, Clone, Serialize, Deserialize, JsonSchema,
 )]
 #[serde(rename_all = "snake_case")]
-#[ExistingTypePath = "crate::schema::sql_types::VertexValueType"]
-pub enum VertexValueType {
+#[ExistingTypePath = "crate::schema::sql_types::ConceptValueType"]
+pub enum ConceptValueType {
     None,
     FromZeroToOne,
 }
 
 #[derive(Queryable, Identifiable)]
-#[diesel(table_name = vertices, belongs_to(Project))]
-pub struct Vertex {
+#[diesel(table_name = concepts, belongs_to(Project))]
+pub struct Concept {
     pub id: i32,
     pub name: String,
     pub description: String,
@@ -167,17 +167,17 @@ pub struct Vertex {
     Debug, PartialEq, diesel_derive_enum::DbEnum, Clone, Serialize, Deserialize, JsonSchema,
 )]
 #[serde(rename_all = "snake_case")]
-#[ExistingTypePath = "crate::schema::sql_types::ArcValueType"]
-pub enum ArcValueType {
+#[ExistingTypePath = "crate::schema::sql_types::ConnectionValueType"]
+pub enum ConnectionValueType {
     Symbolic,
     FromMinusOneToOne,
 }
 
 #[derive(Queryable, Identifiable)]
 #[diesel(belongs_to(Project))]
-#[diesel(belongs_to(Vertex, foreign_key = source_id))]
-#[diesel(belongs_to(Vertex, foreign_key = target_id))]
-pub struct Arc {
+#[diesel(belongs_to(Concept, foreign_key = source_id))]
+#[diesel(belongs_to(Concept, foreign_key = target_id))]
+pub struct Connection {
     pub id: i32,
     pub description: String,
     pub value: f64,

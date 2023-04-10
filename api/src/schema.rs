@@ -2,20 +2,34 @@
 
 pub mod sql_types {
     #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "arc_value_type"))]
-    pub struct ArcValueType;
+    #[diesel(postgres_type(name = "concept_value_type"))]
+    pub struct ConceptValueType;
+
+    #[derive(diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "connection_value_type"))]
+    pub struct ConnectionValueType;
 
     #[derive(diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "project_user_status_value"))]
     pub struct ProjectUserStatusValue;
-
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "vertex_value_type"))]
-    pub struct VertexValueType;
 }
 
 diesel::table! {
-    arcs (id) {
+    concepts (id) {
+        id -> Int4,
+        name -> Varchar,
+        description -> Text,
+        value -> Nullable<Float8>,
+        project_id -> Int4,
+        x_position -> Float8,
+        y_position -> Float8,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    connections (id) {
         id -> Int4,
         description -> Text,
         value -> Float8,
@@ -28,8 +42,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    control_vertices (vertex_id) {
-        vertex_id -> Int4,
+    control_concepts (concept_id) {
+        concept_id -> Int4,
         is_control -> Bool,
     }
 }
@@ -65,14 +79,14 @@ diesel::table! {
 
 diesel::table! {
     use diesel::sql_types::*;
-    use super::sql_types::VertexValueType;
-    use super::sql_types::ArcValueType;
+    use super::sql_types::ConceptValueType;
+    use super::sql_types::ConnectionValueType;
 
     plugins (name) {
         name -> Varchar,
         description -> Text,
-        vertex_value_type -> Nullable<VertexValueType>,
-        arc_value_type -> Nullable<ArcValueType>,
+        concept_value_type -> Nullable<ConceptValueType>,
+        connection_value_type -> Nullable<ConnectionValueType>,
     }
 }
 
@@ -117,8 +131,8 @@ diesel::table! {
 
 diesel::table! {
     use diesel::sql_types::*;
-    use super::sql_types::VertexValueType;
-    use super::sql_types::ArcValueType;
+    use super::sql_types::ConceptValueType;
+    use super::sql_types::ConnectionValueType;
 
     projects (id) {
         id -> Int4,
@@ -128,8 +142,8 @@ diesel::table! {
         is_archived -> Bool,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
-        vertex_value_type -> VertexValueType,
-        arc_value_type -> ArcValueType,
+        concept_value_type -> ConceptValueType,
+        connection_value_type -> ConnectionValueType,
     }
 }
 
@@ -162,22 +176,9 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    vertices (id) {
-        id -> Int4,
-        name -> Varchar,
-        description -> Text,
-        value -> Nullable<Float8>,
-        project_id -> Int4,
-        x_position -> Float8,
-        y_position -> Float8,
-        created_at -> Timestamptz,
-        updated_at -> Timestamptz,
-    }
-}
-
-diesel::joinable!(arcs -> projects (project_id));
-diesel::joinable!(control_vertices -> vertices (vertex_id));
+diesel::joinable!(concepts -> projects (project_id));
+diesel::joinable!(connections -> projects (project_id));
+diesel::joinable!(control_concepts -> concepts (concept_id));
 diesel::joinable!(email_confirmations -> users (user_id));
 diesel::joinable!(password_resets -> users (user_id));
 diesel::joinable!(project_plugins -> plugins (plugin_name));
@@ -187,11 +188,11 @@ diesel::joinable!(project_user_permissions -> project_users (project_user_id));
 diesel::joinable!(project_users -> projects (project_id));
 diesel::joinable!(project_users -> users (user_id));
 diesel::joinable!(sessions -> users (user_id));
-diesel::joinable!(vertices -> projects (project_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    arcs,
-    control_vertices,
+    concepts,
+    connections,
+    control_concepts,
     email_confirmations,
     password_resets,
     permissions,
@@ -203,5 +204,4 @@ diesel::allow_tables_to_appear_in_same_query!(
     projects,
     sessions,
     users,
-    vertices,
 );
