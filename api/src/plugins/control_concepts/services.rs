@@ -25,7 +25,7 @@ pub fn handle_get_model(
         .get_model_emitter
         .lock()
         .unwrap()
-        .on(move |mut model_out| {
+        .on(move |mut model_out, _| {
             let conn = &mut db::establish_connection();
             if !plugin
                 .lock()
@@ -55,12 +55,13 @@ pub fn handle_add_concept(
         .add_concept_emitter
         .lock()
         .unwrap()
-        .on(move |project, mut concept_out| {
+        .on(move |mut concept_out, project| {
             let conn = &mut db::establish_connection();
             if !plugin.lock().unwrap().is_enabled(conn, project.id)? {
                 return Ok(concept_out);
             }
-            let control_concept = create_control_concept(conn, concept_out.id)?;
+            let control_concept =
+                create_control_concept(conn, concept_out.id).to_service_result()?;
             add_is_control(&mut concept_out, &control_concept);
             Ok(concept_out)
         });
@@ -105,11 +106,10 @@ pub fn delete_project_control_concepts(
 pub fn create_control_concept(
     conn: &mut PgConnection,
     concept_id: i32,
-) -> ServiceResult<ControlConcept> {
+) -> QueryResult<ControlConcept> {
     diesel::insert_into(control_concepts::table)
         .values(control_concepts::concept_id.eq(concept_id))
         .get_result::<ControlConcept>(conn)
-        .to_service_result()
 }
 
 pub async fn set_is_control(

@@ -481,6 +481,8 @@ pub struct ConnectionOutType {
     pub target_id: i32,
     /// Connection project identifier
     pub project_id: i32,
+    /// Concept plugins data
+    pub plugins_data: Value,
     /// Connection creation time
     pub created_at: DateTime<Utc>,
     /// Connection update time

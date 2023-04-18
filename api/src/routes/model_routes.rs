@@ -163,11 +163,13 @@ pub async fn create_connection(
     project_id: i32,
     connection_in: Json<ConnectionInCreateType>,
     user: User,
+    plugins: &Plugins,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<ConnectionOutType>> {
     let conn = &mut db::establish_connection();
     model_services::create_connection(
         conn,
+        plugins,
         project_service,
         &user,
         project_id,

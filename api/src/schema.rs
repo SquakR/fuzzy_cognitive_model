@@ -49,6 +49,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    control_connections (connection_id) {
+        connection_id -> Int4,
+        is_control -> Bool,
+    }
+}
+
+diesel::table! {
     email_confirmations (id) {
         id -> Int4,
         user_id -> Int4,
@@ -187,6 +194,7 @@ diesel::table! {
 diesel::joinable!(concepts -> projects (project_id));
 diesel::joinable!(connections -> projects (project_id));
 diesel::joinable!(control_concepts -> concepts (concept_id));
+diesel::joinable!(control_connections -> connections (connection_id));
 diesel::joinable!(email_confirmations -> users (user_id));
 diesel::joinable!(password_resets -> users (user_id));
 diesel::joinable!(project_plugins -> plugins (plugin_name));
@@ -202,6 +210,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     concepts,
     connections,
     control_concepts,
+    control_connections,
     email_confirmations,
     password_resets,
     permissions,

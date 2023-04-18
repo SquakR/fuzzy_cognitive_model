@@ -46,7 +46,11 @@ pub fn get_model(
         concepts,
         connections,
     };
-    model_out = plugins.get_model_emitter.lock().unwrap().emit(model_out)?;
+    model_out = plugins
+        .get_model_emitter
+        .lock()
+        .unwrap()
+        .emit(model_out, ())?;
     Ok(model_out)
 }
 
@@ -132,7 +136,7 @@ pub async fn create_concept(
         .add_concept_emitter
         .lock()
         .unwrap()
-        .emit(project.clone(), ConceptOutType::from(concept))?;
+        .emit(ConceptOutType::from(concept), project.clone())?;
     let model_action = ModelActionType::new(&project, String::from("create_concept"), concept_out);
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
@@ -151,6 +155,22 @@ pub fn update_concept(
             .get_result::<Concept>(conn)?;
         let project = project_services::update_project(conn, project_id, updated_at)?;
         Ok((concept, project))
+    })
+}
+
+pub fn update_connection(
+    conn: &mut PgConnection,
+    connection_id: i32,
+    project_id: i32,
+    updated_at: DateTime<Utc>,
+) -> QueryResult<(Connection, Project)> {
+    conn.transaction(|conn| {
+        let connection = diesel::update(connections::table)
+            .filter(connections::id.eq(connection_id))
+            .set(connections::updated_at.eq(updated_at))
+            .get_result::<Connection>(conn)?;
+        let project = project_services::update_project(conn, project_id, updated_at)?;
+        Ok((connection, project))
     })
 }
 
@@ -283,6 +303,7 @@ pub async fn delete_concept(
 
 pub async fn create_connection(
     conn: &mut PgConnection,
+    plugins: &Plugins,
     project_service: WebSocketProjectService,
     user: &User,
     project_id: i32,
@@ -312,7 +333,11 @@ pub async fn create_connection(
             Ok((connection, project))
         })
         .to_service_result_unique(String::from("connection_duplication_error"))?;
-    let connection_out = ConnectionOutType::from(connection);
+    let connection_out = plugins
+        .add_connection_emitter
+        .lock()
+        .unwrap()
+        .emit(ConnectionOutType::from(connection), project.clone())?;
     let model_action =
         ModelActionType::new(&project, String::from("create_connection"), connection_out);
     project_service.notify(model_action.clone()).await;
@@ -549,6 +574,7 @@ impl From<Connection> for ConnectionOutType {
             source_id: connection.source_id,
             target_id: connection.target_id,
             project_id: connection.project_id,
+            plugins_data: Value::Object(Map::new()),
             created_at: connection.created_at,
             updated_at: connection.updated_at,
         }

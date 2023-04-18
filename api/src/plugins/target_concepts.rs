@@ -7,6 +7,7 @@ use super::Plugin;
 use crate::models::Project;
 use crate::plugins::Plugins;
 use crate::response::ServiceResult;
+use diesel::PgConnection;
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::{Data, Request};
 use std::sync::Arc;
@@ -17,15 +18,11 @@ impl Plugin for TargetConceptsPlugin {
     fn get_name(&self) -> String {
         String::from("Target Concepts")
     }
-    fn install(&self, conn: &mut diesel::PgConnection, project: Project) -> ServiceResult<Project> {
+    fn install(&self, conn: &mut PgConnection, project: Project) -> ServiceResult<Project> {
         services::create_project_target_concepts(conn, &project)?;
         Ok(project)
     }
-    fn uninstall(
-        &self,
-        conn: &mut diesel::PgConnection,
-        project: Project,
-    ) -> ServiceResult<Project> {
+    fn uninstall(&self, conn: &mut PgConnection, project: Project) -> ServiceResult<Project> {
         services::delete_project_target_concepts(conn, project.id)?;
         Ok(project)
     }

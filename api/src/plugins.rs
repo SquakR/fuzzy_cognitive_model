@@ -1,15 +1,17 @@
 pub mod adjustment;
 pub mod control_concepts;
+pub mod control_connections;
 pub mod target_concepts;
 
 pub use adjustment::AdjustmentPlugin;
 pub use control_concepts::ControlConceptsPlugin;
+pub use control_connections::ControlConnectionsPlugin;
 pub use target_concepts::TargetConceptsPlugin;
 
 use crate::models::Project;
 use crate::response::{ServiceResult, ToServiceResult};
 use crate::services::plugin_services;
-use crate::types::{ConceptOutType, ModelOutType};
+use crate::types::{ConceptOutType, ConnectionOutType, ModelOutType};
 use diesel::PgConnection;
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::{Data, Request};
@@ -33,8 +35,9 @@ pub trait Plugin {
 
 pub struct Plugins {
     pub plugins: HashMap<String, Arc<Mutex<Box<dyn Plugin + Sync + Send>>>>,
-    pub get_model_emitter: Mutex<GetModelEmitter>,
-    pub add_concept_emitter: Mutex<AddConceptEmitter>,
+    pub get_model_emitter: Mutex<Emitter<ModelOutType, ()>>,
+    pub add_concept_emitter: Mutex<Emitter<ConceptOutType, Project>>,
+    pub add_connection_emitter: Mutex<Emitter<ConnectionOutType, Project>>,
 }
 
 impl Plugins {
@@ -49,67 +52,43 @@ impl Plugins {
             Arc::new(Mutex::new(Box::new(TargetConceptsPlugin))),
         );
         plugins.insert(
+            String::from("Control Connections"),
+            Arc::new(Mutex::new(Box::new(ControlConnectionsPlugin))),
+        );
+        plugins.insert(
             String::from("Adjustment With Genetic Algorithms"),
             Arc::new(Mutex::new(Box::new(AdjustmentPlugin))),
         );
         Self {
             plugins,
-            get_model_emitter: Mutex::new(GetModelEmitter::new()),
-            add_concept_emitter: Mutex::new(AddConceptEmitter::new()),
+            get_model_emitter: Mutex::new(Emitter::new()),
+            add_concept_emitter: Mutex::new(Emitter::new()),
+            add_connection_emitter: Mutex::new(Emitter::new()),
         }
     }
 }
 
-pub struct GetModelEmitter {
-    listeners: Vec<Mutex<Box<dyn Fn(ModelOutType) -> ServiceResult<ModelOutType> + Send>>>,
+pub struct Emitter<R, E> {
+    listeners: Vec<Mutex<Box<dyn Fn(R, E) -> ServiceResult<R> + Send>>>,
 }
 
-impl GetModelEmitter {
+impl<R, E> Emitter<R, E>
+where
+    E: Clone,
+{
     fn new() -> Self {
         Self {
             listeners: Vec::new(),
         }
     }
-    pub fn on(
-        &mut self,
-        callback: impl Fn(ModelOutType) -> ServiceResult<ModelOutType> + Send + 'static,
-    ) -> () {
+    pub fn on(&mut self, callback: impl Fn(R, E) -> ServiceResult<R> + Send + 'static) -> () {
         self.listeners.push(Mutex::new(Box::new(callback)));
     }
-    pub fn emit(&self, mut model_out: ModelOutType) -> ServiceResult<ModelOutType> {
+    pub fn emit(&self, mut result: R, extra: E) -> ServiceResult<R> {
         for callback in &self.listeners {
-            model_out = callback.lock().unwrap()(model_out)?;
+            result = callback.lock().unwrap()(result, extra.clone())?;
         }
-        Ok(model_out)
-    }
-}
-
-pub struct AddConceptEmitter {
-    listeners:
-        Vec<Mutex<Box<dyn Fn(Project, ConceptOutType) -> ServiceResult<ConceptOutType> + Send>>>,
-}
-
-impl AddConceptEmitter {
-    fn new() -> Self {
-        Self {
-            listeners: Vec::new(),
-        }
-    }
-    pub fn on(
-        &mut self,
-        callback: impl Fn(Project, ConceptOutType) -> ServiceResult<ConceptOutType> + Send + 'static,
-    ) -> () {
-        self.listeners.push(Mutex::new(Box::new(callback)));
-    }
-    pub fn emit(
-        &self,
-        project: Project,
-        mut concept_out: ConceptOutType,
-    ) -> ServiceResult<ConceptOutType> {
-        for callback in &self.listeners {
-            concept_out = callback.lock().unwrap()(project.clone(), concept_out)?;
-        }
-        Ok(concept_out)
+        Ok(result)
     }
 }
 
