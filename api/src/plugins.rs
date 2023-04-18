@@ -1,8 +1,10 @@
 pub mod adjustment;
 pub mod control_concepts;
+pub mod target_concepts;
 
 pub use adjustment::AdjustmentPlugin;
 pub use control_concepts::ControlConceptsPlugin;
+pub use target_concepts::TargetConceptsPlugin;
 
 use crate::models::Project;
 use crate::response::{ServiceResult, ToServiceResult};
@@ -41,6 +43,10 @@ impl Plugins {
         plugins.insert(
             String::from("Control Concepts"),
             Arc::new(Mutex::new(Box::new(ControlConceptsPlugin))),
+        );
+        plugins.insert(
+            String::from("Target Concepts"),
+            Arc::new(Mutex::new(Box::new(TargetConceptsPlugin))),
         );
         plugins.insert(
             String::from("Adjustment With Genetic Algorithms"),

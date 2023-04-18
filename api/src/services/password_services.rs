@@ -1,5 +1,5 @@
 use crate::models::{PasswordReset, User};
-use crate::response::{AppError, ServiceResult, ToServiceResult};
+use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::{password_resets, users};
 use crate::services::{mailing_services, session_services, user_services};
 use crate::types::{ChangePasswordType, ResetPasswordType};

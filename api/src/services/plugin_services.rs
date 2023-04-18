@@ -1,6 +1,6 @@
 use crate::models::{Plugin, Project, ProjectPlugin, User};
 use crate::plugins::Plugins;
-use crate::response::{AppError, ServiceResult, ToServiceResult};
+use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::{plugins, project_plugins, projects};
 use crate::services::{permission_services, project_services};
 use crate::types::PluginType;

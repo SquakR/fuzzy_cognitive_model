@@ -12,9 +12,10 @@ project_user_not_found_error: "Project user record not found."
 last_status_not_found_error: "Last user status record in project not found."
 concept_not_found_error: "Concept record not found."
 connection_not_found_error: "Connection record not found."
-source_concept_not_found_error: "Source concept record not found."
-target_concept_not_found_error: "Target concept record not found."
+connection_source_concept_not_found_error: "Source concept record not found."
+connection_target_concept_not_found_error: "Target concept record not found."
 control_concept_not_found_error: "Control concept record not found."
+target_concept_not_found_error: "Target concept record not found."
 
 invalid_token_error: "Invalid token."
 link_is_not_active_error: "The link is not active."
@@ -84,3 +85,6 @@ connection_duplication_error: "Unable to create connection because it already ex
 
 concept_already_control_error: "The concept is already a control."
 concept_not_control_error: "The concept is not a control."
+concept_is_target_error: "The concept is target."
+
+concept_is_control_error: "The concept is control."

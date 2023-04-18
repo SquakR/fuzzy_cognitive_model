@@ -2,6 +2,7 @@ mod model_routes;
 mod project_routes;
 mod user_routes;
 use crate::plugins::control_concepts::routes as control_concepts_routes;
+use crate::plugins::target_concepts::routes as target_concepts_routes;
 use okapi::openapi3::{Object, OpenApi, Parameter, ParameterValue, RefOr, SchemaObject};
 use rocket::{Build, Rocket};
 use rocket_okapi::settings::OpenApiSettings;
@@ -123,7 +124,8 @@ impl MountRoutes for Rocket<Build> {
                 model_routes::change_connection_description,
                 model_routes::change_connection_value,
                 model_routes::delete_connection,
-                control_concepts_routes::change_concept_is_control
+                control_concepts_routes::change_concept_is_control,
+                target_concepts_routes::change_target_concept
             ),
         )
     }

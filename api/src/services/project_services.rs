@@ -1,6 +1,7 @@
-use crate::models::{Project, ProjectUser, ProjectUserStatusValue, User};
+use crate::models::{ConceptValueType, Project, ProjectUser, ProjectUserStatusValue, User};
 use crate::pagination::Paginate;
-use crate::response::{AppError, ServiceResult, ToServiceResult};
+use crate::plugins::Plugins;
+use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::{
     plugins, project_plugins, project_user_statuses, project_users, projects, users,
 };
@@ -155,11 +156,55 @@ pub fn change_project(
     conn: &mut PgConnection,
     user: &User,
     project_id: i32,
+    plugins: &Plugins,
     project_in: ProjectInType,
 ) -> ServiceResult<Project> {
-    let project = find_project_by_id(conn, project_id)
+    let mut project = find_project_by_id(conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_project(conn, &project, user.id, project_in.is_archived)?;
+    check_project_plugins(conn, project_id, &project_in)?;
+    let old_concept_value_type = project.concept_value_type;
+    project = diesel::update(projects::table)
+        .filter(projects::id.eq(&project_id))
+        .set((
+            projects::name.eq(&project_in.name),
+            projects::description.eq(&project_in.description),
+            projects::is_public.eq(&project_in.is_public),
+            projects::is_archived.eq(&project_in.is_archived),
+            projects::concept_value_type.eq(&project_in.concept_value_type),
+            projects::connection_value_type.eq(&project_in.connection_value_type),
+        ))
+        .get_result::<Project>(conn)
+        .to_service_result()?;
+    update_target_concepts_plugin(
+        conn,
+        project,
+        plugins,
+        old_concept_value_type,
+        project_in.concept_value_type,
+    )
+}
+
+pub fn delete_project(conn: &mut PgConnection, user: &User, project_id: i32) -> ServiceResult<()> {
+    permission_services::can_delete_project(conn, project_id, user.id)?;
+    diesel::delete(projects::table.filter(projects::id.eq(project_id)))
+        .execute(conn)
+        .to_service_result()?;
+    Ok(())
+}
+
+pub fn is_not_archived(project: &Project) -> ServiceResult<()> {
+    if project.is_archived {
+        return validation_error!("change_archived_project_error");
+    }
+    Ok(())
+}
+
+fn check_project_plugins(
+    conn: &mut PgConnection,
+    project_id: i32,
+    project_in: &ProjectInType,
+) -> ServiceResult<()> {
     let project_plugins =
         plugin_services::find_project_plugins(conn, project_id).to_service_result()?;
     for project_plugin in project_plugins {
@@ -180,33 +225,33 @@ pub fn change_project(
             }
         }
     }
-    diesel::update(projects::table)
-        .filter(projects::id.eq(&project_id))
-        .set((
-            projects::name.eq(project_in.name),
-            projects::description.eq(project_in.description),
-            projects::is_public.eq(project_in.is_public),
-            projects::is_archived.eq(project_in.is_archived),
-            projects::concept_value_type.eq(project_in.concept_value_type),
-            projects::connection_value_type.eq(project_in.connection_value_type),
-        ))
-        .get_result::<Project>(conn)
-        .to_service_result()
-}
-
-pub fn delete_project(conn: &mut PgConnection, user: &User, project_id: i32) -> ServiceResult<()> {
-    permission_services::can_delete_project(conn, project_id, user.id)?;
-    diesel::delete(projects::table.filter(projects::id.eq(project_id)))
-        .execute(conn)
-        .to_service_result()?;
     Ok(())
 }
 
-pub fn is_not_archived(project: &Project) -> ServiceResult<()> {
-    if project.is_archived {
-        return validation_error!("change_archived_project_error");
+fn update_target_concepts_plugin(
+    conn: &mut PgConnection,
+    mut project: Project,
+    plugins: &Plugins,
+    old_concept_value_type: ConceptValueType,
+    new_concept_value_type: ConceptValueType,
+) -> ServiceResult<Project> {
+    let target_concept_plugin = plugins.plugins.get("Target Concepts").unwrap();
+    if old_concept_value_type != new_concept_value_type
+        && target_concept_plugin
+            .lock()
+            .unwrap()
+            .is_enabled(conn, project.id)?
+    {
+        project = target_concept_plugin
+            .lock()
+            .unwrap()
+            .uninstall(conn, project)?;
+        project = target_concept_plugin
+            .lock()
+            .unwrap()
+            .install(conn, project)?;
     }
-    Ok(())
+    Ok(project)
 }
 
 type ProjectIdWithUser = (

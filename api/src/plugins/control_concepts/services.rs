@@ -2,17 +2,19 @@ use super::super::Plugins;
 use super::models::ControlConcept;
 use super::types::ControlConceptOutType;
 use crate::db;
-use crate::models::User;
+use crate::models::{Concept, User};
+use crate::plugins::target_concepts::services as target_concepts_services;
 use crate::plugins::Plugin;
-use crate::response::{AppError, ServiceResult, ToServiceResult};
+use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::{concepts, control_concepts, projects};
 use crate::services::{model_services, permission_services};
 use crate::types::{ConceptOutType, ModelActionType};
 use crate::validation_error;
 use crate::web_socket::WebSocketProjectService;
+use chrono::Utc;
 use diesel::prelude::*;
 use diesel::PgConnection;
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 use std::sync::{Arc, Mutex};
 
 pub fn handle_get_model(
@@ -37,9 +39,9 @@ pub fn handle_get_model(
             for concept_out in model_out.concepts.iter_mut() {
                 let control_concept = control_concepts
                     .iter()
-                    .find(|cv| cv.concept_id == concept_out.id)
+                    .find(|cc| cc.concept_id == concept_out.id)
                     .unwrap();
-                add_is_control(concept_out, control_concept.is_control);
+                add_is_control(concept_out, &control_concept);
             }
             Ok(model_out)
         })
@@ -59,7 +61,7 @@ pub fn handle_add_concept(
                 return Ok(concept_out);
             }
             let control_concept = create_control_concept(conn, concept_out.id)?;
-            add_is_control(&mut concept_out, control_concept.is_control);
+            add_is_control(&mut concept_out, &control_concept);
             Ok(concept_out)
         });
 }
@@ -120,7 +122,10 @@ pub async fn set_is_control(
     let project = model_services::find_project_by_concept_id(conn, concept_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
-    let mut control_concept = find_control_concept_by_id(conn, concept_id)
+    if target_concepts_services::is_target(conn, concept_id)? {
+        return validation_error!("concept_is_target_error");
+    }
+    let control_concept = find_control_concept_by_id(conn, concept_id)
         .to_service_result_find(String::from("control_concept_not_found_error"))?;
     if control_concept.is_control && is_control {
         return validation_error!("concept_already_control_error");
@@ -128,15 +133,21 @@ pub async fn set_is_control(
     if !control_concept.is_control && !is_control {
         return validation_error!("concept_not_control_error");
     }
-    control_concept = diesel::update(control_concepts::table)
-        .filter(control_concepts::concept_id.eq(control_concept.concept_id))
-        .set(control_concepts::is_control.eq(is_control))
-        .get_result::<ControlConcept>(conn)
+    let (control_concept, concept, project) = conn
+        .transaction(|conn| {
+            let control_concept = diesel::update(control_concepts::table)
+                .filter(control_concepts::concept_id.eq(control_concept.concept_id))
+                .set(control_concepts::is_control.eq(is_control))
+                .get_result::<ControlConcept>(conn)?;
+            let (concept, project) =
+                model_services::update_concept(conn, concept_id, project.id, Utc::now())?;
+            Ok((control_concept, concept, project))
+        })
         .to_service_result()?;
-    let control_concept_out = ControlConceptOutType::from(control_concept);
+    let control_concept_out = ControlConceptOutType::from((control_concept, concept));
     let model_action = ModelActionType::new(
         &project,
-        String::from("change_concept_is_control"),
+        String::from("change_control_concept"),
         control_concept_out,
     );
     project_service.notify(model_action.clone()).await;
@@ -163,7 +174,18 @@ pub fn find_control_concept_by_id(
         .first::<ControlConcept>(conn)
 }
 
-fn add_is_control(concept_out: &mut ConceptOutType, is_control: bool) -> () {
+pub fn is_control(conn: &mut PgConnection, concept_id: i32) -> ServiceResult<bool> {
+    let control_concept = find_control_concept_by_id(conn, concept_id)
+        .optional()
+        .to_service_result()?;
+    let is_control = match control_concept {
+        Some(control_concept) => control_concept.is_control,
+        None => false,
+    };
+    Ok(is_control)
+}
+
+fn add_is_control(concept_out: &mut ConceptOutType, control_concept: &ControlConcept) -> () {
     let plugins_data = match &mut concept_out.plugins_data {
         Value::Object(plugins_data) => plugins_data,
         _ => unreachable!(),
@@ -177,14 +199,15 @@ fn add_is_control(concept_out: &mut ConceptOutType, is_control: bool) -> () {
     };
     control_concepts_data
         .entry("isControl")
-        .or_insert(Value::Bool(is_control));
+        .or_insert(json!(control_concept.is_control));
 }
 
-impl From<ControlConcept> for ControlConceptOutType {
-    fn from(control_concept: ControlConcept) -> Self {
+impl From<(ControlConcept, Concept)> for ControlConceptOutType {
+    fn from((control_concept, concept): (ControlConcept, Concept)) -> Self {
         Self {
             concept_id: control_concept.concept_id,
             is_control: control_concept.is_control,
+            updated_at: concept.updated_at,
         }
     }
 }

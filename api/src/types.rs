@@ -461,7 +461,7 @@ pub struct ConceptInMoveType {
 pub struct ConceptOutDeleteType {
     /// Concept identifier
     pub id: i32,
-    /// project update time
+    /// Project update time
     pub updated_at: DateTime<Utc>,
 }
 
@@ -530,7 +530,7 @@ pub struct ConnectionOutChangeValueType {
 pub struct ConnectionOutDeleteType {
     /// Connection identifier
     pub id: i32,
-    /// project update time
+    /// Project update time
     pub updated_at: DateTime<Utc>,
 }
 

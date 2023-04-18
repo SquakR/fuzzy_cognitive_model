@@ -1,6 +1,6 @@
 use crate::models::{Concept, ConceptValueType, Connection, ConnectionValueType, Project, User};
 use crate::plugins::Plugins;
-use crate::response::{AppError, ServiceResult, ToServiceResult};
+use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::{concepts, connections, projects};
 use crate::services::{permission_services, project_services};
 use crate::types::{
@@ -292,9 +292,9 @@ pub async fn create_connection(
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
     find_concept_by_id(conn, connection_in.source_id)
-        .to_service_result_find(String::from("source_concept_not_found_error"))?;
+        .to_service_result_find(String::from("connection_source_concept_not_found_error"))?;
     find_concept_by_id(conn, connection_in.target_id)
-        .to_service_result_find(String::from("target_concept_not_found_error"))?;
+        .to_service_result_find(String::from("connection_target_concept_not_found_error"))?;
     check_connection_value(&project, connection_in.value)?;
     let (connection, project) = conn
         .transaction(|conn| {
@@ -419,7 +419,7 @@ pub async fn delete_connection(
     Ok(model_action)
 }
 
-fn check_concept_value(project: &Project, value: Option<f64>) -> ServiceResult<()> {
+pub fn check_concept_value(project: &Project, value: Option<f64>) -> ServiceResult<()> {
     match value {
         Some(value) => match project.concept_value_type {
             ConceptValueType::None => {

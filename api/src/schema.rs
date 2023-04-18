@@ -160,6 +160,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    target_concepts (concept_id) {
+        concept_id -> Int4,
+        is_target -> Bool,
+        value -> Nullable<Float8>,
+    }
+}
+
+diesel::table! {
     users (id) {
         id -> Int4,
         username -> Varchar,
@@ -188,6 +196,7 @@ diesel::joinable!(project_user_permissions -> project_users (project_user_id));
 diesel::joinable!(project_users -> projects (project_id));
 diesel::joinable!(project_users -> users (user_id));
 diesel::joinable!(sessions -> users (user_id));
+diesel::joinable!(target_concepts -> concepts (concept_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     concepts,
@@ -203,5 +212,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     project_users,
     projects,
     sessions,
+    target_concepts,
     users,
 );

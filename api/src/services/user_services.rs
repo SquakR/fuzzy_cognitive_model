@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::models::{Session, User};
 use crate::pagination::Paginate;
-use crate::response::{AppError, ServiceResult, ToServiceResult};
+use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::users;
 use crate::services::{email_confirmation_services, password_services};
 use crate::storage::Storage;

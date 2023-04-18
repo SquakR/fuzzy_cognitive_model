@@ -15,12 +15,12 @@ use rocket_okapi::{response::OpenApiResponderInner, Result as RocketOkapiResult}
 #[macro_export]
 macro_rules! validation_error {
     ($key:expr) => {
-        Err(AppError::ValidationError(Box::new(move |locale| {
+        Err(crate::response::AppError::ValidationError(Box::new(move |locale| {
             t!($key, locale = locale)
         })))
     };
     ($key:expr, $($var_name:tt = $var_val:expr),+ $(,)?) => {
-        Err(AppError::ValidationError(Box::new(move |locale| {
+        Err(crate::response::AppError::ValidationError(Box::new(move |locale| {
             t!($key, locale = locale, $($var_name = $var_val),*)
         })))
     };

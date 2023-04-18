@@ -7,6 +7,6 @@ pub fn get_env(key: &str) -> String {
 }
 
 pub fn get_jwt_key() -> Hmac<Sha256> {
-    let secret_key = get_env("SECRET_KEY");
+    let secret_key = get_env("ROCKET_SECRET_KEY");
     Hmac::new_from_slice(secret_key.as_bytes()).unwrap()
 }

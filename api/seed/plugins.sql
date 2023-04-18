@@ -17,6 +17,18 @@ INSERT INTO plugins (
     connection_value_type
   )
 VALUES (
+    'Target Concepts',
+    'The plugin adds the ability to select target concepts.',
+    null,
+    null
+  );
+INSERT INTO plugins (
+    name,
+    description,
+    concept_value_type,
+    connection_value_type
+  )
+VALUES (
     'Adjustment With Genetic Algorithms',
     'Structural and parametric adjustment of fuzzy cognitive models based on genetic algorithms.',
     'from_zero_to_one',

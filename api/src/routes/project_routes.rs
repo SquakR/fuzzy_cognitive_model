@@ -132,10 +132,16 @@ pub fn change_project(
     project_id: i32,
     project_in: Json<ProjectInType>,
     user: User,
+    plugins: &Plugins,
 ) -> PathResult<ProjectOutType> {
     let conn = &mut db::establish_connection();
-    let project =
-        project_services::change_project(conn, &user, project_id, project_in.into_inner())?;
+    let project = project_services::change_project(
+        conn,
+        &user,
+        project_id,
+        plugins,
+        project_in.into_inner(),
+    )?;
     ProjectOutType::from_project(conn, project).to_path_result()
 }
 
