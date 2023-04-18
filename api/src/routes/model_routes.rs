@@ -103,11 +103,13 @@ pub async fn change_concept_value(
     concept_id: i32,
     value: Json<Option<f64>>,
     user: User,
+    plugins: &Plugins,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<ConceptOutChangeValueType>> {
     let conn = &mut db::establish_connection();
     model_services::change_concept_value(
         conn,
+        plugins,
         project_service,
         &user,
         concept_id,

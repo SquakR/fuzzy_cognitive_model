@@ -1,5 +1,5 @@
 use crate::models::{Concept, ConceptValueType, Connection, ConnectionValueType, Project, User};
-use crate::plugins::Plugins;
+use crate::plugins::{ChangeConceptValueExtra, Plugins};
 use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::{concepts, connections, projects};
 use crate::services::{permission_services, project_services};
@@ -209,14 +209,19 @@ pub async fn change_concept_description(
 
 pub async fn change_concept_value(
     conn: &mut PgConnection,
+    plugins: &Plugins,
     project_service: WebSocketProjectService,
     user: &User,
     concept_id: i32,
-    value: Option<f64>,
+    mut value: Option<f64>,
 ) -> ServiceResult<ModelActionType<ConceptOutChangeValueType>> {
     let project = find_project_by_concept_id(conn, concept_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
+    value = plugins.change_concept_value_emitter.lock().unwrap().emit(
+        value,
+        ChangeConceptValueExtra::new(project.clone(), concept_id),
+    )?;
     check_concept_value(&project, value.clone())?;
     let (concept, project) = conn
         .transaction(|conn| {

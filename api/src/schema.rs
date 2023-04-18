@@ -15,6 +15,17 @@ pub mod sql_types {
 }
 
 diesel::table! {
+    concept_constraints (concept_id) {
+        concept_id -> Int4,
+        has_constraint -> Bool,
+        min_value -> Float8,
+        include_min_value -> Bool,
+        max_value -> Float8,
+        include_max_value -> Bool,
+    }
+}
+
+diesel::table! {
     concepts (id) {
         id -> Int4,
         name -> Varchar,
@@ -191,6 +202,7 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(concept_constraints -> concepts (concept_id));
 diesel::joinable!(concepts -> projects (project_id));
 diesel::joinable!(connections -> projects (project_id));
 diesel::joinable!(control_concepts -> concepts (concept_id));
@@ -207,6 +219,7 @@ diesel::joinable!(sessions -> users (user_id));
 diesel::joinable!(target_concepts -> concepts (concept_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    concept_constraints,
     concepts,
     connections,
     control_concepts,

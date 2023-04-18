@@ -14,7 +14,7 @@ use crate::web_socket::WebSocketProjectService;
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::PgConnection;
-use serde_json::{json, Map, Value};
+use serde_json::{json, Value};
 use std::sync::{Arc, Mutex};
 
 pub fn handle_get_model(
@@ -190,16 +190,9 @@ fn add_is_control(concept_out: &mut ConceptOutType, control_concept: &ControlCon
         Value::Object(plugins_data) => plugins_data,
         _ => unreachable!(),
     };
-    let control_concepts_data = match plugins_data
+    plugins_data
         .entry("controlConcepts")
-        .or_insert(Value::Object(Map::new()))
-    {
-        Value::Object(control_concepts_data) => control_concepts_data,
-        _ => unreachable!(),
-    };
-    control_concepts_data
-        .entry("isControl")
-        .or_insert(json!(control_concept.is_control));
+        .or_insert(json!({ "isControl": control_concept.is_control }));
 }
 
 impl From<(ControlConcept, Concept)> for ControlConceptOutType {

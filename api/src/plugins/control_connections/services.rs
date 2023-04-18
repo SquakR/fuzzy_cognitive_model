@@ -14,7 +14,7 @@ use chrono::Utc;
 use diesel::prelude::*;
 use diesel::Connection as DieselConnection;
 use diesel::PgConnection;
-use serde_json::{json, Map, Value};
+use serde_json::{json, Value};
 use std::sync::{Arc, Mutex};
 
 pub fn handle_get_model(
@@ -181,16 +181,9 @@ fn add_is_control(
         Value::Object(plugins_data) => plugins_data,
         _ => unreachable!(),
     };
-    let control_connections_data = match plugins_data
+    plugins_data
         .entry("controlConnections")
-        .or_insert(Value::Object(Map::new()))
-    {
-        Value::Object(control_connections_data) => control_connections_data,
-        _ => unreachable!(),
-    };
-    control_connections_data
-        .entry("isControl")
-        .or_insert(json!(control_connection.is_control));
+        .or_insert(json!({ "isControl": control_connection.is_control }));
 }
 
 impl From<(ControlConnection, Connection)> for ControlConnectionOutType {

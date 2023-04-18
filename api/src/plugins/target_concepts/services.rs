@@ -14,7 +14,7 @@ use crate::web_socket::WebSocketProjectService;
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::PgConnection;
-use serde_json::{json, Map, Value};
+use serde_json::{json, Value};
 use std::sync::{Arc, Mutex};
 
 pub fn handle_get_model(
@@ -41,7 +41,7 @@ pub fn handle_get_model(
                     .iter()
                     .find(|tc| tc.concept_id == concept_out.id)
                     .unwrap();
-                add_is_target(concept_out, &target_concept);
+                add_target_concept(concept_out, &target_concept);
             }
             Ok(model_out)
         })
@@ -62,7 +62,7 @@ pub fn handle_add_concept(
             }
             let target_concept =
                 create_target_concept(conn, &project, concept_out.id).to_service_result()?;
-            add_is_target(&mut concept_out, &target_concept);
+            add_target_concept(&mut concept_out, &target_concept);
             Ok(concept_out)
         });
 }
@@ -198,24 +198,15 @@ pub fn is_target(conn: &mut PgConnection, concept_id: i32) -> ServiceResult<bool
     Ok(is_target)
 }
 
-fn add_is_target(concept_out: &mut ConceptOutType, target_concept: &TargetConcept) -> () {
+fn add_target_concept(concept_out: &mut ConceptOutType, target_concept: &TargetConcept) -> () {
     let plugins_data = match &mut concept_out.plugins_data {
         Value::Object(plugins_data) => plugins_data,
         _ => unreachable!(),
     };
-    let target_concepts_data = match plugins_data
-        .entry("targetConcepts")
-        .or_insert(Value::Object(Map::new()))
-    {
-        Value::Object(target_concepts_data) => target_concepts_data,
-        _ => unreachable!(),
-    };
-    target_concepts_data
-        .entry("isTarget")
-        .or_insert(json!(target_concept.is_target));
-    target_concepts_data
-        .entry("value")
-        .or_insert(json!(target_concept.value));
+    plugins_data.entry("targetConcepts").or_insert(json!({
+        "isTarget": target_concept.is_target,
+        "value": target_concept.value
+    }));
 }
 
 impl From<(TargetConcept, Concept)> for TargetConceptOutType {

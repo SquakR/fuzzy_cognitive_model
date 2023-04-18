@@ -1,7 +1,6 @@
 use chrono::{DateTime, Utc};
-use rocket::serde::Serialize;
+use rocket::serde::{Deserialize, Serialize};
 use rocket_okapi::JsonSchema;
-use serde::Deserialize;
 
 /// Type of target concept to change
 #[derive(Deserialize, JsonSchema)]
@@ -23,6 +22,6 @@ pub struct TargetConceptOutType {
     pub is_target: bool,
     /// Target concept desired value
     pub value: Option<f64>,
-    /// Vertex update time
+    /// Concept update time
     pub updated_at: DateTime<Utc>,
 }

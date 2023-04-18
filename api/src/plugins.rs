@@ -1,9 +1,11 @@
 pub mod adjustment;
+pub mod concept_constraints;
 pub mod control_concepts;
 pub mod control_connections;
 pub mod target_concepts;
 
 pub use adjustment::AdjustmentPlugin;
+pub use concept_constraints::ConceptConstraintsPlugin;
 pub use control_concepts::ControlConceptsPlugin;
 pub use control_connections::ControlConnectionsPlugin;
 pub use target_concepts::TargetConceptsPlugin;
@@ -33,11 +35,27 @@ pub trait Plugin {
     }
 }
 
+#[derive(Clone)]
+pub struct ChangeConceptValueExtra {
+    pub project: Project,
+    pub concept_id: i32,
+}
+
+impl ChangeConceptValueExtra {
+    pub fn new(project: Project, concept_id: i32) -> Self {
+        Self {
+            project,
+            concept_id,
+        }
+    }
+}
+
 pub struct Plugins {
     pub plugins: HashMap<String, Arc<Mutex<Box<dyn Plugin + Sync + Send>>>>,
     pub get_model_emitter: Mutex<Emitter<ModelOutType, ()>>,
     pub add_concept_emitter: Mutex<Emitter<ConceptOutType, Project>>,
     pub add_connection_emitter: Mutex<Emitter<ConnectionOutType, Project>>,
+    pub change_concept_value_emitter: Mutex<Emitter<Option<f64>, ChangeConceptValueExtra>>,
 }
 
 impl Plugins {
@@ -56,6 +74,10 @@ impl Plugins {
             Arc::new(Mutex::new(Box::new(ControlConnectionsPlugin))),
         );
         plugins.insert(
+            String::from("Concept Constraints"),
+            Arc::new(Mutex::new(Box::new(ConceptConstraintsPlugin))),
+        );
+        plugins.insert(
             String::from("Adjustment With Genetic Algorithms"),
             Arc::new(Mutex::new(Box::new(AdjustmentPlugin))),
         );
@@ -64,6 +86,7 @@ impl Plugins {
             get_model_emitter: Mutex::new(Emitter::new()),
             add_concept_emitter: Mutex::new(Emitter::new()),
             add_connection_emitter: Mutex::new(Emitter::new()),
+            change_concept_value_emitter: Mutex::new(Emitter::new()),
         }
     }
 }
