@@ -42,9 +42,21 @@ INSERT INTO plugins (
   )
 VALUES (
     'Concept Constraints',
-    'The plugin adds the ability to select concept constrains.',
+    'The plugin adds the ability to select concept constraints.',
     'from_zero_to_one',
     null
+  );
+INSERT INTO plugins (
+    name,
+    description,
+    concept_value_type,
+    connection_value_type
+  )
+VALUES (
+    'Connection Constraints',
+    'The plugin adds the ability to select connection constraints.',
+    null,
+    'from_minus_one_to_one'
   );
 INSERT INTO plugins (
     name,

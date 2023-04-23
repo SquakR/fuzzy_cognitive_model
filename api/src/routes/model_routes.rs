@@ -217,11 +217,13 @@ pub async fn change_connection_value(
     connection_id: i32,
     value: Json<f64>,
     user: User,
+    plugins: &Plugins,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<ConnectionOutChangeValueType>> {
     let conn = &mut db::establish_connection();
     model_services::change_connection_value(
         conn,
+        plugins,
         project_service,
         &user,
         connection_id,

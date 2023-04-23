@@ -187,7 +187,6 @@ pub async fn change_concept_constraint(
             let concept_constraint = diesel::update(concept_constraints::table)
                 .filter(concept_constraints::concept_id.eq(concept_constraint.concept_id))
                 .set((
-                    concept_constraints::concept_id.eq(concept_id),
                     concept_constraints::has_constraint.eq(concept_constraint_in.has_constraint),
                     concept_constraints::min_value.eq(concept_constraint_in.min_value),
                     concept_constraints::include_min_value
@@ -297,7 +296,11 @@ fn generate_range_error(
         },
     );
     let value = value.unwrap();
-    validation_error!("constraint_range_error", range = range, value = value)
+    validation_error!(
+        "concept_constraint_range_error",
+        range = range,
+        value = value
+    )
 }
 
 impl From<(ConceptConstraint, Concept)> for ConceptConstraintOutType {

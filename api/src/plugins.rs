@@ -1,11 +1,13 @@
 pub mod adjustment;
 pub mod concept_constraints;
+pub mod connection_constraints;
 pub mod control_concepts;
 pub mod control_connections;
 pub mod target_concepts;
 
 pub use adjustment::AdjustmentPlugin;
 pub use concept_constraints::ConceptConstraintsPlugin;
+pub use connection_constraints::ConnectionConstraintsPlugin;
 pub use control_concepts::ControlConceptsPlugin;
 pub use control_connections::ControlConnectionsPlugin;
 pub use target_concepts::TargetConceptsPlugin;
@@ -50,12 +52,28 @@ impl ChangeConceptValueExtra {
     }
 }
 
+#[derive(Clone)]
+pub struct ChangeConnectionValueExtra {
+    pub project: Project,
+    pub connection_id: i32,
+}
+
+impl ChangeConnectionValueExtra {
+    pub fn new(project: Project, connection_id: i32) -> Self {
+        Self {
+            project,
+            connection_id,
+        }
+    }
+}
+
 pub struct Plugins {
     pub plugins: HashMap<String, Arc<Mutex<Box<dyn Plugin + Sync + Send>>>>,
     pub get_model_emitter: Mutex<Emitter<ModelOutType, ()>>,
     pub add_concept_emitter: Mutex<Emitter<ConceptOutType, Project>>,
     pub add_connection_emitter: Mutex<Emitter<ConnectionOutType, Project>>,
     pub change_concept_value_emitter: Mutex<Emitter<Option<f64>, ChangeConceptValueExtra>>,
+    pub change_connection_value_emitter: Mutex<Emitter<f64, ChangeConnectionValueExtra>>,
 }
 
 impl Plugins {
@@ -78,6 +96,10 @@ impl Plugins {
             Arc::new(Mutex::new(Box::new(ConceptConstraintsPlugin))),
         );
         plugins.insert(
+            String::from("Connection Constraints"),
+            Arc::new(Mutex::new(Box::new(ConnectionConstraintsPlugin))),
+        );
+        plugins.insert(
             String::from("Adjustment With Genetic Algorithms"),
             Arc::new(Mutex::new(Box::new(AdjustmentPlugin))),
         );
@@ -87,6 +109,7 @@ impl Plugins {
             add_concept_emitter: Mutex::new(Emitter::new()),
             add_connection_emitter: Mutex::new(Emitter::new()),
             change_concept_value_emitter: Mutex::new(Emitter::new()),
+            change_connection_value_emitter: Mutex::new(Emitter::new()),
         }
     }
 }

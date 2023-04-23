@@ -166,10 +166,10 @@ pub fn find_project_control_connections(
 
 pub fn find_control_connection_by_id(
     conn: &mut PgConnection,
-    concept_id: i32,
+    connection_id: i32,
 ) -> QueryResult<ControlConnection> {
     control_connections::table
-        .filter(control_connections::connection_id.eq(concept_id))
+        .filter(control_connections::connection_id.eq(connection_id))
         .first::<ControlConnection>(conn)
 }
 

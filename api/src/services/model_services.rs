@@ -1,5 +1,5 @@
 use crate::models::{Concept, ConceptValueType, Connection, ConnectionValueType, Project, User};
-use crate::plugins::{ChangeConceptValueExtra, Plugins};
+use crate::plugins::{ChangeConceptValueExtra, ChangeConnectionValueExtra, Plugins};
 use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::{concepts, connections, projects};
 use crate::services::{permission_services, project_services};
@@ -80,6 +80,15 @@ pub fn find_concept_by_id(conn: &mut PgConnection, concept_id: i32) -> QueryResu
     concepts::table
         .filter(concepts::id.eq(concept_id))
         .get_result::<Concept>(conn)
+}
+
+pub fn find_connection_by_id(
+    conn: &mut PgConnection,
+    connection_id: i32,
+) -> QueryResult<Connection> {
+    connections::table
+        .filter(connections::id.eq(connection_id))
+        .get_result::<Connection>(conn)
 }
 
 pub fn find_project_by_concept_id(
@@ -382,14 +391,23 @@ pub async fn change_connection_description(
 
 pub async fn change_connection_value(
     conn: &mut PgConnection,
+    plugins: &Plugins,
     project_service: WebSocketProjectService,
     user: &User,
     connection_id: i32,
-    value: f64,
+    mut value: f64,
 ) -> ServiceResult<ModelActionType<ConnectionOutChangeValueType>> {
     let project = find_project_by_connection_id(conn, connection_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
+    value = plugins
+        .change_connection_value_emitter
+        .lock()
+        .unwrap()
+        .emit(
+            value,
+            ChangeConnectionValueExtra::new(project.clone(), connection_id),
+        )?;
     check_connection_value(&project, value)?;
     let (connection, project) = conn
         .transaction(|conn| {

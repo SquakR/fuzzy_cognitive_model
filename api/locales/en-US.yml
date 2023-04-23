@@ -18,6 +18,7 @@ control_concept_not_found_error: "Control concept record not found."
 target_concept_not_found_error: "Target concept record not found."
 control_connection_not_found_error: "Control connection record not found."
 concept_constraint_not_found_error: "Concept constraint record not found."
+connection_constraint_not_found_error: "Connection constraint record not found."
 
 invalid_token_error: "Invalid token."
 link_is_not_active_error: "The link is not active."
@@ -93,4 +94,6 @@ concept_is_target_error: "The concept is a target."
 connection_already_control_error: "The connection is already a control."
 connection_not_control_error: "The connection is not a control."
 
-constraint_range_error: "The constraint range `%{range}` does not match the concept value `%{value}`."
+concept_constraint_range_error: "The constraint range `%{range}` does not match the concept value `%{value}`."
+
+connection_constraint_range_error: "The constraint range `%{range}` does not match the connection value `%{value}`."

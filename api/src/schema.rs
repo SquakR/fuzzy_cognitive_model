@@ -40,6 +40,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    connection_constraints (connection_id) {
+        connection_id -> Int4,
+        has_constraint -> Bool,
+        min_value -> Float8,
+        include_min_value -> Bool,
+        max_value -> Float8,
+        include_max_value -> Bool,
+    }
+}
+
+diesel::table! {
     connections (id) {
         id -> Int4,
         description -> Text,
@@ -204,6 +215,7 @@ diesel::table! {
 
 diesel::joinable!(concept_constraints -> concepts (concept_id));
 diesel::joinable!(concepts -> projects (project_id));
+diesel::joinable!(connection_constraints -> connections (connection_id));
 diesel::joinable!(connections -> projects (project_id));
 diesel::joinable!(control_concepts -> concepts (concept_id));
 diesel::joinable!(control_connections -> connections (connection_id));
@@ -221,6 +233,7 @@ diesel::joinable!(target_concepts -> concepts (concept_id));
 diesel::allow_tables_to_appear_in_same_query!(
     concept_constraints,
     concepts,
+    connection_constraints,
     connections,
     control_concepts,
     control_connections,

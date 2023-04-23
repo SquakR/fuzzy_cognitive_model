@@ -3,8 +3,8 @@ extern crate rocket;
 use dotenvy::dotenv;
 use fuzzy_cognitive_model::locale::LocaleFairing;
 use fuzzy_cognitive_model::plugins::{
-    ConceptConstraintsPlugin, ControlConceptsPlugin, ControlConnectionsPlugin, PluginsFairing,
-    TargetConceptsPlugin,
+    ConceptConstraintsPlugin, ConnectionConstraintsPlugin, ControlConceptsPlugin,
+    ControlConnectionsPlugin, PluginsFairing, TargetConceptsPlugin,
 };
 use fuzzy_cognitive_model::response;
 use fuzzy_cognitive_model::routes::MountRoutes;
@@ -62,5 +62,6 @@ fn rocket() -> _ {
         .attach(TargetConceptsPlugin)
         .attach(ControlConnectionsPlugin)
         .attach(ConceptConstraintsPlugin)
+        .attach(ConnectionConstraintsPlugin)
         .attach(web_socket_listener)
 }
