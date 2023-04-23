@@ -1,7 +1,7 @@
 use crate::schema::{
-    concepts, connections, email_confirmations, password_resets, permissions, plugins,
-    project_plugins, project_user_permissions, project_user_statuses, project_users, projects,
-    sessions, users,
+    concepts, connections, email_confirmations, password_resets, permissions, plugin_dependencies,
+    plugins, project_plugins, project_user_permissions, project_user_statuses, project_users,
+    projects, sessions, users,
 };
 use chrono::{DateTime, Utc};
 use diesel::{Associations, Identifiable, Queryable};
@@ -127,6 +127,16 @@ pub struct Plugin {
     pub description: String,
     pub concept_value_type: Option<ConceptValueType>,
     pub connection_value_type: Option<ConnectionValueType>,
+}
+
+#[derive(Queryable, Identifiable)]
+#[diesel(table_name = plugin_dependencies)]
+#[diesel(belongs_to(Plugin, foreign_key = dependent_plugin_id))]
+#[diesel(belongs_to(Plugin, foreign_key = dependency_plugin_id))]
+pub struct PluginDependency {
+    pub id: i32,
+    pub dependent_plugin_name: String,
+    pub dependency_plugin_name: String,
 }
 
 #[derive(Queryable, Identifiable)]

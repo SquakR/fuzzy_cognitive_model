@@ -121,6 +121,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    plugin_dependencies (id) {
+        id -> Int4,
+        dependent_plugin_name -> Varchar,
+        dependency_plugin_name -> Varchar,
+    }
+}
+
+diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::ConceptValueType;
     use super::sql_types::ConnectionValueType;
@@ -256,6 +264,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     email_confirmations,
     password_resets,
     permissions,
+    plugin_dependencies,
     plugins,
     project_plugins,
     project_user_permissions,

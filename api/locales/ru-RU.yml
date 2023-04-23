@@ -56,6 +56,7 @@ delete_project_forbidden_error: "Недостаточно прав для уда
 change_plugins_forbidden_error: "Недостаточно прав для изменения плагинов."
 invalid_plugin_error: "Неверный плагин: `%{plugin_name}`."
 incompatible_plugin_error: "`%{plugin_name}` плагин не совместим с проектом."
+plugin_dependencies_error: "Для удовлетворения зависимостей плагинов требуются следующие плагины: `[%{required}]`."
 
 change_permissions_forbidden_error: "Недостаточно прав для изменения разрешений."
 invalid_permission_error: "Неверное разрешение: `%{permission}`."

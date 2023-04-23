@@ -1,7 +1,7 @@
-use crate::models::{Plugin, Project, ProjectPlugin, User};
+use crate::models::{Plugin, PluginDependency, Project, ProjectPlugin, User};
 use crate::plugins::Plugins;
 use crate::response::{ServiceResult, ToServiceResult};
-use crate::schema::{plugins, project_plugins, projects};
+use crate::schema::{plugin_dependencies, plugins, project_plugins, projects};
 use crate::services::{permission_services, project_services};
 use crate::types::PluginType;
 use crate::validation_error;
@@ -110,7 +110,35 @@ fn check_plugins(
             return validation_error!("incompatible_plugin_error", plugin_name = &plugin_name);
         }
     }
+    check_plugin_dependencies(conn, plugins)
+}
+
+fn check_plugin_dependencies(conn: &mut PgConnection, plugins: &[String]) -> ServiceResult<()> {
+    let plugins_set = plugins.iter().cloned().collect::<HashSet<_>>();
+    let dependencies_set = get_plugin_dependencies(conn, plugins)?;
+    if !dependencies_set.is_subset(&plugins_set) {
+        let required = dependencies_set
+            .difference(&plugins_set)
+            .into_iter()
+            .map(|d| d.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        return validation_error!("plugin_dependencies_error", required = required);
+    }
     Ok(())
+}
+
+fn get_plugin_dependencies(
+    conn: &mut PgConnection,
+    plugins: &[String],
+) -> ServiceResult<HashSet<String>> {
+    Ok(plugin_dependencies::table
+        .filter(plugin_dependencies::dependent_plugin_name.eq_any(plugins))
+        .get_results::<PluginDependency>(conn)
+        .to_service_result()?
+        .into_iter()
+        .map(|dependency| dependency.dependency_plugin_name)
+        .collect::<HashSet<_>>())
 }
 
 fn install_and_uninstall_plugins(
@@ -139,13 +167,31 @@ fn install_and_uninstall_plugins(
     Ok(project)
 }
 
-impl From<Plugin> for PluginType {
-    fn from(plugin: Plugin) -> Self {
-        Self {
-            name: plugin.name,
-            description: plugin.description,
-            concept_value_type: plugin.concept_value_type,
-            connection_value_type: plugin.connection_value_type,
+impl PluginType {
+    pub fn from_plugins(conn: &mut PgConnection, plugins: Vec<Plugin>) -> ServiceResult<Vec<Self>> {
+        let mut plugin_dependencies = plugin_dependencies::table
+            .get_results::<PluginDependency>(conn)
+            .to_service_result()?;
+        let mut plugin_types = vec![];
+        for plugin in plugins {
+            let dependency_indices = plugin_dependencies
+                .iter()
+                .enumerate()
+                .filter(|(_, dependency)| dependency.dependent_plugin_name == plugin.name)
+                .map(|(i, _)| i)
+                .collect::<Vec<usize>>();
+            let mut dependencies = vec![];
+            for index in dependency_indices.into_iter().rev() {
+                dependencies.push(plugin_dependencies.remove(index).dependency_plugin_name);
+            }
+            plugin_types.push(Self {
+                name: plugin.name,
+                description: plugin.description,
+                concept_value_type: plugin.concept_value_type,
+                connection_value_type: plugin.connection_value_type,
+                dependencies,
+            })
         }
+        Ok(plugin_types)
     }
 }

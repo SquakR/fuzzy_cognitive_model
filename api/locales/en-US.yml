@@ -56,6 +56,7 @@ delete_project_forbidden_error: "Insufficient permissions to delete the project.
 change_plugins_forbidden_error: "Insufficient permissions to change plugins."
 invalid_plugin_error: "Invalid plugin: `%{plugin_name}`."
 incompatible_plugin_error: "The `%{plugin_name}` plugin is not compatible with the project."
+plugin_dependencies_error: "The following plugins are required to satisfy plugin dependencies: `[%{required}]`."
 
 change_permissions_forbidden_error: "Insufficient permissions to change permissions."
 invalid_permission_error: "Invalid permission: `%{permission}`."

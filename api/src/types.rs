@@ -253,6 +253,8 @@ pub struct PluginType {
     pub concept_value_type: Option<ConceptValueType>,
     /// Plugin connection value type
     pub connection_value_type: Option<ConnectionValueType>,
+    /// Plugin dependencies
+    pub dependencies: Vec<String>,
 }
 
 /// Type of project permission

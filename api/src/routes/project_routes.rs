@@ -77,12 +77,9 @@ pub fn get_projects(
 #[get("/plugins")]
 pub fn get_plugins(_user: User) -> PathResult<Vec<PluginType>> {
     let conn = &mut db::establish_connection();
-    let plugins = plugin_services::get_plugins(conn)
-        .to_service_result()?
-        .into_iter()
-        .map(PluginType::from)
-        .collect();
-    Ok(Json(plugins))
+    let plugins = plugin_services::get_plugins(conn).to_service_result()?;
+    let plugin_types = PluginType::from_plugins(conn, plugins)?;
+    Ok(Json(plugin_types))
 }
 
 /// Get permissions
