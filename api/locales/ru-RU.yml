@@ -19,6 +19,7 @@ target_concept_not_found_error: "Не найдена запись целевог
 control_connection_not_found_error: "Не найдена запись управляющей связи."
 concept_constraint_not_found_error: "Не найдена запись ограничения концепта."
 connection_constraint_not_found_error: "Не найдена запись ограничения связи."
+concept_dynamic_model_not_found_error: "Не найдена запись модели динамики концепта."
 
 invalid_token_error: "Невалидный токен."
 link_is_not_active_error: "Ссылка не является активной."

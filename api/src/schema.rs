@@ -10,6 +10,10 @@ pub mod sql_types {
     pub struct ConnectionValueType;
 
     #[derive(diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "dynamic_model_type"))]
+    pub struct DynamicModelType;
+
+    #[derive(diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "project_user_status_value"))]
     pub struct ProjectUserStatusValue;
 }
@@ -22,6 +26,16 @@ diesel::table! {
         include_min_value -> Bool,
         max_value -> Float8,
         include_max_value -> Bool,
+    }
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::DynamicModelType;
+
+    concept_dynamic_models (concept_id) {
+        concept_id -> Int4,
+        dynamic_model_type -> Nullable<DynamicModelType>,
     }
 }
 
@@ -214,6 +228,7 @@ diesel::table! {
 }
 
 diesel::joinable!(concept_constraints -> concepts (concept_id));
+diesel::joinable!(concept_dynamic_models -> concepts (concept_id));
 diesel::joinable!(concepts -> projects (project_id));
 diesel::joinable!(connection_constraints -> connections (connection_id));
 diesel::joinable!(connections -> projects (project_id));
@@ -232,6 +247,7 @@ diesel::joinable!(target_concepts -> concepts (concept_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     concept_constraints,
+    concept_dynamic_models,
     concepts,
     connection_constraints,
     connections,

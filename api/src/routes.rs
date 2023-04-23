@@ -1,6 +1,7 @@
 mod model_routes;
 mod project_routes;
 mod user_routes;
+use crate::plugins::adjustment::routes as adjustment_routes;
 use crate::plugins::concept_constraints::routes as concept_constraints_routes;
 use crate::plugins::connection_constraints::routes as connection_constraints_routes;
 use crate::plugins::control_concepts::routes as control_concepts_routes;
@@ -131,7 +132,8 @@ impl MountRoutes for Rocket<Build> {
                 target_concepts_routes::change_target_concept,
                 control_connections_routes::change_connection_is_control,
                 concept_constraints_routes::change_concept_constraint,
-                connection_constraints_routes::change_connection_constraint
+                connection_constraints_routes::change_connection_constraint,
+                adjustment_routes::change_dynamic_model_type
             ),
         )
     }
