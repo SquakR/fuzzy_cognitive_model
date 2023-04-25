@@ -1,5 +1,5 @@
 use crate::models::{Permission, Project, ProjectUserPermission, ProjectUserStatusValue, User};
-use crate::response::{AppError, ServiceResult, ToServiceResult};
+use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::{permissions, project_user_permissions};
 use crate::services::{project_services, project_user_services};
 use crate::types::PermissionType;
@@ -223,7 +223,7 @@ pub fn can_delete_project(
     Ok(())
 }
 
-fn has_permission(
+pub fn has_permission(
     conn: &mut PgConnection,
     project_id: i32,
     user_id: i32,

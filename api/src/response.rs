@@ -29,14 +29,16 @@ macro_rules! validation_error {
 #[macro_export]
 macro_rules! forbidden_error {
     ($key:expr) => {
-        Err(AppError::ForbiddenError(String::from($key)))
+        Err(crate::response::AppError::ForbiddenError(String::from(
+            $key,
+        )))
     };
 }
 
 #[macro_export]
 macro_rules! not_found_error {
     ($key:expr) => {
-        Err(AppError::NotFoundError(String::from($key)))
+        Err(crate::response::AppError::NotFoundError(String::from($key)))
     };
 }
 

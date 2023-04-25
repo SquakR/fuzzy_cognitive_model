@@ -1,7 +1,9 @@
-use crate::models::{Concept, ConceptValueType, Connection, ConnectionValueType, Project, User};
+use crate::models::{
+    Concept, ConceptValueType, Connection, ConnectionValueType, ModelCopy, Project, User,
+};
 use crate::plugins::{ChangeConceptValueExtra, ChangeConnectionValueExtra, Plugins};
 use crate::response::{ServiceResult, ToServiceResult};
-use crate::schema::{concepts, connections, projects};
+use crate::schema::{concepts, connections, model_copies, projects};
 use crate::services::{permission_services, project_services};
 use crate::types::{
     ConceptInChangeDescriptionType, ConceptInCreateType, ConceptInMoveType,
@@ -52,6 +54,19 @@ pub fn get_model(
         .unwrap()
         .emit(model_out, ())?;
     Ok(model_out)
+}
+
+pub fn save_model_copy(
+    conn: &mut PgConnection,
+    plugins: &Plugins,
+    user: &User,
+    project_id: i32,
+) -> ServiceResult<ModelCopy> {
+    let model = get_model(conn, plugins, user, project_id)?;
+    diesel::insert_into(model_copies::table)
+        .values(model_copies::model.eq(serde_json::to_value(model).unwrap()))
+        .get_result::<ModelCopy>(conn)
+        .to_service_result()
 }
 
 pub fn find_project_concepts(

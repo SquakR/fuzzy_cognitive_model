@@ -28,3 +28,8 @@ VALUES (
     'can_delete_project',
     'The user can delete the project.'
   );
+INSERT INTO permissions (key, description)
+VALUES (
+    'can_adjust',
+    'The user can run the algorithm of structural-parametric adjustment of the fuzzy cognitive model.'
+  );

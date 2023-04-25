@@ -1,5 +1,5 @@
 use crate::models::{Session, User};
-use crate::response::{AppError, ServiceResult, ToServiceResult};
+use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::sessions;
 use crate::services::{password_services, user_services};
 use crate::types::{CredentialsType, DeviceType, OSType, ProductType, SessionType};

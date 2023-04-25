@@ -1,6 +1,6 @@
 use crate::models::{ProjectUser, ProjectUserStatus, ProjectUserStatusValue, User};
 use crate::pagination::Paginate;
-use crate::response::{AppError, ServiceResult, ToServiceResult};
+use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::{
     project_user_permissions, project_user_statuses, project_users, projects, users,
 };

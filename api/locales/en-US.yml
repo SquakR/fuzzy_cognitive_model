@@ -99,3 +99,6 @@ connection_not_control_error: "The connection is not a control."
 concept_constraint_range_error: "The constraint range `%{range}` does not match the concept value `%{value}`."
 
 connection_constraint_range_error: "The constraint range `%{range}` does not match the connection value `%{value}`."
+
+adjustment_plugin_is_not_enabled_error: "Structural-parametric adjustment with genetic algorithms plugin is not enabled."
+can_adjust_forbidden_error: "Insufficient permissions to run the algorithm of structural-parametric adjustment of the fuzzy cognitive model."
