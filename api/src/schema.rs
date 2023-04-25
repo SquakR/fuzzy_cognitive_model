@@ -103,6 +103,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    model_copies (id) {
+        id -> Int4,
+        model -> Jsonb,
+    }
+}
+
+diesel::table! {
     password_resets (id) {
         id -> Int4,
         user_id -> Int4,
@@ -262,6 +269,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     control_concepts,
     control_connections,
     email_confirmations,
+    model_copies,
     password_resets,
     permissions,
     plugin_dependencies,

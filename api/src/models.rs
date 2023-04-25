@@ -1,13 +1,14 @@
 use crate::schema::{
-    concepts, connections, email_confirmations, password_resets, permissions, plugin_dependencies,
-    plugins, project_plugins, project_user_permissions, project_user_statuses, project_users,
-    projects, sessions, users,
+    concepts, connections, email_confirmations, model_copies, password_resets, permissions,
+    plugin_dependencies, plugins, project_plugins, project_user_permissions, project_user_statuses,
+    project_users, projects, sessions, users,
 };
 use chrono::{DateTime, Utc};
 use diesel::{Associations, Identifiable, Queryable};
 use ipnetwork::IpNetwork;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Queryable, Identifiable, Clone)]
 pub struct User {
@@ -196,4 +197,11 @@ pub struct Connection {
     pub project_id: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Queryable, Identifiable)]
+#[diesel(table_name = model_copies)]
+pub struct ModelCopy {
+    pub id: i32,
+    pub model: Value,
 }
