@@ -63,6 +63,7 @@ diesel::table! {
         model_copy_id -> Int4,
         name -> Varchar,
         description -> Text,
+        max_model_time -> Int4,
         dynamic_model_type -> DynamicModelType,
         generation_size -> Int4,
         generation_save_interval -> Int4,

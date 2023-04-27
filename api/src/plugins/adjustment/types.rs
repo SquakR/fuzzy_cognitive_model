@@ -35,6 +35,8 @@ pub struct AdjustmentInType {
     pub name: String,
     /// Adjustment run description
     pub description: String,
+    /// Maximum model time
+    pub max_model_time: i32,
     /// Dynamics mode type
     pub dynamic_model_type: DynamicModelType,
     /// Generation size
@@ -57,6 +59,8 @@ pub struct AdjustmentRunOutType {
     pub name: String,
     /// Adjustment run description
     pub description: String,
+    /// Maximum model time
+    pub max_model_time: i32,
     /// Dynamics mode type
     pub dynamic_model_type: DynamicModelType,
     /// Generation size

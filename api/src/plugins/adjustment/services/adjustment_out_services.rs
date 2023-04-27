@@ -53,6 +53,7 @@ impl AdjustmentRunOutType {
             model_copy_id: adjustment_run.model_copy_id,
             name: adjustment_run.name,
             description: adjustment_run.description,
+            max_model_time: adjustment_run.max_model_time,
             dynamic_model_type: adjustment_run.dynamic_model_type,
             generation_size: adjustment_run.generation_size,
             generation_save_interval: adjustment_run.generation_save_interval,

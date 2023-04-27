@@ -7,6 +7,7 @@ CREATE TABLE adjustment_runs (
   FOREIGN KEY (model_copy_id) REFERENCES model_copies(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
+  max_model_time INTEGER NOT NULL,
   dynamic_model_type dynamic_model_type NOT NULL,
   generation_size INTEGER NOT NULL,
   generation_save_interval INTEGER NOT NULL,

@@ -49,7 +49,7 @@ pub async fn adjust(
     plugins: &Plugins,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<AdjustmentRunOutType>> {
-    let conn = &mut db::establish_connection();
+    let conn = db::establish_connection();
     adjustment_services::adjust(
         conn,
         plugins,

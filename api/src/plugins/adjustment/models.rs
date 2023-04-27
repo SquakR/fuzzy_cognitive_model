@@ -43,6 +43,7 @@ pub struct AdjustmentRun {
     pub model_copy_id: i32,
     pub name: String,
     pub description: String,
+    pub max_model_time: i32,
     pub dynamic_model_type: DynamicModelType,
     pub generation_size: i32,
     pub generation_save_interval: i32,
