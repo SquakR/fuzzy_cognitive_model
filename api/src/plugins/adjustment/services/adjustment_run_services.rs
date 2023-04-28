@@ -129,29 +129,39 @@ impl AdjustmentModel {
                         Some(value) => (connection.source_id, *value),
                         None => (connection.source_id, connection.value),
                     });
-                let current_value = current_state.get_mut(&concept.id).unwrap();
-                match dynamic_model_type {
-                    DynamicModelType::DeltaDelta => {
-                        *current_value += to_connections
-                            .map(|(source_id, value)| value * delta_state[&source_id])
-                            .sum::<f64>();
-                    }
-                    DynamicModelType::DeltaValue => {
-                        *current_value += to_connections
-                            .map(|(source_id, value)| value * previous_state[&source_id])
-                            .sum::<f64>();
-                    }
-                    DynamicModelType::ValueDelta => {
-                        *current_value = to_connections
-                            .map(|(source_id, value)| value * delta_state[&source_id])
-                            .sum::<f64>();
-                    }
-                    DynamicModelType::ValueValue => {
-                        *current_value = to_connections
-                            .map(|(source_id, value)| value * previous_state[&source_id])
-                            .sum::<f64>();
-                    }
-                };
+                if to_connections.clone().count() != 0 {
+                    let current_value = current_state.get_mut(&concept.id).unwrap();
+                    match dynamic_model_type {
+                        DynamicModelType::DeltaDelta => {
+                            *current_value += Self::normalize_value(
+                                to_connections
+                                    .map(|(source_id, value)| value * delta_state[&source_id])
+                                    .sum::<f64>(),
+                            );
+                        }
+                        DynamicModelType::DeltaValue => {
+                            *current_value += Self::normalize_value(
+                                to_connections
+                                    .map(|(source_id, value)| value * previous_state[&source_id])
+                                    .sum::<f64>(),
+                            );
+                        }
+                        DynamicModelType::ValueDelta => {
+                            *current_value = Self::normalize_value(
+                                to_connections
+                                    .map(|(source_id, value)| value * delta_state[&source_id])
+                                    .sum::<f64>(),
+                            );
+                        }
+                        DynamicModelType::ValueValue => {
+                            *current_value = Self::normalize_value(
+                                to_connections
+                                    .map(|(source_id, value)| value * previous_state[&source_id])
+                                    .sum::<f64>(),
+                            );
+                        }
+                    };
+                }
             }
             delta_state = Self::get_delta_state(&current_state, &previous_state);
             previous_state = current_state;
@@ -203,7 +213,15 @@ impl AdjustmentModel {
         ];
     }
     fn mutate_chromosome(&self, mut chromosome: Chromosome, rng: &mut ThreadRng) -> Chromosome {
-        if rng.gen::<f64>() < 0.5 {
+        if chromosome.connections.len() == 0 {
+            let concept = &self.control_concepts[rng.gen_range(0..self.control_concepts.len())];
+            *chromosome.concepts.get_mut(&concept.id).unwrap() = concept.generate_value(rng);
+        } else if chromosome.concepts.len() == 0 {
+            let connection =
+                &self.control_connections[rng.gen_range(0..self.control_connections.len())];
+            *chromosome.connections.get_mut(&connection.id).unwrap() =
+                connection.generate_value(rng);
+        } else if rng.gen::<f64>() < 0.5 {
             let concept = &self.control_concepts[rng.gen_range(0..self.control_concepts.len())];
             *chromosome.concepts.get_mut(&concept.id).unwrap() = concept.generate_value(rng);
         } else {
@@ -333,6 +351,15 @@ impl AdjustmentModel {
     }
     fn get_delta_state(state1: &State, state2: &State) -> State {
         State::from_iter(state1.iter().map(|(k, v)| (*k, v - state2[k])))
+    }
+    fn normalize_value(value: f64) -> f64 {
+        if value > 1.0 {
+            return 1.0;
+        }
+        if value <= 0.0 {
+            return 0.0;
+        }
+        value
     }
 }
 
