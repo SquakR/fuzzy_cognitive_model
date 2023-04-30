@@ -22,6 +22,14 @@ pub fn get_model(project_id: i32, user: User, plugins: &Plugins) -> PathResult<M
     model_services::get_model(conn, plugins, &user, project_id).to_path_result()
 }
 
+/// Get model copy
+#[openapi(tag = "model")]
+#[get("/model/<model_copy_id>")]
+pub fn get_model_copy(model_copy_id: i32, user: User) -> PathResult<ModelOutType> {
+    let conn = &mut db::establish_connection();
+    model_services::get_model_copy(conn, &user, model_copy_id).to_path_result()
+}
+
 /// Get model active users
 #[openapi(tag = "model")]
 #[get("/project/<project_id>/active_users")]

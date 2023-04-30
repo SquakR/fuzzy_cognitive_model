@@ -203,5 +203,6 @@ pub struct Connection {
 #[diesel(table_name = model_copies)]
 pub struct ModelCopy {
     pub id: i32,
+    pub project_id: i32,
     pub model: Value,
 }

@@ -162,6 +162,7 @@ diesel::table! {
 diesel::table! {
     model_copies (id) {
         id -> Int4,
+        project_id -> Int4,
         model -> Jsonb,
     }
 }
@@ -316,6 +317,7 @@ diesel::joinable!(connections -> projects (project_id));
 diesel::joinable!(control_concepts -> concepts (concept_id));
 diesel::joinable!(control_connections -> connections (connection_id));
 diesel::joinable!(email_confirmations -> users (user_id));
+diesel::joinable!(model_copies -> projects (project_id));
 diesel::joinable!(password_resets -> users (user_id));
 diesel::joinable!(project_plugins -> plugins (plugin_name));
 diesel::joinable!(project_plugins -> projects (project_id));

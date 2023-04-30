@@ -11,7 +11,7 @@ use schemars::{Map, Set};
 use serde_json::Value;
 
 /// Type of user (expert or researcher)
-#[derive(Serialize, JsonSchema)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserOutType {
     /// User identifier
@@ -185,7 +185,7 @@ pub struct ResetPasswordType {
 }
 
 /// Type of project
-#[derive(Serialize, JsonSchema)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectOutType {
     /// Project identifier
@@ -358,7 +358,7 @@ pub struct ModelActionType<T: Clone + Serialize + JsonSchema> {
 }
 
 /// Type of concept
-#[derive(Clone, Serialize, JsonSchema)]
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ConceptOutType {
     /// Concept identifier
@@ -468,7 +468,7 @@ pub struct ConceptOutDeleteType {
 }
 
 /// Type of connection
-#[derive(Clone, Serialize, JsonSchema)]
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ConnectionOutType {
     /// Connection identifier
@@ -539,7 +539,7 @@ pub struct ConnectionOutDeleteType {
 }
 
 /// Type of model
-#[derive(Serialize, JsonSchema)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ModelOutType {
     /// Model project

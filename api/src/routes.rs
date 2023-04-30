@@ -118,6 +118,7 @@ impl MountRoutes for Rocket<Build> {
                 project_routes::exclude_user,
                 project_routes::delete_project,
                 model_routes::get_model,
+                model_routes::get_model_copy,
                 model_routes::get_active_users,
                 model_routes::create_concept,
                 model_routes::change_concept_description,

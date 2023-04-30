@@ -56,6 +56,20 @@ pub fn get_model(
     Ok(model_out)
 }
 
+pub fn get_model_copy(
+    conn: &mut PgConnection,
+    user: &User,
+    model_copy_id: i32,
+) -> ServiceResult<ModelOutType> {
+    let model_copy = find_model_copy_by_id(conn, model_copy_id)
+        .to_service_result_find(String::from("model_copy_not_found_error"))?;
+    let project = project_services::find_project_by_id(conn, model_copy.project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_view_project(conn, &project, user)?;
+    let model_out = serde_json::from_value::<ModelOutType>(model_copy.model).unwrap();
+    Ok(model_out)
+}
+
 pub fn save_model_copy(
     conn: &mut PgConnection,
     plugins: &Plugins,
@@ -64,9 +78,21 @@ pub fn save_model_copy(
 ) -> ServiceResult<ModelCopy> {
     let model = get_model(conn, plugins, user, project_id)?;
     diesel::insert_into(model_copies::table)
-        .values(model_copies::model.eq(serde_json::to_value(model).unwrap()))
+        .values((
+            model_copies::project_id.eq(project_id),
+            model_copies::model.eq(serde_json::to_value(model).unwrap()),
+        ))
         .get_result::<ModelCopy>(conn)
         .to_service_result()
+}
+
+pub fn find_model_copy_by_id(
+    conn: &mut PgConnection,
+    model_copy_id: i32,
+) -> QueryResult<ModelCopy> {
+    model_copies::table
+        .filter(model_copies::id.eq(model_copy_id))
+        .get_result::<ModelCopy>(conn)
 }
 
 pub fn find_project_concepts(
