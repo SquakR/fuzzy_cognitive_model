@@ -128,11 +128,11 @@ pub fn filter_users<'a>(search: Option<String>) -> users::BoxedQuery<'a, Pg> {
 pub fn paginate_users(
     conn: &mut PgConnection,
     search: Option<String>,
-    pagination: PaginationInType,
+    pagination_in: PaginationInType,
 ) -> ServiceResult<PaginationOutType<UserOutType>> {
     let (users, total_pages) = filter_users(search)
-        .paginate(pagination.page as i64)
-        .per_page(pagination.per_page as i64)
+        .paginate(pagination_in.page as i64)
+        .per_page(pagination_in.per_page as i64)
         .load_and_count_pages::<User>(conn)
         .to_service_result()?;
     Ok(PaginationOutType {

@@ -1,7 +1,9 @@
-use super::super::models::{AdjustmentConceptValue, AdjustmentConnectionValue, AdjustmentRun};
+use super::super::models::{
+    AdjustmentConceptValue, AdjustmentConnectionValue, AdjustmentGeneration, AdjustmentRun,
+};
 use super::super::types::{
-    AdjustmentConceptValueOutType, AdjustmentConnectionValueOutType, AdjustmentRunOutType,
-    StopConditionType,
+    AdjustmentConceptValueOutType, AdjustmentConnectionValueOutType, AdjustmentGenerationOutType,
+    AdjustmentRunOutType, StopConditionType,
 };
 use crate::filter_date_time;
 use crate::models::User;
@@ -24,7 +26,7 @@ pub fn paginate_adjustment_runs(
     project_id: i32,
     search: Option<String>,
     created_at: Option<IntervalInType<DateTime<Utc>>>,
-    pagination: PaginationInType,
+    pagination_in: PaginationInType,
 ) -> ServiceResult<PaginationOutType<AdjustmentRunOutType>> {
     let project = project_services::find_project_by_id(conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
@@ -44,14 +46,49 @@ pub fn paginate_adjustment_runs(
         filter_date_time!(adjustment_runs::created_at, created_at, query);
     }
     let (adjustment_runs, total_pages) = query
-        .paginate(pagination.page as i64)
-        .per_page(pagination.per_page as i64)
+        .paginate(pagination_in.page as i64)
+        .per_page(pagination_in.per_page as i64)
         .load_and_count_pages::<AdjustmentRun>(conn)
         .to_service_result()?;
     Ok(PaginationOutType {
         data: AdjustmentRunOutType::from_adjustment_runs(conn, adjustment_runs)?,
         total_pages: total_pages as i32,
     })
+}
+
+pub fn paginate_adjustment_generations(
+    conn: &mut PgConnection,
+    user: &User,
+    adjustment_run_id: i32,
+    pagination_in: PaginationInType,
+) -> ServiceResult<PaginationOutType<AdjustmentGenerationOutType>> {
+    let adjustment_run = find_adjustment_run_by_id(conn, adjustment_run_id)
+        .to_service_result_find(String::from("adjustment_run_not_found_error"))?;
+    let project = project_services::find_project_by_id(conn, adjustment_run.project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_view_project(conn, &project, user)?;
+    let (generations, total_pages) = adjustment_generations::table
+        .filter(adjustment_generations::adjustment_run_id.eq(adjustment_run_id))
+        .paginate(pagination_in.page as i64)
+        .per_page(pagination_in.per_page as i64)
+        .load_and_count_pages::<AdjustmentGeneration>(conn)
+        .to_service_result()?;
+    Ok(PaginationOutType {
+        data: generations
+            .into_iter()
+            .map(AdjustmentGenerationOutType::from)
+            .collect(),
+        total_pages: total_pages as i32,
+    })
+}
+
+pub fn find_adjustment_run_by_id(
+    conn: &mut PgConnection,
+    adjustment_run_id: i32,
+) -> QueryResult<AdjustmentRun> {
+    adjustment_runs::table
+        .filter(adjustment_runs::id.eq(adjustment_run_id))
+        .get_result::<AdjustmentRun>(conn)
 }
 
 impl AdjustmentRunOutType {
@@ -262,6 +299,16 @@ impl From<(AdjustmentRun, Option<AdjustmentChromosomeGenerationOutType>)> for Ad
             },
             created_at: adjustment_run.created_at,
             result_chromosome,
+        }
+    }
+}
+
+impl From<AdjustmentGeneration> for AdjustmentGenerationOutType {
+    fn from(adjustment_generation: AdjustmentGeneration) -> Self {
+        Self {
+            id: adjustment_generation.id,
+            number: adjustment_generation.number,
+            fitness: adjustment_generation.fitness,
         }
     }
 }

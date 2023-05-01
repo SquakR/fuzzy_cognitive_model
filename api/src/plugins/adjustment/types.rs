@@ -86,8 +86,6 @@ pub struct AdjustmentGenerationOutType {
     pub number: i32,
     /// Adjustment generation average fitness
     pub fitness: f64,
-    /// Adjustment generation population
-    pub population: Vec<AdjustmentChromosomeOutType>,
 }
 
 /// Type of adjustment chromosome

@@ -101,7 +101,7 @@ pub fn paginate_project_users(
     user: &User,
     project_id: i32,
     statuses: Option<Vec<ProjectUserStatusValue>>,
-    seconnectionh: Option<String>,
+    search: Option<String>,
     pagination: PaginationInType,
 ) -> ServiceResult<PaginationOutType<ProjectUserType>> {
     let project = project_services::find_project_by_id(conn, project_id)
@@ -125,7 +125,7 @@ pub fn paginate_project_users(
             }
         }
     }
-    let (users, total_pages) = user_services::filter_users(seconnectionh)
+    let (users, total_pages) = user_services::filter_users(search)
         .inner_join(
             project_users::table
                 .inner_join(
