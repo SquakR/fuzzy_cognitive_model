@@ -3,8 +3,8 @@ use super::services::{
     adjustment_out_services, adjustment_services, concept_dynamic_model_services,
 };
 use super::types::{
-    AdjustmentGenerationOutType, AdjustmentInType, AdjustmentRunOutType, AdjustmentRunsInType,
-    ConceptDynamicModelOutType,
+    AdjustmentChromosomeOutType, AdjustmentGenerationOutType, AdjustmentInType,
+    AdjustmentRunOutType, AdjustmentRunsInType, ConceptDynamicModelOutType,
 };
 use crate::db;
 use crate::models::User;
@@ -121,6 +121,31 @@ pub fn get_adjustment_generations(
         conn,
         &user,
         adjustment_run_id,
+        pagination_in,
+    )
+    .to_path_result()
+}
+
+/// Get adjustment chromosomes
+#[openapi(tag = "adjustment")]
+#[get(
+    "/adjustment_generations/<adjustment_generation_id>/adjustment_chromosomes?<page>&<per_page>"
+)]
+pub fn get_adjustment_chromosomes(
+    adjustment_generation_id: i32,
+    page: Option<u16>,
+    per_page: Option<u16>,
+    user: User,
+) -> PathResult<PaginationOutType<AdjustmentChromosomeOutType>> {
+    let conn = &mut db::establish_connection();
+    let pagination_in = PaginationInType {
+        page: page.unwrap_or(1),
+        per_page: per_page.unwrap_or(15),
+    };
+    adjustment_out_services::paginate_adjustment_chromosomes(
+        conn,
+        &user,
+        adjustment_generation_id,
         pagination_in,
     )
     .to_path_result()

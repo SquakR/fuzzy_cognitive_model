@@ -137,7 +137,8 @@ impl MountRoutes for Rocket<Build> {
                 adjustment_routes::change_dynamic_model_type,
                 adjustment_routes::adjust,
                 adjustment_routes::get_adjustment_runs,
-                adjustment_routes::get_adjustment_generations
+                adjustment_routes::get_adjustment_generations,
+                adjustment_routes::get_adjustment_chromosomes
             ),
         )
     }
