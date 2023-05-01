@@ -10,7 +10,7 @@ use crate::types::{
     IntervalInType, PaginationInType, PaginationOutType, ProjectGroupFilterType, ProjectInType,
     ProjectOutType, UserOutType,
 };
-use crate::validation_error;
+use crate::{filter_date_time, validation_error};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::PgConnection;
@@ -52,25 +52,6 @@ pub fn find_project_by_id(conn: &mut PgConnection, project_id: i32) -> QueryResu
     projects::table.find(project_id).first::<Project>(conn)
 }
 
-macro_rules! filter_date_time {
-    ($column:expr, $value:expr, $query:expr) => {
-        if let Some(start) = $value.start {
-            $query = if $value.include_start {
-                $query.filter($column.ge(start))
-            } else {
-                $query.filter($column.gt(start))
-            };
-        }
-        if let Some(end) = $value.end {
-            $query = if $value.include_end {
-                $query.filter($column.le(end))
-            } else {
-                $query.filter($column.lt(end))
-            };
-        }
-    };
-}
-
 pub fn paginate_projects(
     conn: &mut PgConnection,
     user: &User,
@@ -102,7 +83,7 @@ pub fn paginate_projects(
         query = query.filter(
             projects::name
                 .ilike(like_pattern.to_owned())
-                .or(projects::description.ilike(like_pattern.to_owned())),
+                .or(projects::description.ilike(like_pattern)),
         );
     }
     query = match group {
@@ -131,12 +112,8 @@ pub fn paginate_projects(
         .per_page(pagination.per_page as i64)
         .load_and_count_pages::<Project>(conn)
         .to_service_result()?;
-    let mut data = vec![];
-    for project in projects {
-        data.push(ProjectOutType::from_project(conn, project)?);
-    }
     Ok(PaginationOutType {
-        data,
+        data: ProjectOutType::from_projects(conn, projects)?,
         total_pages: total_pages as i32,
     })
 }
@@ -388,7 +365,7 @@ impl ProjectOutType {
             .enumerate()
             .filter(|(_, (id, _))| *id == project_id)
             .map(|(i, _)| i)
-            .collect::<Vec<usize>>();
+            .collect::<Vec<_>>();
         let mut project_plugins = vec![];
         for index in plugin_indices.into_iter().rev() {
             project_plugins.push(plugins.remove(index).1)

@@ -1,11 +1,15 @@
 use super::models::DynamicModelType;
-use super::services::{adjustment_services, concept_dynamic_model_services};
-use super::types::{AdjustmentInType, AdjustmentRunOutType, ConceptDynamicModelOutType};
+use super::services::{
+    adjustment_out_services, adjustment_services, concept_dynamic_model_services,
+};
+use super::types::{
+    AdjustmentInType, AdjustmentRunOutType, AdjustmentRunsInType, ConceptDynamicModelOutType,
+};
 use crate::db;
 use crate::models::User;
 use crate::plugins::Plugins;
 use crate::response::{PathResult, ToPathResult};
-use crate::types::ModelActionType;
+use crate::types::{IntervalInType, ModelActionType, PaginationInType, PaginationOutType};
 use crate::web_socket::WebSocketProjectService;
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
@@ -59,5 +63,41 @@ pub async fn adjust(
         adjustment_in.into_inner(),
     )
     .await
+    .to_path_result()
+}
+
+/// Get adjustment runs
+#[openapi(tag = "adjustment")]
+#[get("/project/<project_id>/adjustment_runs?<adjustment_runs_in..>")]
+pub fn get_adjustment_runs(
+    project_id: i32,
+    adjustment_runs_in: AdjustmentRunsInType,
+    user: User,
+) -> PathResult<PaginationOutType<AdjustmentRunOutType>> {
+    let conn = &mut db::establish_connection();
+    let created_at = if adjustment_runs_in.created_at_start.is_some()
+        || adjustment_runs_in.created_at_end.is_some()
+    {
+        Some(IntervalInType {
+            start: adjustment_runs_in.created_at_start.map(|c| c.0),
+            include_start: adjustment_runs_in.created_at_include_start.unwrap_or(true),
+            end: adjustment_runs_in.created_at_end.map(|c| c.0),
+            include_end: adjustment_runs_in.created_at_include_end.unwrap_or(true),
+        })
+    } else {
+        None
+    };
+    let pagination = PaginationInType {
+        page: adjustment_runs_in.page.unwrap_or(1),
+        per_page: adjustment_runs_in.per_page.unwrap_or(15),
+    };
+    adjustment_out_services::paginate_adjustment_runs(
+        conn,
+        &user,
+        project_id,
+        adjustment_runs_in.search,
+        created_at,
+        pagination,
+    )
     .to_path_result()
 }

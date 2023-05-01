@@ -1,4 +1,5 @@
 use super::models::DynamicModelType;
+use crate::request::DateTimeWrapper;
 use chrono::{DateTime, Utc};
 use rocket::serde::{Deserialize, Serialize};
 use rocket_okapi::JsonSchema;
@@ -145,4 +146,29 @@ pub struct AdjustmentConnectionValueOutType {
     pub connection_id: i32,
     /// Connection value
     pub value: f64,
+}
+
+/// Input type for getting adjustment runs
+#[derive(FromForm, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AdjustmentRunsInType {
+    // Search string
+    pub search: Option<String>,
+    /// Start of created at interval
+    #[field(name = "createdAtStart")]
+    pub created_at_start: Option<DateTimeWrapper>,
+    /// Whether to include start to created at interval
+    #[field(name = "createdAtIncludeStart")]
+    pub created_at_include_start: Option<bool>,
+    /// End of created at interval
+    #[field(name = "createdAtEnd")]
+    pub created_at_end: Option<DateTimeWrapper>,
+    /// Whether to include end to created at interval
+    #[field(name = "createdAtIncludeEnd")]
+    pub created_at_include_end: Option<bool>,
+    /// Page number
+    pub page: Option<u16>,
+    /// Number of records per page
+    #[field(name = "perPage")]
+    pub per_page: Option<u16>,
 }

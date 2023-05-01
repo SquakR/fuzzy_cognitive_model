@@ -51,7 +51,7 @@ pub async fn adjust(
         &adjustment_model.adjustment_in,
     )?;
     let adjustment_run_id = adjustment_run.id;
-    let adjustment_run_out = AdjustmentRunOutType::from_adjustment(&mut conn, adjustment_run)?;
+    let adjustment_run_out = AdjustmentRunOutType::from_adjustment_run(&mut conn, adjustment_run)?;
     let model_action = ModelActionType::new(&project, String::from("adjust"), adjustment_run_out);
     project_service.notify(model_action.clone()).await;
     let handle = Handle::current();

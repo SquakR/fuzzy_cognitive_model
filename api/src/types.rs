@@ -310,7 +310,7 @@ pub struct ProjectsInType {
     /// Search string
     pub search: Option<String>,
     /// Is project archived
-    #[field(name = "isConnectionhived")]
+    #[field(name = "isArchived")]
     pub is_archived: Option<bool>,
     /// Start of created at interval
     #[field(name = "createdAtStart")]

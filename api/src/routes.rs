@@ -135,7 +135,8 @@ impl MountRoutes for Rocket<Build> {
                 concept_constraints_routes::change_concept_constraint,
                 connection_constraints_routes::change_connection_constraint,
                 adjustment_routes::change_dynamic_model_type,
-                adjustment_routes::adjust
+                adjustment_routes::adjust,
+                adjustment_routes::get_adjustment_runs
             ),
         )
     }

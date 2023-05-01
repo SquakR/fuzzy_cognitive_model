@@ -54,7 +54,7 @@ pub fn get_projects(
         } else {
             None
         };
-    let pagination_id = PaginationInType {
+    let pagination = PaginationInType {
         page: projects_in.page.unwrap_or(1),
         per_page: projects_in.per_page.unwrap_or(15),
     };
@@ -67,7 +67,7 @@ pub fn get_projects(
         projects_in.is_archived,
         created_at,
         updated_at,
-        pagination_id,
+        pagination,
     )
     .to_path_result()
 }

@@ -36,7 +36,7 @@ impl SaveResult for SaveResultServer {
             .get_result::<AdjustmentRun>(&mut self.conn)
             .unwrap();
         let adjustment_run_out =
-            match AdjustmentRunOutType::from_adjustment(&mut self.conn, adjustment_run) {
+            match AdjustmentRunOutType::from_adjustment_run(&mut self.conn, adjustment_run) {
                 Ok(adjustment_run_out) => adjustment_run_out,
                 Err(_) => unreachable!(),
             };
