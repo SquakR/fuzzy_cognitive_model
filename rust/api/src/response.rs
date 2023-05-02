@@ -82,7 +82,7 @@ impl<T> ToPathEmptyResult for ServiceResult<T> {
 }
 
 pub enum AppError {
-    ValidationError(Box<dyn Fn(&str) -> String>),
+    ValidationError(Box<dyn Fn(&str) -> String + Send>),
     DieselError(DieselError, Option<String>, Option<String>),
     ForbiddenError(String),
     NotFoundError(String),

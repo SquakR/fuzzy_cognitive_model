@@ -7,6 +7,7 @@ use super::types::{
     AdjustmentRunOutType, AdjustmentRunsInType, ConceptDynamicModelOutType,
 };
 use crate::db;
+use crate::locale::Locale;
 use crate::models::User;
 use crate::plugins::Plugins;
 use crate::response::{PathResult, ToPathResult};
@@ -51,6 +52,7 @@ pub async fn adjust(
     project_id: i32,
     adjustment_in: Json<AdjustmentInType>,
     user: User,
+    locale: &Locale,
     plugins: &Plugins,
     project_service: WebSocketProjectService,
 ) -> PathResult<ModelActionType<AdjustmentRunOutType>> {
@@ -60,6 +62,7 @@ pub async fn adjust(
         plugins,
         project_service,
         &user,
+        locale,
         project_id,
         adjustment_in.into_inner(),
     )

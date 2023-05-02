@@ -1,16 +1,16 @@
 #[macro_use]
 extern crate rocket;
 use dotenvy::dotenv;
-use fuzzy_cognitive_model::locale::LocaleFairing;
-use fuzzy_cognitive_model::plugins::{
+use fuzzy_cognitive_model_api::locale::LocaleFairing;
+use fuzzy_cognitive_model_api::plugins::{
     AdjustmentPlugin, ConceptConstraintsPlugin, ConnectionConstraintsPlugin, ControlConceptsPlugin,
     ControlConnectionsPlugin, PluginsFairing, TargetConceptsPlugin,
 };
-use fuzzy_cognitive_model::response;
-use fuzzy_cognitive_model::routes::MountRoutes;
-use fuzzy_cognitive_model::storage::Storage;
-use fuzzy_cognitive_model::utils;
-use fuzzy_cognitive_model::web_socket::WebSocketListener;
+use fuzzy_cognitive_model_api::response;
+use fuzzy_cognitive_model_api::routes::MountRoutes;
+use fuzzy_cognitive_model_api::storage::Storage;
+use fuzzy_cognitive_model_api::utils;
+use fuzzy_cognitive_model_api::web_socket::WebSocketListener;
 use rocket::catcher::Catcher;
 use rocket_cors::AllowedOrigins;
 use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};

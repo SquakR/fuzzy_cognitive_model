@@ -1,0 +1,13 @@
+[package]
+name = "fuzzy_cognitive_model_common"
+version = "0.1.0"
+authors = ["squak <squakrazv@gmail.com>"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-trait = "0.1.68"
+serde = { version = "1.0.155", features = ["derive", "rc"] }
+rand = "0.8.5"
+ordered-float = "3.7.0"

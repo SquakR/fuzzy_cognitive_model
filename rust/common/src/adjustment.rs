@@ -1,14 +1,46 @@
-use super::super::models::DynamicModelType;
-use super::super::types::AdjustmentInType;
-use super::adjustment_save_result_services::SaveResult;
+use async_trait::async_trait;
 use ordered_float::OrderedFloat;
 use rand::rngs::ThreadRng;
 use rand::Rng;
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+#[async_trait]
+pub trait SaveResult<T, E> {
+    async fn save_result(&mut self, result_chromosome: &Chromosome) -> Result<T, E>;
+    async fn save_generation(&mut self, generation: &mut Generation, number: i32) -> Result<T, E>;
+}
+
+#[derive(Clone, Deserialize)]
+pub enum DynamicModel {
+    DeltaDelta,
+    DeltaValue,
+    ValueDelta,
+    ValueValue,
+}
+
+#[derive(Deserialize)]
+pub struct StopCondition {
+    pub max_generations: i32,
+    pub max_without_improvements: i32,
+    pub error: f64,
+}
+
+#[derive(Deserialize)]
+pub struct AdjustmentInput {
+    pub name: String,
+    pub description: String,
+    pub max_model_time: i32,
+    pub dynamic_model: DynamicModel,
+    pub generation_size: i32,
+    pub generation_save_interval: i32,
+    pub stop_condition: StopCondition,
+}
+
+#[derive(Deserialize)]
 pub struct AdjustmentModel {
-    pub adjustment_in: AdjustmentInType,
+    pub adjustment_input: AdjustmentInput,
     pub concepts_map: HashMap<i32, Arc<Concept>>,
     pub control_concepts: Vec<Arc<Concept>>,
     pub target_concepts: Vec<Arc<Concept>>,
@@ -17,6 +49,7 @@ pub struct AdjustmentModel {
     pub control_connections: Vec<Arc<Connection>>,
 }
 
+#[derive(Deserialize)]
 pub struct Concept {
     pub id: i32,
     pub value: f64,
@@ -24,9 +57,10 @@ pub struct Concept {
     pub is_target: bool,
     pub target_value: Option<f64>,
     pub constraint: Option<Constraint>,
-    pub dynamic_model_type: Option<DynamicModelType>,
+    pub dynamic_model: Option<DynamicModel>,
 }
 
+#[derive(Deserialize)]
 pub struct Connection {
     pub id: i32,
     pub value: f64,
@@ -36,6 +70,7 @@ pub struct Connection {
     pub constraint: Option<Constraint>,
 }
 
+#[derive(Deserialize)]
 pub struct Constraint {
     pub min_value: f64,
     pub include_min_value: bool,
@@ -60,33 +95,37 @@ const ALPHA: f64 = 0.5;
 const FITNESS_DIFF: f64 = 0.001;
 
 impl AdjustmentModel {
-    pub async fn run<S>(self, mut save_result: S) -> Chromosome
+    pub async fn run<S, T, E>(self, mut save_result: S) -> Result<Chromosome, E>
     where
-        S: SaveResult,
+        S: SaveResult<T, E>,
     {
         let mut without_improvements = 0;
         let mut current_generation = self.create_first_generation();
         let mut generation_number = 0;
         let mut is_generation_saved = false;
-        while generation_number < self.adjustment_in.stop_condition.max_generations
-            && without_improvements < self.adjustment_in.stop_condition.max_without_improvements
+        while generation_number < self.adjustment_input.stop_condition.max_generations
+            && without_improvements
+                < self
+                    .adjustment_input
+                    .stop_condition
+                    .max_without_improvements
         {
-            if generation_number % self.adjustment_in.generation_save_interval == 0 {
+            if generation_number % self.adjustment_input.generation_save_interval == 0 {
                 save_result
                     .save_generation(&mut current_generation, generation_number + 1)
-                    .await;
+                    .await?;
                 is_generation_saved = true;
             }
             let best_chromosome_fitness = Self::get_best_chromosome(&current_generation).fitness;
-            if 1.0 / best_chromosome_fitness < self.adjustment_in.stop_condition.error {
+            if 1.0 / best_chromosome_fitness < self.adjustment_input.stop_condition.error {
                 if !is_generation_saved {
                     save_result
                         .save_generation(&mut current_generation, generation_number + 1)
-                        .await;
+                        .await?;
                 }
                 let best_chromosome = Self::get_best_chromosome(&current_generation);
-                save_result.save_result(best_chromosome).await;
-                return best_chromosome.clone();
+                save_result.save_result(best_chromosome).await?;
+                return Ok(best_chromosome.clone());
             }
             let next_generation = self.create_next_generation(&current_generation);
             generation_number += 1;
@@ -101,11 +140,11 @@ impl AdjustmentModel {
         if !is_generation_saved {
             save_result
                 .save_generation(&mut current_generation, generation_number + 1)
-                .await;
+                .await?;
         }
         let best_chromosome = Self::get_best_chromosome(&current_generation);
-        save_result.save_result(best_chromosome).await;
-        best_chromosome.clone()
+        save_result.save_result(best_chromosome).await?;
+        Ok(best_chromosome.clone())
     }
     fn get_chromosome_fitness(
         &self,
@@ -114,13 +153,13 @@ impl AdjustmentModel {
     ) -> f64 {
         let mut previous_state = self.get_initial_state(concepts);
         let mut delta_state = previous_state.clone();
-        for _ in 0..self.adjustment_in.max_model_time {
+        for _ in 0..self.adjustment_input.max_model_time {
             let mut current_state = previous_state.clone();
             for concept in self.concepts_map.values() {
                 let dynamic_model_type = concept
-                    .dynamic_model_type
+                    .dynamic_model
                     .as_ref()
-                    .unwrap_or(&self.adjustment_in.dynamic_model_type);
+                    .unwrap_or(&self.adjustment_input.dynamic_model);
                 let to_connections = self
                     .connections_map
                     .values()
@@ -132,28 +171,28 @@ impl AdjustmentModel {
                 if to_connections.clone().count() != 0 {
                     let current_value = current_state.get_mut(&concept.id).unwrap();
                     match dynamic_model_type {
-                        DynamicModelType::DeltaDelta => {
+                        DynamicModel::DeltaDelta => {
                             *current_value += Self::normalize_value(
                                 to_connections
                                     .map(|(source_id, value)| value * delta_state[&source_id])
                                     .sum::<f64>(),
                             );
                         }
-                        DynamicModelType::DeltaValue => {
+                        DynamicModel::DeltaValue => {
                             *current_value += Self::normalize_value(
                                 to_connections
                                     .map(|(source_id, value)| value * previous_state[&source_id])
                                     .sum::<f64>(),
                             );
                         }
-                        DynamicModelType::ValueDelta => {
+                        DynamicModel::ValueDelta => {
                             *current_value = Self::normalize_value(
                                 to_connections
                                     .map(|(source_id, value)| value * delta_state[&source_id])
                                     .sum::<f64>(),
                             );
                         }
-                        DynamicModelType::ValueValue => {
+                        DynamicModel::ValueValue => {
                             *current_value = Self::normalize_value(
                                 to_connections
                                     .map(|(source_id, value)| value * previous_state[&source_id])
@@ -185,7 +224,7 @@ impl AdjustmentModel {
         rng: &mut ThreadRng,
     ) -> Vec<&'a Chromosome> {
         let mut parents = Vec::new();
-        for _ in 0..self.adjustment_in.generation_size {
+        for _ in 0..self.adjustment_input.generation_size {
             let candidate1 =
                 &generation.chromosomes[rng.gen_range(0..generation.chromosomes.len())];
             let candidate2 =
@@ -235,7 +274,7 @@ impl AdjustmentModel {
     fn create_first_generation(&self) -> Generation {
         let mut rng = rand::thread_rng();
         let mut chromosomes = Vec::new();
-        for _ in 0..self.adjustment_in.generation_size {
+        for _ in 0..self.adjustment_input.generation_size {
             chromosomes.push(Self::create_random_chromosome(self, &mut rng));
         }
         let fitness = Self::get_generation_fitness(&chromosomes);

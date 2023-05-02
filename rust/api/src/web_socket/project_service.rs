@@ -2,7 +2,7 @@ use super::listener::ProjectConnections;
 use crate::models::User;
 use crate::response::{ServiceResult, ToServiceResult};
 use crate::services::{permission_services, project_services, user_services};
-use crate::types::ModelActionType;
+use crate::types::{ModelActionErrorType, ModelActionType};
 use diesel::PgConnection;
 use futures_util::SinkExt;
 use schemars::JsonSchema;
@@ -82,11 +82,19 @@ impl WebSocketProjectService {
         T: Clone + Serialize + JsonSchema,
     {
         let message = Message::Text(serde_json::to_string(&model_action).unwrap());
+        self.send_message(message, model_action.project_id).await;
+    }
+    pub async fn notify_error(&self, model_action_error: ModelActionErrorType) -> () {
+        let message = Message::Text(serde_json::to_string(&model_action_error).unwrap());
+        self.send_message(message, model_action_error.project_id)
+            .await;
+    }
+    pub async fn send_message(&self, message: Message, project_id: i32) -> () {
         for connection_sender in self
             .project_connections
             .lock()
             .await
-            .get_mut(&model_action.project_id)
+            .get_mut(&project_id)
             .unwrap_or(&mut vec![])
         {
             connection_sender

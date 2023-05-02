@@ -357,6 +357,18 @@ pub struct ModelActionType<T: Clone + Serialize + JsonSchema> {
     pub data: T,
 }
 
+/// Type of model error
+#[derive(Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelActionErrorType {
+    // Project identifier
+    pub project_id: i32,
+    /// Action error name
+    pub name: String,
+    /// Action error message
+    pub message: String,
+}
+
 /// Type of concept
 #[derive(Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

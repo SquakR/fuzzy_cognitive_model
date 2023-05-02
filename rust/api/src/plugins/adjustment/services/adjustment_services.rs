@@ -1,9 +1,9 @@
 use super::super::models::{AdjustmentRun, DynamicModelType};
 use super::super::types::{AdjustmentInType, AdjustmentRunOutType};
-use super::adjustment_run_services::{AdjustmentModel, Concept, Connection, Constraint};
 use super::adjustment_save_result_services::SaveResultServer;
 use super::permission_services;
 use crate::forbidden_error;
+use crate::locale::Locale;
 use crate::models::User;
 use crate::plugins::Plugins;
 use crate::response::{ServiceResult, ToServiceResult};
@@ -12,10 +12,13 @@ use crate::schema::{
     connections, control_concepts, control_connections, target_concepts,
 };
 use crate::services::{model_services, project_services};
-use crate::types::ModelActionType;
+use crate::types::{ModelActionErrorType, ModelActionType};
 use crate::web_socket::WebSocketProjectService;
 use diesel::prelude::*;
 use diesel::PgConnection;
+use fuzzy_cognitive_model_common::adjustment::{
+    AdjustmentInput, AdjustmentModel, Concept, Connection, Constraint, DynamicModel, StopCondition,
+};
 use rocket::tokio::runtime::Handle;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -26,6 +29,7 @@ pub async fn adjust(
     plugins: &Plugins,
     project_service: WebSocketProjectService,
     user: &User,
+    locale: &Locale,
     project_id: i32,
     adjustment_in: AdjustmentInType,
 ) -> ServiceResult<ModelActionType<AdjustmentRunOutType>> {
@@ -48,23 +52,33 @@ pub async fn adjust(
         &mut conn,
         project_id,
         model_copy.id,
-        &adjustment_model.adjustment_in,
+        &adjustment_model.adjustment_input,
     )?;
     let adjustment_run_id = adjustment_run.id;
     let adjustment_run_out = AdjustmentRunOutType::from_adjustment_run(&mut conn, adjustment_run)?;
     let model_action = ModelActionType::new(&project, String::from("adjust"), adjustment_run_out);
     project_service.notify(model_action.clone()).await;
     let handle = Handle::current();
+    let locale = locale.get_locale();
     thread::spawn(move || {
         handle.spawn(async move {
-            adjustment_model
+            let project_service_copy = project_service.clone();
+            if let Err(app_error) = adjustment_model
                 .run(SaveResultServer {
                     conn,
-                    project_id,
                     adjustment_run_id,
                     project_service,
                 })
-                .await;
+                .await
+            {
+                let model_action_error = ModelActionErrorType::new(
+                    project_id,
+                    String::from("adjust_error"),
+                    app_error,
+                    locale,
+                );
+                project_service_copy.notify_error(model_action_error).await;
+            }
         })
     });
     Ok(model_action)
@@ -108,7 +122,7 @@ fn get_adjustment_model(
         .cloned()
         .collect();
     Ok(AdjustmentModel {
-        adjustment_in,
+        adjustment_input: AdjustmentInput::from(adjustment_in),
         concepts_map,
         control_concepts,
         target_concepts,
@@ -122,22 +136,25 @@ fn create_adjustment_run(
     conn: &mut PgConnection,
     project_id: i32,
     model_copy_id: i32,
-    adjustment_in: &AdjustmentInType,
+    adjustment_input: &AdjustmentInput,
 ) -> ServiceResult<AdjustmentRun> {
     diesel::insert_into(adjustment_runs::table)
         .values((
             adjustment_runs::project_id.eq(project_id),
             adjustment_runs::model_copy_id.eq(model_copy_id),
-            adjustment_runs::name.eq(&adjustment_in.name),
-            adjustment_runs::description.eq(&adjustment_in.description),
-            adjustment_runs::max_model_time.eq(&adjustment_in.max_model_time),
-            adjustment_runs::dynamic_model_type.eq(&adjustment_in.dynamic_model_type),
-            adjustment_runs::generation_size.eq(&adjustment_in.generation_size),
-            adjustment_runs::generation_save_interval.eq(&adjustment_in.generation_save_interval),
-            adjustment_runs::max_generations.eq(&adjustment_in.stop_condition.max_generations),
+            adjustment_runs::name.eq(&adjustment_input.name),
+            adjustment_runs::description.eq(&adjustment_input.description),
+            adjustment_runs::max_model_time.eq(&adjustment_input.max_model_time),
+            adjustment_runs::dynamic_model_type.eq(DynamicModelType::from(
+                adjustment_input.dynamic_model.clone(),
+            )),
+            adjustment_runs::generation_size.eq(&adjustment_input.generation_size),
+            adjustment_runs::generation_save_interval
+                .eq(&adjustment_input.generation_save_interval),
+            adjustment_runs::max_generations.eq(&adjustment_input.stop_condition.max_generations),
             adjustment_runs::max_without_improvements
-                .eq(&adjustment_in.stop_condition.max_without_improvements),
-            adjustment_runs::error.eq(&adjustment_in.stop_condition.error),
+                .eq(&adjustment_input.stop_condition.max_without_improvements),
+            adjustment_runs::error.eq(&adjustment_input.stop_condition.error),
         ))
         .get_result::<AdjustmentRun>(conn)
         .to_service_result()
@@ -209,7 +226,7 @@ fn get_concepts(conn: &mut PgConnection, project_id: i32) -> ServiceResult<Vec<A
                     is_target,
                     target_value,
                     constraint,
-                    dynamic_model_type,
+                    dynamic_model: dynamic_model_type.map(DynamicModel::from),
                 })
             },
         )
@@ -275,4 +292,44 @@ fn get_connections(
         )
         .collect::<Vec<_>>();
     Ok(connections)
+}
+
+impl From<DynamicModelType> for DynamicModel {
+    fn from(dynamic_model_type: DynamicModelType) -> Self {
+        match dynamic_model_type {
+            DynamicModelType::DeltaDelta => Self::DeltaDelta,
+            DynamicModelType::DeltaValue => Self::DeltaValue,
+            DynamicModelType::ValueDelta => Self::ValueDelta,
+            DynamicModelType::ValueValue => Self::ValueValue,
+        }
+    }
+}
+
+impl From<DynamicModel> for DynamicModelType {
+    fn from(dynamic_model: DynamicModel) -> Self {
+        match dynamic_model {
+            DynamicModel::DeltaDelta => Self::DeltaDelta,
+            DynamicModel::DeltaValue => Self::DeltaValue,
+            DynamicModel::ValueDelta => Self::ValueDelta,
+            DynamicModel::ValueValue => Self::ValueValue,
+        }
+    }
+}
+
+impl From<AdjustmentInType> for AdjustmentInput {
+    fn from(adjustment_in: AdjustmentInType) -> Self {
+        Self {
+            name: adjustment_in.name,
+            description: adjustment_in.description,
+            max_model_time: adjustment_in.max_model_time,
+            dynamic_model: DynamicModel::from(adjustment_in.dynamic_model_type),
+            generation_size: adjustment_in.generation_size,
+            generation_save_interval: adjustment_in.generation_save_interval,
+            stop_condition: StopCondition {
+                max_generations: adjustment_in.stop_condition.max_generations,
+                max_without_improvements: adjustment_in.stop_condition.max_without_improvements,
+                error: adjustment_in.stop_condition.error,
+            },
+        }
+    }
 }

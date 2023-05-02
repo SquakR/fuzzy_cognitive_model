@@ -1,9 +1,18 @@
 {
   "folders": [
     {
-      "path": "api"
+      "path": "rust"
+    },
+	{
+      "path": "rust/common"
     },
     {
+      "path": "rust/api"
+    },
+    {
+      "path": "rust/wasm"
+    },
+	{
       "path": "web"
     },
     {
@@ -43,6 +52,7 @@
     "cSpell.words": [
       "Artem",
       "binascii",
+      "bindgen",
       "bulma",
       "chrono",
       "composables",

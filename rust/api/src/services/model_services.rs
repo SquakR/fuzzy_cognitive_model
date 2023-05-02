@@ -2,21 +2,22 @@ use crate::models::{
     Concept, ConceptValueType, Connection, ConnectionValueType, ModelCopy, Project, User,
 };
 use crate::plugins::{ChangeConceptValueExtra, ChangeConnectionValueExtra, Plugins};
-use crate::response::{ServiceResult, ToServiceResult};
+use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{concepts, connections, model_copies, projects};
 use crate::services::{permission_services, project_services};
 use crate::types::{
     ConceptInChangeDescriptionType, ConceptInCreateType, ConceptInMoveType,
     ConceptOutChangeDescriptionType, ConceptOutChangeValueType, ConceptOutDeleteType,
     ConceptOutMoveType, ConceptOutType, ConnectionInCreateType, ConnectionOutChangeDescriptionType,
-    ConnectionOutChangeValueType, ConnectionOutDeleteType, ConnectionOutType, ModelActionType,
-    ModelOutType, ProjectOutType,
+    ConnectionOutChangeValueType, ConnectionOutDeleteType, ConnectionOutType, ModelActionErrorType,
+    ModelActionType, ModelOutType, ProjectOutType,
 };
 use crate::validation_error;
 use crate::web_socket::WebSocketProjectService;
 use chrono::DateTime;
 use chrono::Utc;
 use diesel::prelude::*;
+use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::Connection as DieselConnection;
 use diesel::PgConnection;
 use schemars::JsonSchema;
@@ -576,6 +577,40 @@ where
             project_updated_at: project.updated_at,
             name,
             data,
+        }
+    }
+}
+
+impl ModelActionErrorType {
+    pub fn new(project_id: i32, name: String, app_error: AppError, locale: String) -> Self {
+        Self {
+            project_id,
+            name,
+            message: match app_error {
+                AppError::ValidationError(get_message) => get_message(&locale),
+                AppError::DieselError(diesel_error, not_found_key, unique_error_key) => {
+                    match diesel_error {
+                        DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
+                            t!(&unique_error_key.unwrap(), locale = &locale)
+                        }
+                        DieselError::NotFound => {
+                            t!(&not_found_key.unwrap(), locale = &locale)
+                        }
+                        _ => {
+                            t!("internal_server_error", locale = &locale)
+                        }
+                    }
+                }
+                AppError::ForbiddenError(forbidden_key) => {
+                    t!(&forbidden_key, locale = &locale)
+                }
+                AppError::NotFoundError(not_found_key) => {
+                    t!(&not_found_key, locale = &locale)
+                }
+                AppError::InternalServerError => {
+                    t!("internal_server_error", locale = &locale)
+                }
+            },
         }
     }
 }
