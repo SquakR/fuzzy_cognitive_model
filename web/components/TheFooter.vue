@@ -1,20 +1,14 @@
 <template>
-  <footer class="footer">
-    <div class="content has-text-centered">
-      <p>
-        <span v-html="t('copyright', { years })" />
-        <br />
-        <span>{{ t('version', { version }) }}</span>
-      </p>
-    </div>
-  </footer>
+  <VFooter class="the-footer__footer" color="indigo" app>
+    <div v-html="t('copyright', { years })" />
+    <div>{{ t('version', { version }) }}</div>
+  </VFooter>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
-
+const { t } = useI18n({})
 const version = ref('0.1.0')
 const years = ref('2022-2023')
 </script>
@@ -32,3 +26,11 @@ const years = ref('2022-2023')
   "version": "Версия: {version}"
 }
 </i18n>
+
+<style lang="sass">
+.the-footer__footer
+  width: 100%
+  display: flex
+  flex-direction: column
+  align-items: center
+</style>

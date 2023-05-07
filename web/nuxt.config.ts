@@ -3,9 +3,12 @@ import VueI18nPlugin from '@intlify/unplugin-vue-i18n'
 
 export default defineNuxtConfig({
   css: [
-    '@fortawesome/fontawesome-svg-core/styles.css',
-    'assets/styles/main.sass',
+    'vuetify/lib/styles/main.sass',
+    '@mdi/font/css/materialdesignicons.min.css',
   ],
+  build: {
+    transpile: ['vuetify'],
+  },
   vite: {
     plugins: [VueI18nPlugin.vite({})],
   },
