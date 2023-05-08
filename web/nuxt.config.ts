@@ -17,5 +17,12 @@ export default defineNuxtConfig({
       API_HTTP_BASE_URL: process.env.API_HTTP_BASE_URL,
     },
   },
+  typescript: {
+    tsConfig: {
+      compilerOptions: {
+        types: ['vuetify'],
+      },
+    },
+  },
   modules: ['@vueuse/nuxt', '@pinia/nuxt'],
 })

@@ -1,11 +1,10 @@
 <template>
-  <VCard>
-    <VLayout>
-      <TheAppBar />
-      <VMain>
-        <NuxtPage />
-      </VMain>
-      <TheFooter />
-    </VLayout>
-  </VCard>
+  <VLayout>
+    <TheAppBar />
+    <VMain>
+      <NuxtPage />
+      <TheGlobalMessage />
+    </VMain>
+    <TheFooter />
+  </VLayout>
 </template>

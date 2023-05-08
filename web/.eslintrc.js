@@ -26,9 +26,21 @@ module.exports = {
 
   overrides: [
     {
-      files: ['pages/*.vue', 'layouts/*.vue'],
+      files: ['pages/**/*.vue', 'layouts/*.vue'],
       rules: {
         'vue/multi-word-component-names': 'off',
+      },
+    },
+    {
+      files: ['components/*.vue'],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+      },
+    },
+    {
+      files: ['composables/*.ts'],
+      rules: {
+        '@typescript-eslint/ban-ts-comment': 'off',
       },
     },
   ],

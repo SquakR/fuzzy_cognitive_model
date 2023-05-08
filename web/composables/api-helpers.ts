@@ -18,6 +18,7 @@ export const useLocalLazyFetch: typeof useLazyFetch = (request, opts) => {
 
 export const localFetch = <T>(request: FetchRequest, opts?: FetchOptions) => {
   const config = useRuntimeConfig()
+  // @ts-ignore
   return $fetch<T>(request, {
     baseURL: config.public.API_HTTP_BASE_URL,
     ...opts,

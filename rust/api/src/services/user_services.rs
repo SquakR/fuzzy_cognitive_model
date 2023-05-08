@@ -27,7 +27,10 @@ pub async fn create_user(
     }
     let mut avatar = None;
     if let Some(avatar_file) = user_in.avatar.take() {
-        if avatar_file.len() > 0 {
+        if avatar_file.content_type().is_some()
+            && avatar_file.name().is_some()
+            && avatar_file.len() > 0
+        {
             avatar = Some(storage.add_user_avatar(avatar_file).await?);
         }
     }

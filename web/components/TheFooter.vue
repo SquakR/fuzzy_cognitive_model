@@ -13,7 +13,7 @@ const version = ref('0.1.0')
 const years = ref('2022-2023')
 </script>
 
-<i18n locale="en-ES" lang="json">
+<i18n locale="en-US" lang="json">
 {
   "copyright": "Copyright &#169; Orlov Artem {years}",
   "version": "Version: {version}"
