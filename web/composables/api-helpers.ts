@@ -1,26 +1,18 @@
 import { FetchRequest, FetchOptions } from 'ofetch'
+import { useLocaleStore } from '~/store'
 
-export const useLocalFetch: typeof useFetch = (request, opts) => {
+export const useLocalFetchFunc = () => {
   const config = useRuntimeConfig()
-  return useFetch(request, {
-    baseURL: config.public.API_HTTP_BASE_URL,
-    ...opts,
-  })
-}
-
-export const useLocalLazyFetch: typeof useLazyFetch = (request, opts) => {
-  const config = useRuntimeConfig()
-  return useLazyFetch(request, {
-    baseURL: config.public.API_HTTP_BASE_URL,
-    ...opts,
-  })
-}
-
-export const localFetch = <T>(request: FetchRequest, opts?: FetchOptions) => {
-  const config = useRuntimeConfig()
-  // @ts-ignore
-  return $fetch<T>(request, {
-    baseURL: config.public.API_HTTP_BASE_URL,
-    ...opts,
-  })
+  const storeLocale = useLocaleStore()
+  return <T>(request: FetchRequest, opts?: FetchOptions) => {
+    // @ts-ignore
+    return $fetch<T>(request, {
+      baseURL: config.public.API_HTTP_BASE_URL,
+      headers: {
+        'Accept-Language': storeLocale.locale,
+      },
+      credentials: 'include',
+      ...opts,
+    })
+  }
 }

@@ -15,11 +15,10 @@
         <BaseTextField :label="t('secondName')" name="secondName" clearable />
         <BaseTextField :label="t('lastName')" name="lastName" />
         <BaseFileInput :label="t('avatar')" name="avatar" accept="image/*" />
-        <BasePasswordField :label="t('password')" name="password" clearable />
+        <BasePasswordField :label="t('password')" name="password" />
         <BasePasswordField
           :label="t('passwordConfirmation')"
           name="passwordConfirmation"
-          clearable
         />
       </BaseForm>
     </div>

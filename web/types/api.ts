@@ -32,3 +32,39 @@ export interface UseInChangeType {
   avatar: File | null
   resetAvatar: boolean
 }
+
+export interface DeviceType {
+  name: string | null
+  brand: string | null
+  model: string | null
+}
+
+export interface OSType {
+  name: string | null
+  major: string | null
+  minor: string | null
+  patch: string | null
+  patch_minor: string | null
+}
+
+export interface ProductType {
+  name: string | null
+  major: string | null
+  minor: string | null
+  patch: string | null
+}
+
+export interface SessionType {
+  id: number
+  isCurrent: boolean
+  createdAt: string
+  ipAddress: string
+  device: DeviceType
+  os: OSType
+  product: ProductType
+}
+
+export interface CredentialsType {
+  username: string
+  password: string
+}

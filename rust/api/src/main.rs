@@ -31,6 +31,7 @@ fn rocket() -> _ {
     );
     let cors = rocket_cors::CorsOptions {
         allowed_origins,
+        allow_credentials: true,
         ..Default::default()
     }
     .to_cors()

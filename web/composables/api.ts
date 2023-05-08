@@ -1,5 +1,10 @@
 import { useLocaleStore } from '~/store'
-import { UserInCreateType, UserOutType, UseInChangeType } from '~/types'
+import {
+  UserInCreateType,
+  UserOutType,
+  CredentialsType,
+  SessionType,
+} from '~/types'
 
 export const useCreateUser = () => {
   const config = useRuntimeConfig()
@@ -27,35 +32,12 @@ export const useCreateUser = () => {
   }
 }
 
-export const getMe = (locale: string) => {
-  try {
-    return localFetch<UserOutType>('/me', {
-      headers: {
-        'Accept-Language': locale,
-      },
-    })
-  } catch {
-    return null
-  }
-}
-
-export const changeMe = async (userIn: UseInChangeType, locale: string) => {
-  const formData = new FormData()
-  for (const [name, value] of Object.entries(userIn)) {
-    formData.append(name, value)
-  }
-  const response = await fetch('/user', {
-    method: 'PUT',
-    headers: {
-      'Accept-Language': locale,
-    },
-    body: formData,
-  })
-  if (!response.ok) {
-    throw createError({
-      statusCode: response.status,
-      statusMessage: response.statusText,
+export const useSignIn = () => {
+  const fetch = useLocalFetchFunc()
+  return async (credentials: CredentialsType) => {
+    return fetch<SessionType>('/sign_in', {
+      method: 'POST',
+      body: credentials,
     })
   }
-  return (await response.json()) as UserOutType
 }
