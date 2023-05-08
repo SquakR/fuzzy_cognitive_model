@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { BreadcrumbItem } from '~/types/base-breadcrumbs'
+import { BreadcrumbItem } from '~/types'
 import { useI18n } from 'vue-i18n'
 
 export interface Props {

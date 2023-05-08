@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { useLocaleStore } from '~/store'
+import { useUserStore } from '~/store'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n({})
@@ -51,12 +51,15 @@ const locales = [
   { text: 'English', value: 'en-US' },
   { text: 'Russian', value: 'ru-RU' },
 ]
-const storeLocale = useLocaleStore()
+const userStore = useUserStore()
 const selectedLocale = computed({
-  get: () => [storeLocale.locale],
+  get: () => [userStore.locale],
   set: (value) => {
-    storeLocale.locale = value[0]
+    userStore.locale = value[0]
   },
+})
+onMounted(() => {
+  userStore.updateLocale()
 })
 </script>
 

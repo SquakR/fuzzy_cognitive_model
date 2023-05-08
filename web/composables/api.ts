@@ -1,43 +1,38 @@
-import { useLocaleStore } from '~/store'
 import {
   UserInCreateType,
   UserOutType,
   CredentialsType,
   SessionType,
+  LocalFetchFuncOptions,
 } from '~/types'
 
-export const useCreateUser = () => {
-  const config = useRuntimeConfig()
-  const storeLocale = useLocaleStore()
+export const useCreateUser = (opts: LocalFetchFuncOptions<UserOutType>) => {
+  const fetch = useLocalFetchFormDataFunc('/user', opts, {
+    method: 'POST',
+  })
   return async (userIn: UserInCreateType) => {
-    const formData = new FormData()
-    for (const [name, value] of Object.entries(userIn)) {
-      formData.append(name, value)
-    }
-    const response = await fetch(`${config.public.API_HTTP_BASE_URL}/user`, {
-      method: 'POST',
-      headers: {
-        'Accept-Language': userIn.language || storeLocale.locale,
-      },
-      body: formData,
-    })
-    if (!response.ok) {
-      throw createError({
-        statusCode: response.status,
-        statusMessage: response.statusText,
-        message: await response.text(),
-      })
-    }
-    return (await response.json()) as UserOutType
+    return await fetch(userIn)
   }
 }
 
-export const useSignIn = () => {
-  const fetch = useLocalFetchFunc()
-  return async (credentials: CredentialsType) => {
-    return fetch<SessionType>('/sign_in', {
-      method: 'POST',
-      body: credentials,
-    })
+export const useGetMe = (opts: LocalFetchFuncOptions<UserOutType>) => {
+  return useLocalFetchFunc('/me', opts)
+}
+
+export const useChangeMeLocale = (opts: LocalFetchFuncOptions<UserOutType>) => {
+  const fetch = useLocalFetchFunc('me/locale', opts, {
+    method: 'PATCH',
+  })
+  return (newLocale: string) => {
+    return fetch(JSON.stringify(newLocale))
+  }
+}
+
+export const useSignIn = (opts: LocalFetchFuncOptions<SessionType>) => {
+  const fetch = useLocalFetchFunc<SessionType>('/sign_in', opts, {
+    method: 'POST',
+  })
+  return (credentials: CredentialsType) => {
+    return fetch(credentials)
   }
 }

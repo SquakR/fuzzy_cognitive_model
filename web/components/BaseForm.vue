@@ -3,7 +3,7 @@
     v-slot="{ isSubmitting }"
     :validation-schema="validationSchema"
     :initial-values="initialValues"
-    :on-submit="handleSubmit"
+    :on-submit="onSubmit"
   >
     <VCard :width="computedWidth">
       <VCardTitle>
@@ -11,12 +11,20 @@
       </VCardTitle>
       <VCardText>
         <VAlert
-          v-if="message"
-          :color="message.type"
+          v-if="success"
+          color="success"
           class="mb-2"
           closable
-          @click:close="message = null"
-          >{{ message.message }}</VAlert
+          @click:close="success = null"
+          >{{ success }}</VAlert
+        >
+        <VAlert
+          v-else-if="error"
+          color="error"
+          class="mb-2"
+          closable
+          @click:close="error = null"
+          >{{ error }}</VAlert
         >
         <slot />
       </VCardText>
@@ -35,9 +43,11 @@
 </template>
 
 <script setup lang="ts">
-import { Form, SubmissionHandler, SubmissionContext } from 'vee-validate'
+import { Form, SubmissionHandler } from 'vee-validate'
+import { useMessageStore } from '~/store'
 
 export interface Props {
+  actionKey: string
   title: string
   buttonText: string
   validationSchema: object
@@ -46,33 +56,21 @@ export interface Props {
   width?: string | number
   successMessage?: string
 }
-export interface Emits {
-  (e: 'onSuccess', value: any): void
-}
 
 const props = withDefaults(defineProps<Props>(), {
   width: 500,
   successMessage: undefined,
 })
-const emit = defineEmits<Emits>()
 
 const computedWidth = computed(() =>
   typeof props.width === 'number' ? `${props.width}px` : props.width
 )
 
-const message = useLocaleMessage()
-
-const handleSubmit = async (
-  values: Record<string, unknown>,
-  ctx: SubmissionContext
-) => {
-  const result = await props.onSubmit(values, ctx)
-  emit('onSuccess', result)
-  if (props.successMessage) {
-    message.value = {
-      type: 'success',
-      message: props.successMessage,
-    }
-  }
-}
+const messageStore = useMessageStore()
+const { success, error, unsubscribe } = messageStore.subscribeLocal(
+  props.actionKey
+)
+onUnmounted(() => {
+  unsubscribe()
+})
 </script>

@@ -11,25 +11,35 @@
 import { useMessageStore } from '~/store'
 
 const messageStore = useMessageStore()
+const { success, error, unsubscribe } = messageStore.subscribeGlobal()
+onUnmounted(() => {
+  unsubscribe()
+})
+
 const isActive = computed({
-  get: () => messageStore.target === 'global' && !!messageStore.message,
+  get: () => Boolean(success.value || error.value),
   set: (value) => {
     if (!value) {
-      messageStore.message = null
+      success.value = null
+      error.value = null
     }
   },
 })
 
 const color = computed(() => {
-  if (!messageStore.message) {
-    return undefined
+  if (success.value) {
+    return 'success'
   }
-  return messageStore.message.type
+  if (error.value) {
+    return 'error'
+  }
 })
 const message = computed(() => {
-  if (!messageStore.message) {
-    return undefined
+  if (success.value) {
+    return success.value
   }
-  return messageStore.message.message
+  if (error.value) {
+    return error.value
+  }
 })
 </script>

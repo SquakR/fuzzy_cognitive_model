@@ -32,7 +32,7 @@ module.exports = {
       },
     },
     {
-      files: ['components/*.vue'],
+      files: ['components/*.vue', 'composables/*.ts'],
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',
       },

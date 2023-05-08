@@ -7,7 +7,7 @@ export interface UserOutType {
   secondName: string | null
   lastName: string
   avatar: string | null
-  language: string | null
+  locale: string | null
   createdAt: string
   updatedAt: string
 }
@@ -20,7 +20,7 @@ export interface UserInCreateType {
   secondName: string | null
   lastName: string
   avatar: File | null
-  language: string | null
+  locale: string | null
 }
 
 export interface UseInChangeType {
