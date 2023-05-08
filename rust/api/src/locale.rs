@@ -41,9 +41,9 @@ impl Locale {
         *self.locale.lock().unwrap() = Some(String::from("en-US"));
     }
     pub fn set_from_user(&self, user: &User, accept_language: &AcceptLanguage) -> () {
-        if let Some(language) = &user.language {
+        if let Some(locale) = &user.locale {
             for available_locale in AVAILABLE_LOCALES {
-                if language == available_locale.0 {
+                if locale == available_locale.0 {
                     *self.locale.lock().unwrap() = Some(available_locale.1.to_owned());
                     return;
                 }

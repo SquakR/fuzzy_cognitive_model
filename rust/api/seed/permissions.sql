@@ -6,7 +6,7 @@ VALUES (
 INSERT INTO permissions (key, description)
 VALUES (
     'can_change_model',
-    "The user can change the project model."
+    'The user can change the project model.'
   );
 INSERT INTO permissions (key, description)
 VALUES (

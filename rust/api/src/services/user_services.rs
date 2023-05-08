@@ -36,24 +36,25 @@ pub async fn create_user(
     }
     let (user, email_confirmation) = conn
         .transaction(|conn| {
-            let user = diesel::insert_into(users::table)
-                .values((
-                    users::username.eq(user_in.username),
-                    users::password.eq(password_services::hash_password(&user_in.password)),
-                    users::email.eq(user_in.email),
-                    users::first_name.eq(user_in.first_name),
-                    users::second_name.eq(user_in.second_name),
-                    users::last_name.eq(user_in.last_name),
-                    users::avatar.eq(avatar.and_then(|p| Some(p.to_str().unwrap().to_owned()))),
-                    users::language.eq(user_in.language.and_then(|l| {
-                        if l == "" {
-                            None
-                        } else {
-                            Some(l)
-                        }
-                    })),
-                ))
-                .get_result::<User>(conn)?;
+            let user =
+                diesel::insert_into(users::table)
+                    .values((
+                        users::username.eq(user_in.username),
+                        users::password.eq(password_services::hash_password(&user_in.password)),
+                        users::email.eq(user_in.email),
+                        users::first_name.eq(user_in.first_name),
+                        users::second_name.eq(user_in.second_name),
+                        users::last_name.eq(user_in.last_name),
+                        users::avatar.eq(avatar.and_then(|p| Some(p.to_str().unwrap().to_owned()))),
+                        users::locale.eq(user_in.locale.and_then(|l| {
+                            if l == "" {
+                                None
+                            } else {
+                                Some(l)
+                            }
+                        })),
+                    ))
+                    .get_result::<User>(conn)?;
             let email_confirmation =
                 email_confirmation_services::create_email_confirmation(conn, &user)?;
             Ok((user, email_confirmation))
@@ -223,15 +224,15 @@ pub async fn change_user(
     Ok(user)
 }
 
-pub fn change_user_language(
+pub fn change_user_locale(
     conn: &mut PgConnection,
     user: User,
-    language: Option<&str>,
+    locale: Option<&str>,
 ) -> ServiceResult<User> {
     let mut create = true;
-    if let Some(user_language) = &user.language {
-        if let Some(new_language) = language {
-            if user_language == new_language {
+    if let Some(user_locale) = &user.locale {
+        if let Some(new_locale) = locale {
+            if user_locale == new_locale {
                 create = false;
             }
         }
@@ -239,7 +240,7 @@ pub fn change_user_language(
     if create {
         diesel::update(users::table)
             .filter(users::id.eq(&user.id))
-            .set(users::language.eq(language))
+            .set(users::locale.eq(locale))
             .get_result::<User>(conn)
             .to_service_result()
     } else {
@@ -286,7 +287,7 @@ impl From<User> for UserOutType {
             second_name: user.second_name,
             last_name: user.last_name,
             avatar: user.avatar,
-            language: user.language,
+            locale: user.locale,
             created_at: user.created_at,
             updated_at: user.updated_at,
         }

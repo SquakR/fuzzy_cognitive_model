@@ -94,7 +94,7 @@ impl MountRoutes for Rocket<Build> {
                 user_routes::confirm_email,
                 user_routes::get_me,
                 user_routes::change_me,
-                user_routes::change_me_language,
+                user_routes::change_me_locale,
                 user_routes::change_me_password,
                 user_routes::request_password_reset,
                 user_routes::reset_password,

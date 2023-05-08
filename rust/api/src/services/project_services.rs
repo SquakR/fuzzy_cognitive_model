@@ -315,7 +315,7 @@ impl ProjectOutType {
                 users::second_name,
                 users::last_name,
                 users::avatar,
-                users::language,
+                users::locale,
                 users::created_at,
                 users::updated_at,
             ))
@@ -354,7 +354,7 @@ impl ProjectOutType {
             second_name: creator.7,
             last_name: creator.8,
             avatar: creator.9,
-            language: creator.10,
+            locale: creator.10,
             created_at: creator.11,
             updated_at: creator.12,
         };

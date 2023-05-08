@@ -12,8 +12,8 @@ use crate::services::{
 };
 use crate::storage::Storage;
 use crate::types::{
-    ChangeLanguageType, ChangePasswordType, CredentialsType, PaginationInType, PaginationOutType,
-    ResetPasswordType, SessionType, UserInChangeType, UserInCreateType, UserOutType,
+    ChangePasswordType, CredentialsType, PaginationInType, PaginationOutType, ResetPasswordType,
+    SessionType, UserInChangeType, UserInCreateType, UserOutType,
 };
 use crate::web_socket::WebSocketProjectService;
 use crate::{get_session_id, internal_server_error, validation_error};
@@ -95,18 +95,17 @@ pub async fn change_me(
     Ok(Json(UserOutType::from(user)))
 }
 
-/// Change current user language
+/// Change current user locale
 #[openapi(tag = "users")]
-#[patch("/me/language", format = "json", data = "<change_language>")]
-pub fn change_me_language(
-    change_language: Json<ChangeLanguageType>,
+#[patch("/me/locale", format = "json", data = "<new_locale>")]
+pub fn change_me_locale(
+    new_locale: Json<Option<String>>,
     accept_language: &AcceptLanguage,
     user: User,
     locale: &Locale,
 ) -> PathResult<UserOutType> {
     let conn = &mut db::establish_connection();
-    let user =
-        user_services::change_user_language(conn, user, change_language.language.as_deref())?;
+    let user = user_services::change_user_locale(conn, user, new_locale.into_inner().as_deref())?;
     locale.set_from_user(&user, accept_language);
     Ok(Json(UserOutType::from(user)))
 }

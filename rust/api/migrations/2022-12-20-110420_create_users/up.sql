@@ -9,7 +9,7 @@ CREATE TABLE users (
     second_name VARCHAR(255) NULL,
     last_name VARCHAR(255) NOT NULL,
     avatar VARCHAR,
-    language VARCHAR(5),
+    locale VARCHAR(5),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );

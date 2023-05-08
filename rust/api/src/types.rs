@@ -30,8 +30,8 @@ pub struct UserOutType {
     pub last_name: String,
     /// User avatar
     pub avatar: Option<String>,
-    /// User preferred language
-    pub language: Option<String>,
+    /// User preferred locale
+    pub locale: Option<String>,
     /// User creation time
     pub created_at: DateTime<Utc>,
     /// User update time
@@ -58,8 +58,8 @@ pub struct UserInCreateType<'r> {
     pub last_name: String,
     /// User avatar
     pub avatar: Option<TempFile<'r>>,
-    /// User preferred language
-    pub language: Option<String>,
+    /// User preferred locale
+    pub locale: Option<String>,
 }
 
 /// Type of user (expert or researcher) to change
@@ -154,14 +154,6 @@ pub struct CredentialsType {
     pub username: String,
     /// User password
     pub password: String,
-}
-
-/// Change user preferred language
-#[derive(Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct ChangeLanguageType {
-    /// New user preferred language
-    pub language: Option<String>,
 }
 
 /// Change user password type
@@ -287,8 +279,8 @@ pub struct ProjectUserType {
     pub last_name: String,
     /// User avatar
     pub avatar: Option<String>,
-    /// User preferred language
-    pub language: Option<String>,
+    /// User preferred locale
+    pub locale: Option<String>,
     /// User creation time
     pub created_at: DateTime<Utc>,
     /// User update time
@@ -685,9 +677,9 @@ impl<'r> JsonSchema for UserInCreateType<'r> {
                     Some(String::from("binary"))
                 ),
                 (
-                    "language",
+                    "locale",
                     InstanceType::String,
-                    "User preferred language",
+                    "User preferred locale",
                     false,
                     None
                 )

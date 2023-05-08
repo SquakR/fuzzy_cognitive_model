@@ -330,7 +330,7 @@ impl ProjectUserType {
                 second_name: user.second_name,
                 last_name: user.last_name,
                 avatar: user.avatar,
-                language: user.language,
+                locale: user.locale,
                 created_at: user.created_at,
                 updated_at: user.updated_at,
                 status,

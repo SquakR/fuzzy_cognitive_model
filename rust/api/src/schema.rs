@@ -294,7 +294,7 @@ diesel::table! {
         second_name -> Nullable<Varchar>,
         last_name -> Varchar,
         avatar -> Nullable<Varchar>,
-        language -> Nullable<Varchar>,
+        locale -> Nullable<Varchar>,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }
