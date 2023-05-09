@@ -1,40 +1,26 @@
 <template>
   <VAppBar color="indigo-darken-1" title="Fuzzy Cognitive Model">
     <template #append>
-      <VTooltip v-model="tooltipActive" location="bottom">
-        <template #activator="{ props: tooltipProps }">
-          <VMenu>
-            <template #activator="{ props: menuProps }">
-              <VBtn
-                v-bind="{ ...tooltipProps, ...menuProps }"
-                icon="mdi-translate"
-                @click="tooltipActive = false"
-              ></VBtn>
-            </template>
-            <VSheet>
-              <VList
-                v-model:selected="selectedLocale"
-                :items="locales"
-                density="compact"
-              >
-                <VListSubheader class="font-weight-bold" color="black">{{
-                  t('languages')
-                }}</VListSubheader>
-                <VListItem
-                  v-for="locale in locales"
-                  :key="locale.value"
-                  :value="locale.value"
-                >
-                  <VListItemSubtitle style="color: black">{{
-                    locale.text
-                  }}</VListItemSubtitle>
-                </VListItem>
-              </VList>
-            </VSheet>
-          </VMenu>
+      <VTooltip location="bottom">
+        <template #activator="{ props }">
+          <VBtn
+            v-bind="props"
+            href="https://github.com/SquakR/fuzzy_cognitive_model"
+            target="_blank"
+            class="mr-1"
+            icon
+          >
+            <VIcon size="x-large">mdi-github</VIcon>
+          </VBtn>
         </template>
-        <span>{{ t('languages') }}</span>
+        <span>{{ t('repository') }}</span>
       </VTooltip>
+      <TheLocaleMenu class="mr-1" />
+      <TheAvatarMenu v-if="userStore.user" :user="userStore.user" />
+      <template v-else>
+        <VBtn :to="{ name: 'auth-sign_in' }">{{ t('signIn') }}</VBtn>
+        <VBtn :to="{ name: 'auth-sign_up' }">{{ t('signUp') }}</VBtn>
+      </template>
     </template>
   </VAppBar>
 </template>
@@ -45,32 +31,21 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n({})
 
-const tooltipActive = ref(false)
-
-const locales = [
-  { text: 'English', value: 'en-US' },
-  { text: 'Russian', value: 'ru-RU' },
-]
 const userStore = useUserStore()
-const selectedLocale = computed({
-  get: () => [userStore.locale],
-  set: (value) => {
-    userStore.locale = value[0]
-  },
-})
-onMounted(() => {
-  userStore.updateLocale()
-})
 </script>
 
 <i18n locale="en-US" lang="json">
 {
-  "languages": "Languages"
+  "repository": "Repository",
+  "signIn": "Sign in",
+  "signUp": "Sign up"
 }
 </i18n>
 
 <i18n locale="ru-RU" lang="json">
 {
-  "languages": "Языки"
+  "repository": "Репозиторий",
+  "signIn": "Вход",
+  "signUp": "Регистрация"
 }
 </i18n>

@@ -29,10 +29,19 @@ export const useChangeMeLocale = (opts: LocalFetchFuncOptions<UserOutType>) => {
 }
 
 export const useSignIn = (opts: LocalFetchFuncOptions<SessionType>) => {
-  const fetch = useLocalFetchFunc<SessionType>('/sign_in', opts, {
+  const fetch = useLocalFetchFunc('/sign_in', opts, {
     method: 'POST',
   })
   return (credentials: CredentialsType) => {
     return fetch(credentials)
+  }
+}
+
+export const useSignOut = (opts: LocalFetchFuncOptions<null>) => {
+  const fetch = useLocalFetchFunc('/sign_out', opts, {
+    method: 'PATCH',
+  })
+  return () => {
+    return fetch()
   }
 }
