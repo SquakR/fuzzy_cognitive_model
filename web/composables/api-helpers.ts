@@ -1,6 +1,53 @@
-import { FetchRequest, FetchOptions, FetchError } from 'ofetch'
+import { UseFetchOptions, FetchResult as NuxtFetchResult } from 'nuxt/app'
+import { KeysOf } from 'nuxt/dist/app/composables/asyncData'
+import type { NitroFetchOptions, NitroFetchRequest } from 'nitropack'
+import { FetchRequest, FetchError } from 'ofetch'
 import { useMessageStore, useUserStore } from '~/store'
-import { LocalFetchFuncOptions } from '~/types'
+import { LocalFetchFuncOptions, LocalFetchOptions } from '~/types'
+
+export const useLocalFetch = <
+  ResT = void,
+  _ResT = ResT extends void ? NuxtFetchResult<NitroFetchRequest, 'get'> : ResT,
+  DataT = _ResT,
+  PickKeys extends KeysOf<DataT> = KeysOf<DataT>
+>(
+  request:
+    | Ref<NitroFetchRequest>
+    | NitroFetchRequest
+    | (() => NitroFetchRequest),
+  opts: LocalFetchOptions,
+  fetchOpts?: UseFetchOptions<_ResT, DataT, PickKeys, NitroFetchRequest, 'get'>
+) => {
+  const config = useRuntimeConfig()
+  const userStore = useUserStore()
+  const headers = useRequestHeaders(['cookie'])
+  const messageStore = useMessageStore()
+
+  const { error, ...rest } = useFetch<
+    ResT,
+    FetchError,
+    NitroFetchRequest,
+    'get',
+    _ResT,
+    DataT,
+    PickKeys
+  >(request, {
+    key: opts.key,
+    baseURL: config.public.API_HTTP_BASE_URL,
+    headers: {
+      'Accept-Language': userStore.locale,
+      ...headers,
+    },
+    credentials: 'include',
+    ...fetchOpts,
+  })
+  watch(error, (newValue) => {
+    if (newValue && (opts.emitError === undefined || opts.emitError)) {
+      messageStore.emitError(opts.key, String(newValue.data))
+    }
+  })
+  return { error, ...rest }
+}
 
 export const useLocalFetchFormDataFunc = <T>(
   url: string,
@@ -51,7 +98,7 @@ export const useLocalFetchFormDataFunc = <T>(
 export const useLocalFetchFunc = <T>(
   request: FetchRequest,
   opts: LocalFetchFuncOptions<T>,
-  fetchOpts?: FetchOptions
+  fetchOpts?: NitroFetchOptions<NitroFetchRequest>
 ) => {
   const config = useRuntimeConfig()
   const userStore = useUserStore()
@@ -60,7 +107,6 @@ export const useLocalFetchFunc = <T>(
 
   return async (body?: RequestInit['body'] | Record<string, any>) => {
     try {
-      // @ts-ignore
       const result = await $fetch<T>(request, {
         baseURL: config.public.API_HTTP_BASE_URL,
         headers: {

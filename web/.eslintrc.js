@@ -29,18 +29,13 @@ module.exports = {
       files: ['pages/**/*.vue', 'layouts/*.vue'],
       rules: {
         'vue/multi-word-component-names': 'off',
+        'vue/valid-v-slot': 'off',
       },
     },
     {
       files: ['components/*.vue', 'composables/*.ts'],
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',
-      },
-    },
-    {
-      files: ['composables/*.ts'],
-      rules: {
-        '@typescript-eslint/ban-ts-comment': 'off',
       },
     },
   ],

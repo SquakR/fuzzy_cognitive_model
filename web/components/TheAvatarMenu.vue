@@ -2,16 +2,13 @@
   <VMenu>
     <template #activator="{ props }">
       <VBtn size="large" v-bind="props" icon>
-        <VAvatar size="large" color="white" class="text-indigo-darken-1">
-          <VImg
-            v-if="user.avatar"
-            :src="`${config.public.API_HTTP_BASE_URL}${user.avatar}`"
-            :alt="user.lastName"
-          ></VImg>
-          <span v-else class="text-h6"
-            >{{ user.lastName[0] }}{{ user.firstName[0] }}</span
-          >
-        </VAvatar>
+        <BaseUserAvatar
+          v-if="modelValue"
+          :user="modelValue"
+          size="large"
+          color="white"
+          class="text-indigo-darken-1"
+        />
       </VBtn>
     </template>
     <VSheet>
@@ -33,24 +30,23 @@
 <script setup lang="ts">
 import { UserOutType } from '~/types'
 import { useI18n } from 'vue-i18n'
-import { useUserStore } from '~/store'
 
 export interface Props {
-  user: UserOutType
+  modelValue: UserOutType | null
 }
-
+export interface Emits {
+  (e: 'update:modelValue', modelValue: UserOutType | null): void
+}
 defineProps<Props>()
-
-const config = useRuntimeConfig()
+const emit = defineEmits<Emits>()
 
 const { t } = useI18n({})
-
-const userStore = useUserStore()
 
 const signOut = useSignOut({
   key: 'signOut',
   onSuccess: () => {
-    userStore.user = null
+    emit('update:modelValue', null)
+    navigateTo({ name: 'auth-sign_in' })
   },
 })
 </script>

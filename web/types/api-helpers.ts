@@ -1,3 +1,8 @@
+export type LocalFetchOptions = {
+  key: string
+  emitError?: boolean
+}
+
 export type LocalFetchFuncOptions<T> = {
   key: string
   successMessage?: string

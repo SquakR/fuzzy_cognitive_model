@@ -16,7 +16,7 @@
         <span>{{ t('repository') }}</span>
       </VTooltip>
       <TheLocaleMenu class="mr-1" />
-      <TheAvatarMenu v-if="userStore.user" :user="userStore.user" />
+      <TheAvatarMenu v-if="userStore.user" v-model="userStore.user" />
       <template v-else>
         <VBtn :to="{ name: 'auth-sign_in' }">{{ t('signIn') }}</VBtn>
         <VBtn :to="{ name: 'auth-sign_up' }">{{ t('signUp') }}</VBtn>

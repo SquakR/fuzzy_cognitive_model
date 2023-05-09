@@ -30,6 +30,7 @@ export const useUserStore = defineStore('user', () => {
       locale.value = value
       storageLocale.value = value
       nuxtApp.$i18n.global.locale.value = value
+      nuxtApp.$vuetify.locale.current.value = value
       if (user.value && user.value.locale !== value) {
         changeMeLocale(value)
       }

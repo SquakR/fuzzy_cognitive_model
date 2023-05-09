@@ -31,7 +31,6 @@ pub fn get_projects(
     projects_in: ProjectsInType,
     user: User,
 ) -> PathResult<PaginationOutType<ProjectOutType>> {
-    println!("{:?}", projects_in);
     let conn = &mut db::establish_connection();
     let created_at =
         if projects_in.created_at_start.is_some() || projects_in.created_at_end.is_some() {

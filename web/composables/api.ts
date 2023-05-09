@@ -3,7 +3,11 @@ import {
   UserOutType,
   CredentialsType,
   SessionType,
+  LocalFetchOptions,
   LocalFetchFuncOptions,
+  ProjectsInType,
+  PaginationOutType,
+  ProjectOutType,
 } from '~/types'
 
 export const useCreateUser = (opts: LocalFetchFuncOptions<UserOutType>) => {
@@ -44,4 +48,17 @@ export const useSignOut = (opts: LocalFetchFuncOptions<null>) => {
   return () => {
     return fetch()
   }
+}
+
+export const useGetProjects = (
+  opts: LocalFetchOptions,
+  projectsIn: Ref<ProjectsInType>
+) => {
+  return useLocalFetch<PaginationOutType<ProjectOutType>>('/projects', opts, {
+    params: computed(() =>
+      Object.fromEntries(
+        Object.entries(projectsIn.value).filter(([_, v]) => !!v)
+      )
+    ),
+  })
 }
