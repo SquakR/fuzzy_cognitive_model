@@ -41,15 +41,23 @@ const initialValues: yup.InferType<typeof validationSchema> = {
   description: '',
   isPublic: false,
 }
-const createProject = useCreateProject({
+const { execute: createProject } = useCreateProject({
   key: actionKey,
-  onSuccess: (project) => {
-    emit('addProject', project)
-    isActive.value = false
-  },
 })
+
+const { data: plugins } = useGetPlugins({ key: 'plugins' })
+const pluginNames = computed(() => {
+  if (!plugins.value) {
+    return []
+  }
+  return plugins.value.map((p) => p.name)
+})
+const { execute: setProjectPlugins } = useSetProjectPlugins({
+  key: actionKey,
+})
+
 const onSubmit = async (values: yup.InferType<typeof validationSchema>) => {
-  await createProject({
+  const { data: project, success: createProjectSuccess } = await createProject({
     name: values.name,
     description: values.description,
     isPublic: values.isPublic,
@@ -57,6 +65,17 @@ const onSubmit = async (values: yup.InferType<typeof validationSchema>) => {
     conceptValueType: 'from_zero_to_one',
     connectionValueType: 'from_minus_one_to_one',
   })
+  if (!createProjectSuccess) {
+    return
+  }
+  const { data: plugins, success: setProjectPluginsSuccess } =
+    await setProjectPlugins(project.id, pluginNames.value)
+  if (!setProjectPluginsSuccess) {
+    return
+  }
+  project.plugins = plugins
+  emit('addProject', project)
+  isActive.value = false
 }
 </script>
 

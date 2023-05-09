@@ -6,16 +6,17 @@ export const useUserStore = defineStore('user', () => {
   const nuxtApp = useNuxtApp()
 
   const user = ref<UserOutType | null>(null)
-  const getMe = useGetMe({ key: 'getMe', emitError: false })
-  const changeMeLocale = useChangeMeLocale({
-    key: 'changeMeLocale',
-    onSuccess: (changedUser) => {
-      user.value = changedUser
-    },
+  const { execute: getMe } = useGetMe({ key: 'getMe', emitError: false })
+  const { execute: changeMeLocale, onSuccess: changeMeLocaleOnSuccess } =
+    useChangeMeLocale({
+      key: 'changeMeLocale',
+    })
+  changeMeLocaleOnSuccess((changedUser) => {
+    user.value = changedUser
   })
   const updateMe = async () => {
     if (!user.value) {
-      user.value = await getMe()
+      user.value = (await getMe()).data
     }
     if (user.value) {
       updateLocale()

@@ -42,12 +42,12 @@ const emit = defineEmits<Emits>()
 
 const { t } = useI18n({})
 
-const signOut = useSignOut({
+const { execute: signOut, onSuccess } = useSignOut({
   key: 'signOut',
-  onSuccess: () => {
-    emit('update:modelValue', null)
-    navigateTo({ name: 'auth-sign_in' })
-  },
+})
+onSuccess(async () => {
+  emit('update:modelValue', null)
+  await navigateTo({ name: 'auth-sign_in' })
 })
 </script>
 

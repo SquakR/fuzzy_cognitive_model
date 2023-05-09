@@ -3,7 +3,7 @@
     <VCardTitle>{{ t('title') }}</VCardTitle>
     <VCardText>
       <VRow>
-        <VCol cols="12" class="d-flex justify-end">
+        <VCol cols="12">
           <AddProjectForm @add-project="addProject">
             <template #activator="{ props }">
               <VBtn v-bind="props" color="primary">{{ t('addProject') }}</VBtn>

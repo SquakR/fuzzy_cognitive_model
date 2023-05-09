@@ -59,11 +59,11 @@ const initialValues: yup.InferType<typeof validationSchema> = {
   password: '',
   passwordConfirmation: '',
 }
-const createUser = useCreateUser({
+const { execute: createUser, onSuccess } = useCreateUser({
   key: actionKey,
-  onSuccess: async () => {
-    await navigateTo({ name: 'auth-sign_in' })
-  },
+})
+onSuccess(async () => {
+  await navigateTo({ name: 'auth-sign_in' })
 })
 const onSubmit = async (values: yup.InferType<typeof validationSchema>) => {
   await createUser({

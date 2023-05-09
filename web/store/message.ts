@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ReplaySubject, Observable, filter, map } from 'rxjs'
-import { Message } from '~/types'
+import { ErrorMessage, Message, SuccessMessage } from '~/types'
 
 export const useMessageStore = defineStore('message', () => {
   const localKeys = ref<Record<string, number>>({})
@@ -12,6 +12,10 @@ export const useMessageStore = defineStore('message', () => {
 
   const emitError = (key: string, message: string) => {
     messageStream$.next({ key, type: 'error', message })
+  }
+
+  const emitClear = (key: string) => {
+    messageStream$.next({ key, type: 'clear' })
   }
 
   const subscribeGlobal = () => {
@@ -61,6 +65,13 @@ export const useMessageStore = defineStore('message', () => {
         success.value = null
       })
     )
+    const clearStream$ = pipeClear(stream$)
+    subscription.add(
+      clearStream$.subscribe(() => {
+        success.value = null
+        error.value = null
+      })
+    )
     return {
       success,
       error,
@@ -71,16 +82,23 @@ export const useMessageStore = defineStore('message', () => {
   const pipeSuccess = (stream$: Observable<Message>) => {
     return stream$.pipe(
       filter((m) => m.type === 'success'),
-      map((m) => m.message)
+      map((m) => (m as SuccessMessage).message)
     )
   }
 
   const pipeError = (stream$: Observable<Message>) => {
     return stream$.pipe(
       filter((m) => m.type === 'error'),
-      map((m) => m.message)
+      map((m) => (m as ErrorMessage).message)
     )
   }
 
-  return { emitSuccess, emitError, subscribeGlobal, subscribeLocal }
+  const pipeClear = (stream$: Observable<Message>) => {
+    return stream$.pipe(
+      filter((m) => m.type === 'clear'),
+      map(() => null)
+    )
+  }
+
+  return { emitSuccess, emitError, emitClear, subscribeGlobal, subscribeLocal }
 })

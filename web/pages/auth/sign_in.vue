@@ -33,11 +33,11 @@ const initialValues: yup.InferType<typeof validationSchema> = {
   username: '',
   password: '',
 }
-const signIn = useSignIn({
+const { execute: signIn, onSuccess } = useSignIn({
   key: actionKey,
-  onSuccess: async () => {
-    await navigateTo({ name: 'index' })
-  },
+})
+onSuccess(async () => {
+  await navigateTo({ name: 'projects' })
 })
 </script>
 
