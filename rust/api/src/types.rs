@@ -582,6 +582,8 @@ pub struct PaginationInType {
 pub struct PaginationOutType<T> {
     /// Pagination data
     pub data: Vec<T>,
+    /// Total count of items
+    pub total_count: i32,
     /// Total count of pages
     pub total_pages: i32,
 }

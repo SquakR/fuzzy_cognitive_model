@@ -48,13 +48,14 @@ pub fn paginate_adjustment_runs(
     if let Some(created_at) = created_at {
         filter_date_time!(adjustment_runs::created_at, created_at, query);
     }
-    let (adjustment_runs, total_pages) = query
+    let (adjustment_runs, total_count, total_pages) = query
         .paginate(pagination_in.page as i64)
         .per_page(pagination_in.per_page as i64)
         .load_and_count_pages::<AdjustmentRun>(conn)
         .to_service_result()?;
     Ok(PaginationOutType {
         data: AdjustmentRunOutType::from_adjustment_runs(conn, adjustment_runs)?,
+        total_count: total_count as i32,
         total_pages: total_pages as i32,
     })
 }
@@ -68,7 +69,7 @@ pub fn paginate_adjustment_generations(
     let project = find_project_by_adjustment_run_id(conn, adjustment_run_id)
         .to_service_result_find(String::from("adjustment_run_not_found_error"))?;
     permission_services::can_view_project(conn, &project, user)?;
-    let (generations, total_pages) = adjustment_generations::table
+    let (generations, total_count, total_pages) = adjustment_generations::table
         .filter(adjustment_generations::adjustment_run_id.eq(adjustment_run_id))
         .paginate(pagination_in.page as i64)
         .per_page(pagination_in.per_page as i64)
@@ -79,6 +80,7 @@ pub fn paginate_adjustment_generations(
             .into_iter()
             .map(AdjustmentGenerationOutType::from)
             .collect(),
+        total_count: total_count as i32,
         total_pages: total_pages as i32,
     })
 }
@@ -92,7 +94,7 @@ pub fn paginate_adjustment_chromosomes(
     let project = find_project_by_adjustment_generation_id(conn, adjustment_generation_id)
         .to_service_result_find(String::from("adjustment_generation_not_found_error"))?;
     permission_services::can_view_project(conn, &project, user)?;
-    let (adjustment_chromosomes, total_pages) = adjustment_chromosomes::table
+    let (adjustment_chromosomes, total_count, total_pages) = adjustment_chromosomes::table
         .filter(adjustment_chromosomes::adjustment_generation_id.eq(adjustment_generation_id))
         .paginate(pagination_in.page as i64)
         .per_page(pagination_in.per_page as i64)
@@ -100,6 +102,7 @@ pub fn paginate_adjustment_chromosomes(
         .to_service_result()?;
     Ok(PaginationOutType {
         data: AdjustmentChromosomeOutType::from_chromosomes(conn, adjustment_chromosomes)?,
+        total_count: total_count as i32,
         total_pages: total_pages as i32,
     })
 }

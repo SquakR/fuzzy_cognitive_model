@@ -107,13 +107,14 @@ pub fn paginate_projects(
     if let Some(updated_at) = updated_at {
         filter_date_time!(projects::updated_at, updated_at, query);
     }
-    let (projects, total_pages) = query
+    let (projects, total_count, total_pages) = query
         .paginate(pagination.page as i64)
         .per_page(pagination.per_page as i64)
         .load_and_count_pages::<Project>(conn)
         .to_service_result()?;
     Ok(PaginationOutType {
         data: ProjectOutType::from_projects(conn, projects)?,
+        total_count: total_count as i32,
         total_pages: total_pages as i32,
     })
 }

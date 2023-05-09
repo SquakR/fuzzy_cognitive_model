@@ -125,7 +125,7 @@ pub fn paginate_project_users(
             }
         }
     }
-    let (users, total_pages) = user_services::filter_users(search)
+    let (users, total_count, total_pages) = user_services::filter_users(search)
         .inner_join(
             project_users::table
                 .inner_join(
@@ -143,6 +143,7 @@ pub fn paginate_project_users(
         .to_service_result()?;
     Ok(PaginationOutType {
         data: ProjectUserType::from_users(conn, user, project.id, users)?,
+        total_count: total_count as i32,
         total_pages: total_pages as i32,
     })
 }

@@ -134,7 +134,7 @@ pub fn paginate_users(
     search: Option<String>,
     pagination_in: PaginationInType,
 ) -> ServiceResult<PaginationOutType<UserOutType>> {
-    let (users, total_pages) = filter_users(search)
+    let (users, total_count, total_pages) = filter_users(search)
         .paginate(pagination_in.page as i64)
         .per_page(pagination_in.per_page as i64)
         .load_and_count_pages::<User>(conn)
@@ -144,6 +144,7 @@ pub fn paginate_users(
             .into_iter()
             .map(UserOutType::from)
             .collect::<Vec<UserOutType>>(),
+        total_count: total_count as i32,
         total_pages: total_pages as i32,
     })
 }

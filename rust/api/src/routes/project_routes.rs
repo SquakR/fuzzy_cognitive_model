@@ -31,6 +31,7 @@ pub fn get_projects(
     projects_in: ProjectsInType,
     user: User,
 ) -> PathResult<PaginationOutType<ProjectOutType>> {
+    println!("{:?}", projects_in);
     let conn = &mut db::establish_connection();
     let created_at =
         if projects_in.created_at_start.is_some() || projects_in.created_at_end.is_some() {
@@ -56,7 +57,7 @@ pub fn get_projects(
         };
     let pagination = PaginationInType {
         page: projects_in.page.unwrap_or(1),
-        per_page: projects_in.per_page.unwrap_or(15),
+        per_page: projects_in.per_page.unwrap_or(10),
     };
     project_services::paginate_projects(
         conn,
