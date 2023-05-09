@@ -1,3 +1,3 @@
 <template>
-  <VContainer> Projects </VContainer>
+  <div>Projects</div>
 </template>

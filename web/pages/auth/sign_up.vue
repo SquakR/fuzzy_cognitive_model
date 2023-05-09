@@ -1,32 +1,29 @@
 <template>
-  <BaseBreadcrumbs :items="bc">
-    <div class="d-flex justify-center">
-      <BaseForm
-        :action-key="actionKey"
-        :title="t('title')"
-        :button-text="t('buttonText')"
-        :validation-schema="validationSchema"
-        :initial-values="initialValues"
-        :on-submit="onSubmit"
-      >
-        <BaseTextField :label="t('username')" name="username" />
-        <BaseTextField :label="t('email')" name="email" type="email" />
-        <BaseTextField :label="t('firstName')" name="firstName" />
-        <BaseTextField :label="t('secondName')" name="secondName" clearable />
-        <BaseTextField :label="t('lastName')" name="lastName" />
-        <BaseFileInput :label="t('avatar')" name="avatar" accept="image/*" />
-        <BasePasswordField :label="t('password')" name="password" />
-        <BasePasswordField
-          :label="t('passwordConfirmation')"
-          name="passwordConfirmation"
-        />
-      </BaseForm>
-    </div>
-  </BaseBreadcrumbs>
+  <div class="d-flex justify-center mt-5">
+    <BaseForm
+      :action-key="actionKey"
+      :title="t('title')"
+      :button-text="t('buttonText')"
+      :validation-schema="validationSchema"
+      :initial-values="initialValues"
+      :on-submit="onSubmit"
+    >
+      <BaseTextField :label="t('username')" name="username" />
+      <BaseTextField :label="t('email')" name="email" type="email" />
+      <BaseTextField :label="t('firstName')" name="firstName" />
+      <BaseTextField :label="t('secondName')" name="secondName" clearable />
+      <BaseTextField :label="t('lastName')" name="lastName" />
+      <BaseFileInput :label="t('avatar')" name="avatar" accept="image/*" />
+      <BasePasswordField :label="t('password')" name="password" />
+      <BasePasswordField
+        :label="t('passwordConfirmation')"
+        name="passwordConfirmation"
+      />
+    </BaseForm>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { BreadcrumbItem } from '~/types/base-breadcrumbs'
 import { useI18n } from 'vue-i18n'
 import * as yup from 'yup'
 import { useUserStore } from '~/store'
@@ -37,12 +34,6 @@ definePageMeta({
 
 const { t } = useI18n({})
 
-const bc = computed<BreadcrumbItem[]>(() => [
-  {
-    title: t('title'),
-    to: { name: 'auth-sign_up' },
-  },
-])
 const userStore = useUserStore()
 
 const actionKey = 'signUp'

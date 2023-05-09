@@ -2,7 +2,10 @@
   <VLayout>
     <TheAppBar />
     <VMain>
-      <NuxtPage />
+      <VContainer>
+        <NuxtPage />
+      </VContainer>
+
       <TheGlobalMessage />
     </VMain>
     <TheFooter />
