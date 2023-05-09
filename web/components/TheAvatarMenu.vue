@@ -16,7 +16,10 @@
     </template>
     <VSheet>
       <VList density="compact">
-        <VListItem prepend-icon="mdi-vector-polygon-variant">
+        <VListItem
+          :to="{ name: 'projects' }"
+          prepend-icon="mdi-vector-polygon-variant"
+        >
           <VListItemTitle>{{ t('projects') }}</VListItemTitle>
         </VListItem>
         <VListItem prepend-icon="mdi-logout" @click="signOut">

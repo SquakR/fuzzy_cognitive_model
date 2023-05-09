@@ -14,17 +14,16 @@ import { BreadcrumbItem } from '~/types'
 import { useI18n } from 'vue-i18n'
 
 export interface Props {
-  items: BreadcrumbItem[]
+  items?: BreadcrumbItem[]
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  items: () => [],
+})
 
 const { t } = useI18n({})
 
 const computedItems = computed(() => {
-  if (props.items[0].to === '/') {
-    return props.items
-  }
   return [{ title: t('index'), to: { name: 'index' } }, ...props.items]
 })
 </script>
