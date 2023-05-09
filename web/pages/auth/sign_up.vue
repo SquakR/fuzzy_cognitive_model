@@ -38,11 +38,11 @@ const userStore = useUserStore()
 
 const actionKey = 'signUp'
 const validationSchema = yup.object({
-  username: yup.string().required().min(3),
-  email: yup.string().required().email(),
-  firstName: yup.string().required().min(2),
-  secondName: yup.string().notRequired().min(2),
-  lastName: yup.string().required().min(2),
+  username: yup.string().required().min(3).max(255),
+  email: yup.string().required().email().max(255),
+  firstName: yup.string().required().min(2).max(255),
+  secondName: yup.string().notRequired().min(2).max(255),
+  lastName: yup.string().required().min(2).max(255),
   avatar: yup.mixed(),
   password: yup.string().required().min(8),
   passwordConfirmation: yup

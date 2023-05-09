@@ -89,7 +89,7 @@ export interface ProjectOutType {
   description: string
   creator: UserOutType
   isPublic: boolean
-  isArchive: boolean
+  isArchived: boolean
   createdAt: string
   updatedAt: string
   conceptValueType: ConceptValueType
@@ -101,7 +101,7 @@ export interface ProjectInType {
   name: string
   description: string
   isPublic: boolean
-  isArchive: boolean
+  isArchived: boolean
   conceptValueType: ConceptValueType
   connectionValueType: ConnectionValueType
 }

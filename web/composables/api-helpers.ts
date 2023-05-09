@@ -43,7 +43,7 @@ export const useLocalFetch = <
   })
   watch(error, (newValue) => {
     if (newValue && (opts.emitError === undefined || opts.emitError)) {
-      messageStore.emitError(opts.key, String(newValue.data))
+      messageStore.emitError(opts.key, getErrorMessage(newValue.data))
     }
   })
   return { error, ...rest }
@@ -74,7 +74,13 @@ export const useLocalFetchFormDataFunc = <T>(
       ...fetchOpts,
     })
     if (!response.ok) {
-      const errorMessage = await response.text()
+      const contentType = response.headers.get('content-type')
+      let errorMessage
+      if (contentType && contentType.indexOf('application/json') !== -1) {
+        errorMessage = getErrorMessage(await response.json())
+      } else {
+        errorMessage = getErrorMessage(await response.text())
+      }
       if (opts.onError) {
         opts.onError(errorMessage)
       }
@@ -126,7 +132,7 @@ export const useLocalFetchFunc = <T>(
       return result
     } catch (error) {
       if (error instanceof FetchError) {
-        const errorMessage = String(error.data)
+        const errorMessage = getErrorMessage(error.data)
         if (opts.onError) {
           opts.onError(errorMessage)
         }
@@ -138,4 +144,16 @@ export const useLocalFetchFunc = <T>(
       throw error
     }
   }
+}
+
+type ErrorPayload = {
+  error: { code: number; reason: string; description: string }
+}
+
+const getErrorMessage = (data: string | ErrorPayload) => {
+  console.log(data)
+  if (typeof data === 'string') {
+    return data
+  }
+  return `${data.error.reason}. ${data.error.description}`
 }

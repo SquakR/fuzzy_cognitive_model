@@ -26,16 +26,31 @@ module.exports = {
 
   overrides: [
     {
-      files: ['pages/**/*.vue', 'layouts/*.vue'],
+      files: ['layouts/*.vue', 'pages/**/*.vue'],
       rules: {
         'vue/multi-word-component-names': 'off',
-        'vue/valid-v-slot': 'off',
       },
     },
     {
-      files: ['components/*.vue', 'composables/*.ts'],
+      files: ['layouts/*.vue', 'pages/**/*.vue', 'components/*.vue'],
+      rules: {
+        'vue/valid-v-slot': 'off',
+        'vue/no-template-shadow': 'off',
+      },
+    },
+    {
+      files: [
+        'layouts/*.vue',
+        'pages/**/*.vue',
+        'components/*.vue',
+        'composables/*.ts',
+      ],
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-unused-vars': [
+          'warn',
+          { argsIgnorePattern: '^_' },
+        ],
       },
     },
   ],

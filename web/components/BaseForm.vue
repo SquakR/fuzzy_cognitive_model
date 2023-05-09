@@ -7,7 +7,7 @@
   >
     <VCard :width="computedWidth">
       <VCardTitle>
-        <slot name="title">{{ title }}</slot>
+        <slot name="title" :title="title">{{ title }}</slot>
       </VCardTitle>
       <VCardText>
         <VAlert

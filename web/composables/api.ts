@@ -8,6 +8,7 @@ import {
   ProjectsInType,
   PaginationOutType,
   ProjectOutType,
+  ProjectInType,
 } from '~/types'
 
 export const useCreateUser = (opts: LocalFetchFuncOptions<UserOutType>) => {
@@ -61,4 +62,15 @@ export const useGetProjects = (
       )
     ),
   })
+}
+
+export const useCreateProject = (
+  opts: LocalFetchFuncOptions<ProjectOutType>
+) => {
+  const fetch = useLocalFetchFunc('/project', opts, {
+    method: 'POST',
+  })
+  return async (projectIn: ProjectInType) => {
+    return await fetch(projectIn)
+  }
 }
