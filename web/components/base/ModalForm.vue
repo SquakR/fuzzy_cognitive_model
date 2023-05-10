@@ -4,6 +4,7 @@
       <slot name="activator" :props="props" />
     </template>
     <BaseForm
+      ref="baseForm"
       :action-key="actionKey"
       :title="title"
       :button-text="buttonText"
@@ -27,6 +28,7 @@
 
 <script setup lang="ts">
 import { SubmissionHandler } from 'vee-validate'
+import BaseForm from '~/components/base/Form.vue'
 
 export interface Props {
   modelValue: boolean
@@ -49,6 +51,10 @@ const props = withDefaults(defineProps<Props>(), {
   successMessage: undefined,
 })
 const emit = defineEmits<Emits>()
+
+const baseForm = ref<InstanceType<typeof BaseForm> | null>(null)
+const form = computed(() => (baseForm.value ? baseForm.value.form : null))
+defineExpose({ form })
 
 const isActive = computed({
   get: () => props.modelValue,

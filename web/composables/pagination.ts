@@ -1,7 +1,7 @@
 import { AsyncDataExecuteOptions } from 'nuxt/dist/app/composables/asyncData'
 import { PaginationOutType } from '~/types'
 
-export const usePagination = <T>(
+export const usePagination = <T extends { id: number }>(
   pagination: Ref<PaginationOutType<T> | null>,
   refetch: (opts?: AsyncDataExecuteOptions | undefined) => Promise<void>,
   page: Ref<number>,
@@ -39,5 +39,15 @@ export const usePagination = <T>(
     }
   }
 
-  return { itemsLength, data, insertAtTop }
+  const replace = (newData: T) => {
+    if (pagination.value) {
+      pagination.value.data.splice(
+        pagination.value.data.findIndex((d) => d.id === newData.id),
+        1,
+        newData
+      )
+    }
+  }
+
+  return { itemsLength, data, insertAtTop, replace }
 }

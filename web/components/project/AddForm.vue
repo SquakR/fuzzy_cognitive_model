@@ -12,7 +12,7 @@
       <slot name="activator" :props="props" />
     </template>
     <BaseTextField :label="t('name')" name="name" />
-    <BaseTextArea :label="t('description')" name="description" />
+    <BaseTextarea :label="t('description')" name="description" />
     <BaseCheckbox :label="t('isPublic')" name="isPublic" />
   </BaseModalForm>
 </template>
@@ -25,6 +25,7 @@ import { ProjectOutType } from '~/types'
 export interface Emits {
   (e: 'addProject', project: ProjectOutType): void
 }
+
 const emit = defineEmits<Emits>()
 
 const { t } = useI18n()

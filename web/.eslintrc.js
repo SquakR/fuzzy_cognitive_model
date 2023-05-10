@@ -26,13 +26,13 @@ module.exports = {
 
   overrides: [
     {
-      files: ['layouts/*.vue', 'pages/**/*.vue'],
+      files: ['layouts/*.vue', 'pages/**/*.vue', 'components/**/*.vue'],
       rules: {
         'vue/multi-word-component-names': 'off',
       },
     },
     {
-      files: ['layouts/*.vue', 'pages/**/*.vue', 'components/*.vue'],
+      files: ['layouts/*.vue', 'pages/**/*.vue', 'components/**/*.vue'],
       rules: {
         'vue/valid-v-slot': 'off',
         'vue/no-template-shadow': 'off',
@@ -42,8 +42,8 @@ module.exports = {
       files: [
         'layouts/*.vue',
         'pages/**/*.vue',
-        'components/*.vue',
-        'composables/*.ts',
+        'components/**/*.vue',
+        'composables/**/*.ts',
         'store/*.ts',
       ],
       rules: {

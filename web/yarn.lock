@@ -1094,7 +1094,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nuxt/kit@npm:3.4.3, @nuxt/kit@npm:^3.0.0, @nuxt/kit@npm:^3.3.3, @nuxt/kit@npm:^3.4.3":
+"@nuxt/kit@npm:3.4.3, @nuxt/kit@npm:^3.0.0, @nuxt/kit@npm:^3.3.3, @nuxt/kit@npm:^3.4.0, @nuxt/kit@npm:^3.4.3":
   version: 3.4.3
   resolution: "@nuxt/kit@npm:3.4.3"
   dependencies:
@@ -1655,6 +1655,17 @@ __metadata:
   peerDependencies:
     vue: ">=2.7 || >=3"
   checksum: a10db1dbd6dfdd9079807235b53c8a008033cdc7ec57ad838853ce55a1d18f4e551c0026b91088a8a609f44dce8cf3041381ea576144b79db97eeb5547a32c90
+  languageName: node
+  linkType: hard
+
+"@vee-validate/nuxt@npm:^4.9.2":
+  version: 4.9.2
+  resolution: "@vee-validate/nuxt@npm:4.9.2"
+  dependencies:
+    "@nuxt/kit": ^3.4.0
+    local-pkg: ^0.4.3
+    vee-validate: ^4.9.2
+  checksum: bc17a3f9dab0483e69d76faa9e7a123921359ce98573f5db869adfe19aa93b3c56ef27b25ef9247befba1b4f98de6b30112cc694a799b574b77a101edea0af3a
   languageName: node
   linkType: hard
 
@@ -7868,6 +7879,7 @@ __metadata:
     "@pinia/nuxt": ^0.4.9
     "@typescript-eslint/eslint-plugin": ^5.6.0
     "@typescript-eslint/parser": ^5.6.0
+    "@vee-validate/nuxt": ^4.9.2
     "@vue/eslint-config-standard": ^8.0.1
     "@vueuse/core": ^10.1.2
     "@vueuse/nuxt": ^10.1.2
@@ -7883,7 +7895,6 @@ __metadata:
     rxjs: ^7.8.1
     sass: ^1.62.1
     typescript: ^5.0.4
-    vee-validate: ^4.8.6
     vue-i18n: ^9.2.2
     vuetify: ^3.2.2
     yup: ^1.1.1
@@ -9078,15 +9089,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vee-validate@npm:^4.8.6":
-  version: 4.9.1
-  resolution: "vee-validate@npm:4.9.1"
+"vee-validate@npm:^4.9.2":
+  version: 4.9.2
+  resolution: "vee-validate@npm:4.9.2"
   dependencies:
     "@vue/devtools-api": ^6.5.0
     type-fest: ^3.10.0
   peerDependencies:
     vue: ^3.2.0
-  checksum: 556fdfd9dd27b61b2500315cb5410d3e538735aba1dee24fca77e549a2f27d0a0109cefab966d1b706c45f43e92c04579ffb69b4627a55c0dbbb0b9bb12d537d
+  checksum: fb035028c971a8ee7a035a5a8c86ac5f1bfb1fd1f7829ed3fef9f16d43b9826441009c62041ac8a92ae7669b8285b27728100b02ec2e38d436f952cd00b90ae3
   languageName: node
   linkType: hard
 

@@ -163,7 +163,7 @@ export interface ProjectsInType {
   perPage: number | null
 }
 
-export interface PaginationOutType<T> {
+export interface PaginationOutType<T extends { id: number }> {
   data: T[]
   totalCount: number
   totalPages: number

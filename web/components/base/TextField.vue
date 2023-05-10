@@ -1,22 +1,20 @@
 <template>
-  <Field v-slot="{ field, meta: { dirty }, errors }" :name="name">
-    <VTextarea
-      v-bind="field"
-      :variant="variant"
-      :label="label"
-      :clearable="clearable"
-      :error-messages="errors"
-      :counter="counter"
-      :append-inner-icon="appendInnerIcon"
-      :color="dirty && !errors.length ? 'success' : undefined"
-      @click:append-inner="$emit('click:append-inner')"
-    />
-  </Field>
+  <VTextField
+    v-model="value"
+    :variant="variant"
+    :label="label"
+    :type="type"
+    :clearable="clearable"
+    :error-messages="errors"
+    :counter="counter"
+    :append-inner-icon="appendInnerIcon"
+    :color="meta.dirty && !errors.length ? 'success' : undefined"
+    @blur="handleBlur"
+    @click:append-inner="$emit('click:append-inner')"
+  />
 </template>
 
 <script setup lang="ts">
-import { Field } from 'vee-validate'
-
 export interface Props {
   name: string
   variant?:
@@ -28,6 +26,7 @@ export interface Props {
     | 'solo-inverted'
     | 'solo-filled'
   label?: string
+  type?: string
   clearable?: boolean
   counter?: string | number | true
   appendInnerIcon?: string
@@ -36,12 +35,15 @@ export interface Emits {
   (e: 'click:append-inner'): void
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   variant: 'underlined',
   label: undefined,
+  type: 'text',
   clearable: false,
   counter: undefined,
   appendInnerIcon: undefined,
 })
 defineEmits<Emits>()
+
+const { value, handleBlur, errors, meta } = useField(toRef(props, 'name'))
 </script>

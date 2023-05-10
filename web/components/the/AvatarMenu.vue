@@ -2,7 +2,7 @@
   <VMenu>
     <template #activator="{ props }">
       <VBtn size="large" v-bind="props" icon>
-        <BaseUserAvatar
+        <UserAvatar
           v-if="modelValue"
           :user="modelValue"
           size="large"

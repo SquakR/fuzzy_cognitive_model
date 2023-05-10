@@ -1,7 +1,7 @@
 <template>
   <VTooltip v-model="tooltipActive" location="bottom">
     <template #activator="{ props: tooltipProps }">
-      <BaseDeleteMenu
+      <MenuDelete
         :item-name="itemName"
         @confirm="$emit('confirm')"
         @cancel="$emit('cancel')"
@@ -15,7 +15,7 @@
             mdi-delete</VIcon
           >
         </template>
-      </BaseDeleteMenu>
+      </MenuDelete>
     </template>
     <span>{{ t('delete') }}</span>
   </VTooltip>
@@ -24,12 +24,12 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+export interface Props {
+  itemName: string
+}
 export interface Emits {
   (e: 'confirm'): void
   (e: 'cancel'): void
-}
-export interface Props {
-  itemName: string
 }
 
 defineProps<Props>()

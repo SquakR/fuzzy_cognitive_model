@@ -4,11 +4,11 @@
     <VCardText>
       <VRow>
         <VCol cols="12">
-          <AddProjectForm @add-project="addProject">
+          <ProjectAddForm @add-project="addProject">
             <template #activator="{ props }">
               <VBtn v-bind="props" color="primary">{{ t('addProject') }}</VBtn>
             </template>
-          </AddProjectForm>
+          </ProjectAddForm>
         </VCol>
       </VRow>
       <VDataTableServer
@@ -20,10 +20,7 @@
         :items="projects"
       >
         <template #item.creator="{ item }">
-          <BaseUserAvatar
-            :user="item.raw.creator"
-            class="mr-1"
-          ></BaseUserAvatar>
+          <UserAvatar :user="item.raw.creator" class="mr-1"></UserAvatar>
           {{ userNameFilter(item.raw.creator) }}</template
         >
         <template #item.createdAt="{ item }">
@@ -33,13 +30,17 @@
           {{ dateTimeFilter(item.raw.updatedAt) }}
         </template>
         <template #item.actions="{ item }">
-          <VIcon class="mr-2" color="primary"> mdi-pencil </VIcon>
-          <TableDeleteButton
+          <TableEdit class="mr-2" @click="editingProject = item.raw" />
+          <TableDelete
             :item-name="t('project')"
             @confirm="deleteProject(item.raw.id)"
-          ></TableDeleteButton>
+          />
         </template>
       </VDataTableServer>
+      <ProjectChangeForm
+        v-model="editingProject"
+        @change-project="changeProject"
+      />
     </VCardText>
   </VCard>
 </template>
@@ -94,6 +95,7 @@ const {
   itemsLength,
   data: projects,
   insertAtTop,
+  replace,
 } = usePagination(
   projectsPagination,
   refresh,
@@ -102,6 +104,9 @@ const {
 )
 const addProject = async (project: ProjectOutType) => {
   await insertAtTop(project)
+}
+const changeProject = async (project: ProjectOutType) => {
+  replace(project)
 }
 
 const {
@@ -116,6 +121,8 @@ deleteProjectOnSuccess(() => {
 const loading = computed(
   () => projectsPending.value || deleteProjectPending.value
 )
+
+const editingProject = ref<ProjectOutType | null>(null)
 </script>
 
 <i18n locale="en-US" lang="json">

@@ -1,6 +1,8 @@
 <template>
   <Form
+    ref="form"
     v-slot="{ isSubmitting }"
+    as="v-form"
     :validation-schema="validationSchema"
     :initial-values="initialValues"
     :on-submit="onSubmit"
@@ -60,6 +62,11 @@ export interface Props {
 const props = withDefaults(defineProps<Props>(), {
   width: 500,
   successMessage: undefined,
+})
+
+const form = ref<InstanceType<typeof Form> | null>(null)
+defineExpose({
+  form,
 })
 
 const computedWidth = computed(() =>
