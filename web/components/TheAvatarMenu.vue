@@ -40,7 +40,7 @@ export interface Emits {
 defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const { t } = useI18n({})
+const { t } = useI18n()
 
 const { execute: signOut, onSuccess } = useSignOut({
   key: 'signOut',

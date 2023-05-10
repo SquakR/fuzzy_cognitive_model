@@ -27,7 +27,7 @@ export interface Emits {
 }
 const emit = defineEmits<Emits>()
 
-const { t } = useI18n({})
+const { t } = useI18n()
 
 const isActive = ref(false)
 const actionKey = 'createProject'

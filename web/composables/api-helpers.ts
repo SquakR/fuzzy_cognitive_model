@@ -93,10 +93,13 @@ export const useLocalFetchFuncRaw = <T>(
     onErrorHandlers.value.push(callback)
   }
 
+  const pending = ref(false)
+
   const execute = async (
     request: FetchRequest,
     body?: RequestInit['body'] | Record<string, any>
   ): Promise<LocalFetchResult<T>> => {
+    pending.value = true
     try {
       const data = await $fetch<T>(request, {
         baseURL: config.public.API_HTTP_BASE_URL,
@@ -120,10 +123,12 @@ export const useLocalFetchFuncRaw = <T>(
         return { data: null, success: false, errorData: error.data }
       }
       throw error
+    } finally {
+      pending.value = false
     }
   }
 
-  return { execute, onSuccess, onError }
+  return { execute, pending, onSuccess, onError }
 }
 
 export const useLocalFetchFunc = <T>(

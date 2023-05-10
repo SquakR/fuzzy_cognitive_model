@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n({})
+const { t } = useI18n()
 const version = ref('0.1.0')
 const years = ref('2022-2023')
 </script>

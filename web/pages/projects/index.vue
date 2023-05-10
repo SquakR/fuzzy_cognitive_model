@@ -32,6 +32,13 @@
         <template #item.updatedAt="{ item }">
           {{ dateTimeFilter(item.raw.updatedAt) }}
         </template>
+        <template #item.actions="{ item }">
+          <VIcon class="mr-2" color="primary"> mdi-pencil </VIcon>
+          <TableDeleteButton
+            :item-name="t('project')"
+            @confirm="deleteProject(item.raw.id)"
+          ></TableDeleteButton>
+        </template>
       </VDataTableServer>
     </VCardText>
   </VCard>
@@ -52,7 +59,7 @@ type LocalProjectsInType = ProjectsInType & {
   perPage: number
 }
 
-const { t } = useI18n({})
+const { t } = useI18n()
 
 const headers = computed(() => [
   { key: 'name', title: t('name'), sortable: false },
@@ -60,6 +67,7 @@ const headers = computed(() => [
   { key: 'creator', title: t('creator'), sortable: false },
   { key: 'createdAt', title: t('createdAt'), sortable: false },
   { key: 'updatedAt', title: t('updatedAt'), sortable: false },
+  { key: 'actions', title: t('actions'), sortable: false },
 ])
 const projectsIn = ref<LocalProjectsInType>({
   group: 'private',
@@ -79,7 +87,7 @@ const projectsIn = ref<LocalProjectsInType>({
 })
 const {
   data: projectsPagination,
-  pending: loading,
+  pending: projectsPending,
   refresh,
 } = useGetProjects({ key: 'projects' }, projectsIn)
 const {
@@ -95,6 +103,19 @@ const {
 const addProject = async (project: ProjectOutType) => {
   await insertAtTop(project)
 }
+
+const {
+  execute: deleteProject,
+  pending: deleteProjectPending,
+  onSuccess: deleteProjectOnSuccess,
+} = useDeleteProject({ key: 'deleteProject' })
+deleteProjectOnSuccess(() => {
+  refresh()
+})
+
+const loading = computed(
+  () => projectsPending.value || deleteProjectPending.value
+)
 </script>
 
 <i18n locale="en-US" lang="json">
@@ -105,7 +126,9 @@ const addProject = async (project: ProjectOutType) => {
   "description": "Description",
   "creator": "Creator",
   "createdAt": "Date of creation",
-  "updatedAt": "Date of change"
+  "updatedAt": "Date of change",
+  "actions": "Actions",
+  "project": "project"
 }
 </i18n>
 
@@ -117,6 +140,8 @@ const addProject = async (project: ProjectOutType) => {
   "description": "Описание",
   "creator": "Создатель",
   "createdAt": "Дата создание",
-  "updatedAt": "Дата изменения"
+  "updatedAt": "Дата изменения",
+  "actions": "Действия",
+  "project": "проект"
 }
 </i18n>

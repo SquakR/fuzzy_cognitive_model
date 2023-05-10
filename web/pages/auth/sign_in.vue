@@ -22,7 +22,7 @@ definePageMeta({
   middleware: ['guest'],
 })
 
-const { t } = useI18n({})
+const { t } = useI18n()
 
 const actionKey = 'signIn'
 const validationSchema = yup.object({

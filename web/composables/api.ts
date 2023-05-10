@@ -97,3 +97,13 @@ export const useSetProjectPlugins = (opts: LocalFetchFuncOptions) => {
   }
   return { execute, ...rest }
 }
+
+export const useDeleteProject = (opts: LocalFetchFuncOptions) => {
+  const { execute: fetch, ...rest } = useLocalFetchFunc<null>(opts, {
+    method: 'DELETE',
+  })
+  const execute = async (projectId: number) => {
+    return await fetch(`/project/${projectId}`)
+  }
+  return { execute, ...rest }
+}
