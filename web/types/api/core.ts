@@ -1,3 +1,5 @@
+import { DynamicModelType } from './plugins/adjustment'
+
 export interface UserOutType {
   id: number
   username: string
@@ -161,6 +163,146 @@ export interface ProjectsInType {
   updatedAtIncludeEnd: boolean | null
   page: number | null
   perPage: number | null
+}
+
+export interface ModelActionType<T> {
+  projectId: number
+  projectUpdatedAt: number
+  name: string
+  data: T
+}
+
+export interface ModelActionErrorType {
+  projectId: number
+  name: string
+  message: string
+}
+
+export interface ConceptOutType {
+  id: number
+  name: string
+  description: string
+  value: number | null
+  projectId: number
+  xPosition: number
+  yPosition: number
+  pluginsData: {
+    controlConcepts?: {
+      isControl: boolean
+    }
+    targetConcepts?: {
+      isTarget: boolean
+      value: number
+    }
+    conceptConstraints?: {
+      hasConstraint: boolean
+      minValue: number
+      includeMinValue: boolean
+      maxValue: number
+      includeMaxValue: boolean
+    }
+    adjustment?: {
+      dynamicModelType: DynamicModelType
+    }
+  }
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ConceptInCreateType {
+  name: string
+  description: string
+  value: number | null
+  xPosition: number
+  yPosition: number
+}
+
+export interface ConceptOutChangeDescriptionType {
+  id: number
+  name: string
+  description: string
+  updatedAt: string
+}
+
+export interface ConceptInChangeDescriptionType {
+  name: string
+  description: string
+}
+
+export interface ConceptOutChangeValueType {
+  id: number
+  value: number | null
+  updatedAt: string
+}
+
+export interface ConceptOutMoveType {
+  id: number
+  xPosition: number
+  yPosition: number
+  updatedAt: string
+}
+
+export interface ConceptInMoveType {
+  xPosition: number
+  yPosition: number
+}
+
+export interface ConceptOutDeleteType {
+  id: number
+  updatedAt: string
+}
+
+export interface ConnectionOutType {
+  id: number
+  description: string
+  value: number
+  sourceId: number
+  targetId: number
+  projectId: number
+  pluginsData: {
+    controlConnections?: {
+      isControl: boolean
+    }
+    connectionConstraints: {
+      hasConstraint: boolean
+      minValue: number
+      includeMinValue: boolean
+      maxValue: number
+      includeMaxValue: boolean
+    }
+  }
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ConnectionInCreateType {
+  description: string
+  value: number
+  sourceId: number
+  targetId: number
+}
+
+export interface ConnectionOutChangeDescriptionType {
+  id: number
+  description: string
+  updatedAt: string
+}
+
+export interface ConnectionOutChangeValueType {
+  id: number
+  value: number
+  updateAt: string
+}
+
+export interface ConnectionOutDeleteType {
+  id: number
+  updatedAt: string
+}
+
+export interface ModelOutType {
+  project: ProjectOutType
+  concepts: ConceptOutType[]
+  connections: ConnectionOutType[]
 }
 
 export interface PaginationOutType<T extends { id: number }> {

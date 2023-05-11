@@ -34,7 +34,7 @@ const isActive = ref(false)
 const actionKey = 'createProject'
 const validationSchema = yup.object({
   name: yup.string().required().min(3).max(255),
-  description: yup.string().required(),
+  description: yup.string(),
   isPublic: yup.boolean().required(),
 })
 const initialValues: yup.InferType<typeof validationSchema> = {
@@ -60,7 +60,7 @@ const { execute: setProjectPlugins } = useSetProjectPlugins({
 const onSubmit = async (values: yup.InferType<typeof validationSchema>) => {
   const { data: project, success: createProjectSuccess } = await createProject({
     name: values.name,
-    description: values.description,
+    description: values.description ? values.description : '',
     isPublic: values.isPublic,
     isArchived: false,
     conceptValueType: 'from_zero_to_one',

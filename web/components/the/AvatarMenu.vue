@@ -28,8 +28,8 @@
 </template>
 
 <script setup lang="ts">
-import { UserOutType } from '~/types'
 import { useI18n } from 'vue-i18n'
+import { UserOutType } from '~/types'
 
 export interface Props {
   modelValue: UserOutType | null

@@ -1,12 +1,12 @@
-import { UseFetchOptions, FetchResult as NuxtFetchResult } from 'nuxt/app'
-import { KeysOf } from 'nuxt/dist/app/composables/asyncData'
 import type { NitroFetchOptions, NitroFetchRequest } from 'nitropack'
-import { FetchRequest, FetchError } from 'ofetch'
+import { FetchResult as NuxtFetchResult, UseFetchOptions } from 'nuxt/app'
+import { KeysOf } from 'nuxt/dist/app/composables/asyncData'
+import { FetchError, FetchRequest } from 'ofetch'
 import { useMessageStore, useUserStore } from '~/store'
 import {
+  ErrorPayload,
   LocalFetchFuncOptions,
   LocalFetchOptions,
-  ErrorPayload,
   LocalFetchResult,
 } from '~/types'
 
@@ -66,11 +66,20 @@ export const useLocalFetch = <
       ...fetchOpts,
     }
   )
-  watch(error, (newValue) => {
-    if (newValue && (opts.emitError === undefined || opts.emitError)) {
-      messageStore.emitError(opts.key, getErrorMessage(newValue.data))
-    }
-  })
+  watch(
+    error,
+    (newValue) => {
+      if (newValue) {
+        if (opts.fatal === undefined || opts.fatal) {
+          throw error
+        }
+        if (opts.emitError === undefined || opts.emitError) {
+          messageStore.emitError(opts.key, getErrorMessage(newValue.data))
+        }
+      }
+    },
+    { immediate: true }
+  )
   return { error, ...rest }
 }
 

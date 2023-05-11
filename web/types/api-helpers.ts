@@ -1,6 +1,7 @@
 export interface LocalFetchOptions {
   key: string
   emitError?: boolean
+  fatal?: boolean
 }
 
 export interface LocalFetchFuncOptions {

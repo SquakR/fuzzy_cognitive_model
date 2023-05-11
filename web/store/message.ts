@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ReplaySubject, Observable, filter, map } from 'rxjs'
+import { Observable, ReplaySubject, filter, map } from 'rxjs'
 import { ErrorMessage, Message, SuccessMessage } from '~/types'
 
 export const useMessageStore = defineStore('message', () => {

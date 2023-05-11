@@ -1,9 +1,9 @@
 import {
+  CredentialsType,
+  LocalFetchFuncOptions,
+  SessionType,
   UserInCreateType,
   UserOutType,
-  CredentialsType,
-  SessionType,
-  LocalFetchFuncOptions,
 } from '~/types'
 
 export const useCreateUser = (opts: LocalFetchFuncOptions) => {

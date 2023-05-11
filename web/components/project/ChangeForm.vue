@@ -22,8 +22,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import * as yup from 'yup'
-import { ProjectOutType } from '~/types'
 import BaseModalForm from '~/components/base/ModalForm.vue'
+import { ProjectOutType } from '~/types'
 
 export interface Props {
   modelValue: ProjectOutType | null
@@ -52,7 +52,7 @@ const isActive = computed({
 const actionKey = 'changeProject'
 const validationSchema = yup.object({
   name: yup.string().required().min(3).max(255),
-  description: yup.string().required(),
+  description: yup.string(),
   isPublic: yup.boolean().required(),
   isArchived: yup.boolean().required(),
 })
@@ -89,7 +89,7 @@ onSuccess((project) => {
 const onSubmit = async (values: yup.InferType<typeof validationSchema>) => {
   await changeProject(props.modelValue!.id, {
     name: values.name,
-    description: values.description,
+    description: values.description ? values.description : '',
     isPublic: values.isPublic,
     isArchived: values.isArchived,
     conceptValueType: 'from_zero_to_one',

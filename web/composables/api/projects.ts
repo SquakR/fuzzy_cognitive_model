@@ -1,11 +1,11 @@
 import {
-  LocalFetchOptions,
   LocalFetchFuncOptions,
-  ProjectsInType,
+  LocalFetchOptions,
   PaginationOutType,
-  ProjectOutType,
-  ProjectInType,
   PluginType,
+  ProjectInType,
+  ProjectOutType,
+  ProjectsInType,
 } from '~/types'
 
 export const useGetProjects = (
@@ -40,7 +40,7 @@ export const useChangeProject = (opts: LocalFetchFuncOptions) => {
     method: 'PUT',
   })
   const execute = async (projectId: number, projectIn: ProjectInType) => {
-    return await fetch(`/project/${projectId}`, projectIn)
+    return await fetch(`/projects/${projectId}`, projectIn)
   }
   return { execute, ...rest }
 }
@@ -50,7 +50,7 @@ export const useSetProjectPlugins = (opts: LocalFetchFuncOptions) => {
     method: 'POST',
   })
   const execute = async (projectId: number, newPlugins: string[]) => {
-    return await fetch(`/project/${projectId}/plugins`, newPlugins)
+    return await fetch(`/projects/${projectId}/plugins`, newPlugins)
   }
   return { execute, ...rest }
 }
@@ -60,7 +60,7 @@ export const useDeleteProject = (opts: LocalFetchFuncOptions) => {
     method: 'DELETE',
   })
   const execute = async (projectId: number) => {
-    return await fetch(`/project/${projectId}`)
+    return await fetch(`/projects/${projectId}`)
   }
   return { execute, ...rest }
 }

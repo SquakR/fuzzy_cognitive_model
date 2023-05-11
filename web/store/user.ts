@@ -1,5 +1,5 @@
-import { defineStore } from 'pinia'
 import { useStorage } from '@vueuse/core'
+import { defineStore } from 'pinia'
 import { UserOutType } from '~/types'
 
 export const useUserStore = defineStore('user', () => {

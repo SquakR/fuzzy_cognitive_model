@@ -16,7 +16,7 @@ use rocket_okapi::openapi;
 
 /// Get model
 #[openapi(tag = "model")]
-#[get("/project/<project_id>")]
+#[get("/projects/<project_id>")]
 pub fn get_model(project_id: i32, user: User, plugins: &Plugins) -> PathResult<ModelOutType> {
     let conn = &mut db::establish_connection();
     model_services::get_model(conn, plugins, &user, project_id).to_path_result()
@@ -24,7 +24,7 @@ pub fn get_model(project_id: i32, user: User, plugins: &Plugins) -> PathResult<M
 
 /// Get model copy
 #[openapi(tag = "model")]
-#[get("/model/<model_copy_id>")]
+#[get("/models/<model_copy_id>")]
 pub fn get_model_copy(model_copy_id: i32, user: User) -> PathResult<ModelOutType> {
     let conn = &mut db::establish_connection();
     model_services::get_model_copy(conn, &user, model_copy_id).to_path_result()
@@ -32,7 +32,7 @@ pub fn get_model_copy(model_copy_id: i32, user: User) -> PathResult<ModelOutType
 
 /// Get model active users
 #[openapi(tag = "model")]
-#[get("/project/<project_id>/active_users")]
+#[get("/projects/<project_id>/active_users")]
 pub async fn get_active_users(
     project_id: i32,
     user: User,
@@ -51,7 +51,7 @@ pub async fn get_active_users(
 /// Create new concept
 #[openapi(tag = "model")]
 #[post(
-    "/project/<project_id>/concept",
+    "/projects/<project_id>/concept",
     format = "json",
     data = "<concept_in>"
 )]
@@ -165,7 +165,7 @@ pub async fn delete_concept(
 /// Create new connection
 #[openapi(tag = "model")]
 #[post(
-    "/project/<project_id>/connection",
+    "/projects/<project_id>/connection",
     format = "json",
     data = "<connection_in>"
 )]

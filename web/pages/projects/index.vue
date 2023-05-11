@@ -19,6 +19,16 @@
         :items-length="itemsLength"
         :items="projects"
       >
+        <template #item.name="{ item }">
+          <NuxtLink
+            :to="{ name: 'projects-id', params: { id: item.raw.id } }"
+            >{{ item.raw.name }}</NuxtLink
+          >
+        </template>
+        <template #item.description="{ item }">
+          <span v-if="item.raw.description">{{ item.raw.description }}</span>
+          <strong v-else>&mdash;</strong>
+        </template>
         <template #item.creator="{ item }">
           <UserAvatar :user="item.raw.creator" class="mr-1"></UserAvatar>
           {{ userNameFilter(item.raw.creator) }}</template
