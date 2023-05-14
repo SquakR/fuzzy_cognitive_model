@@ -1,7 +1,7 @@
 <template>
   <div class="d-flex justify-center mt-5">
     <BaseForm
-      :action-key="actionKey"
+      :action-key="ACTION_KEY"
       :title="t('title')"
       :button-text="t('buttonText')"
       :validation-schema="validationSchema"
@@ -36,7 +36,7 @@ const { t } = useI18n()
 
 const userStore = useUserStore()
 
-const actionKey = 'signUp'
+const ACTION_KEY = 'signUp'
 const validationSchema = yup.object({
   username: yup.string().required().min(3).max(255),
   email: yup.string().required().email().max(255),
@@ -60,7 +60,7 @@ const initialValues: yup.InferType<typeof validationSchema> = {
   passwordConfirmation: '',
 }
 const { execute: createUser, onSuccess } = useCreateUser({
-  key: actionKey,
+  key: ACTION_KEY,
 })
 onSuccess(async () => {
   await navigateTo({ name: 'auth-sign_in' })

@@ -1,7 +1,7 @@
 <template>
   <BaseModalForm
     v-model="isActive"
-    :action-key="actionKey"
+    :action-key="ACTION_KEY"
     :title="t('title')"
     :button-text="t('buttonText')"
     :validation-schema="validationSchema"
@@ -30,8 +30,8 @@ const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
 
+const ACTION_KEY = 'createProject'
 const isActive = ref(false)
-const actionKey = 'createProject'
 const validationSchema = yup.object({
   name: yup.string().required().min(3).max(255),
   description: yup.string(),
@@ -43,7 +43,7 @@ const initialValues: yup.InferType<typeof validationSchema> = {
   isPublic: false,
 }
 const { execute: createProject } = useCreateProject({
-  key: actionKey,
+  key: ACTION_KEY,
 })
 
 const { data: plugins } = useGetPlugins({ key: 'plugins' })
@@ -54,7 +54,7 @@ const pluginNames = computed(() => {
   return plugins.value.map((p) => p.name)
 })
 const { execute: setProjectPlugins } = useSetProjectPlugins({
-  key: actionKey,
+  key: ACTION_KEY,
 })
 
 const onSubmit = async (values: yup.InferType<typeof validationSchema>) => {

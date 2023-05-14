@@ -5,8 +5,9 @@
 <script setup lang="ts">
 import cytoscape from 'cytoscape'
 import colors from 'vuetify/lib/util/colors'
+import { usePlugins } from '~/composables/plugins'
 import { useUserStore } from '~/store'
-import { ConceptOutType, ConnectionOutType, ModelOutType } from '~/types'
+import { ModelOutType } from '~/types'
 
 export interface Props {
   model: ModelOutType
@@ -18,15 +19,9 @@ const cy = shallowRef<cytoscape.Core | null>(null)
 
 const userStore = useUserStore()
 
-const { execute: moveConceptExecute } = useMoveConcept({ key: 'moveConcept' })
-const moveConcept = useDebounceFn(moveConceptExecute, 500)
+const { moveConcept } = useModelActions(toRef(props, 'model'), cy)
 
-const getConceptId = (concept: ConceptOutType | number) => {
-  const id = typeof concept === 'number' ? concept : concept.id
-  return `concept${id}`
-}
-const getConnectionId = (connection: ConnectionOutType) =>
-  `connection${connection.id}`
+const { getConceptClasses, getConnectionClasses, getStyles } = usePlugins()
 
 const getConceptElements = () =>
   props.model.concepts.map((concept) => {
@@ -34,49 +29,27 @@ const getConceptElements = () =>
       props.model.project.conceptValueType === 'none'
         ? '\n'
         : new Intl.NumberFormat(userStore.locale).format(concept.value!)
-    let classes = ''
-    if (
-      concept.pluginsData.controlConcepts &&
-      concept.pluginsData.controlConcepts.isControl
-    ) {
-      classes += ' is-control-concept'
-    }
-    if (
-      concept.pluginsData.targetConcepts &&
-      concept.pluginsData.targetConcepts.isTarget
-    ) {
-      classes += ' is-target-concept'
-    }
     return {
       data: {
         conceptId: concept.id,
         id: getConceptId(concept),
         label: `${concept.name}\n\n${value}\n\n${concept.description}`,
       },
-      classes,
+      classes: getConceptClasses(concept).join(' '),
     }
   })
 
 const getConnectionElements = () =>
-  props.model.connections.map((connection) => {
-    let classes = ''
-    if (
-      connection.pluginsData.controlConnections &&
-      connection.pluginsData.controlConnections.isControl
-    ) {
-      classes += ' is-control-connection'
-    }
-    return {
-      data: {
-        connectionId: connection.id,
-        id: getConnectionId(connection),
-        source: getConceptId(connection.sourceId),
-        target: getConceptId(connection.targetId),
-        label: new Intl.NumberFormat(userStore.locale).format(connection.value),
-      },
-      classes,
-    }
-  })
+  props.model.connections.map((connection) => ({
+    data: {
+      connectionId: connection.id,
+      id: getConnectionId(connection),
+      source: getConceptId(connection.sourceId),
+      target: getConceptId(connection.targetId),
+      label: new Intl.NumberFormat(userStore.locale).format(connection.value),
+    },
+    classes: getConnectionClasses(connection).join(' '),
+  }))
 
 const getConceptPositions = () =>
   props.model.concepts.reduce(
@@ -127,25 +100,7 @@ onMounted(() => {
             props.model.project.conceptValueType === 'none' ? 1.0 : 1.25,
         },
       },
-      {
-        selector: 'node.is-control-concept',
-        style: {
-          backgroundColor: colors.amber.lighten1,
-        },
-      },
-      {
-        selector: 'node.is-target-concept',
-        style: {
-          backgroundColor: colors.lime.lighten1,
-        },
-      },
-      {
-        selector: 'edge.is-control-connection',
-        style: {
-          'line-color': colors.amber.lighten1,
-          'target-arrow-color': colors.amber.lighten1,
-        },
-      },
+      ...getStyles(),
     ],
   })
   cy.value.on('drag', 'node', async (e) => {

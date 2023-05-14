@@ -252,6 +252,14 @@ impl WebSocketListener {
                                     Ok(_) => {},
                                     Err(_) => return
                                 },
+                                Message::Text(text) => {
+                                    if text == "ping" {
+                                        match outgoing.send(Message::Text(String::from("pong"))).await {
+                                            Ok(_) => {},
+                                            Err(_) => return
+                                        }
+                                    }
+                                }
                                 Message::Close(_) => return,
                                 _ => {}
                             },

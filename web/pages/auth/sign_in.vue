@@ -1,7 +1,7 @@
 <template>
   <div class="d-flex justify-center mt-5">
     <BaseForm
-      :action-key="actionKey"
+      :action-key="ACTION_KEY"
       :title="t('title')"
       :button-text="t('buttonText')"
       :validation-schema="validationSchema"
@@ -24,7 +24,7 @@ definePageMeta({
 
 const { t } = useI18n()
 
-const actionKey = 'signIn'
+const ACTION_KEY = 'signIn'
 const validationSchema = yup.object({
   username: yup.string().required().min(3),
   password: yup.string().required().min(8),
@@ -34,7 +34,7 @@ const initialValues: yup.InferType<typeof validationSchema> = {
   password: '',
 }
 const { execute: signIn, onSuccess } = useSignIn({
-  key: actionKey,
+  key: ACTION_KEY,
 })
 onSuccess(async () => {
   await navigateTo({ name: 'projects' })

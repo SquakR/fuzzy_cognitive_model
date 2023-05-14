@@ -441,6 +441,7 @@ pub struct ConceptOutChangeValueType {
 
 /// Type of result of moving concept
 #[derive(Clone, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct ConceptOutMoveType {
     /// Concept identifier
     pub id: i32,

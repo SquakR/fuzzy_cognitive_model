@@ -6,7 +6,7 @@
   <VCard v-else height="100%">
     <VCardTitle>{{ model!.project.name }}</VCardTitle>
     <VCardText class="d-flex flex-column model-id__model-editor-container">
-      <ModelEditor :model="model"></ModelEditor>
+      <ModelEditor :model="model!"></ModelEditor>
     </VCardText>
   </VCard>
 </template>
@@ -14,6 +14,7 @@
 <script setup lang="ts">
 definePageMeta({
   layout: 'editor',
+  middleware: 'auth',
 })
 const route = useRoute()
 

@@ -188,7 +188,7 @@ pub async fn create_concept(
         .lock()
         .unwrap()
         .emit(ConceptOutType::from(concept), project.clone())?;
-    let model_action = ModelActionType::new(&project, String::from("create_concept"), concept_out);
+    let model_action = ModelActionType::new(&project, String::from("createConcept"), concept_out);
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
@@ -251,7 +251,7 @@ pub async fn change_concept_description(
     let concept_out = ConceptOutChangeDescriptionType::from(concept);
     let model_action = ModelActionType::new(
         &project,
-        String::from("change_concept_description"),
+        String::from("changeConceptDescription"),
         concept_out,
     );
     project_service.notify(model_action.clone()).await;
@@ -286,7 +286,7 @@ pub async fn change_concept_value(
         .to_service_result_find(String::from("concept_not_found_error"))?;
     let concept_out = ConceptOutChangeValueType::from(concept);
     let model_action =
-        ModelActionType::new(&project, String::from("change_concept_value"), concept_out);
+        ModelActionType::new(&project, String::from("changeConceptValue"), concept_out);
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
@@ -315,7 +315,7 @@ pub async fn move_concept(
         })
         .to_service_result_find(String::from("concept_not_found_error"))?;
     let concept_out = ConceptOutMoveType::from(concept);
-    let model_action = ModelActionType::new(&project, String::from("move_concept"), concept_out);
+    let model_action = ModelActionType::new(&project, String::from("moveConcept"), concept_out);
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
@@ -347,7 +347,7 @@ pub async fn delete_concept(
     }
     let model_action = ModelActionType::new(
         &project,
-        String::from("delete_concept"),
+        String::from("deleteConcept"),
         ConceptOutDeleteType {
             id: concept_id,
             updated_at: project.updated_at,
@@ -395,7 +395,7 @@ pub async fn create_connection(
         .unwrap()
         .emit(ConnectionOutType::from(connection), project.clone())?;
     let model_action =
-        ModelActionType::new(&project, String::from("create_connection"), connection_out);
+        ModelActionType::new(&project, String::from("createConnection"), connection_out);
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
@@ -424,7 +424,7 @@ pub async fn change_connection_description(
     let connection_out = ConnectionOutChangeDescriptionType::from(connection);
     let model_action = ModelActionType::new(
         &project,
-        String::from("change_connection_description"),
+        String::from("changeConnectionDescription"),
         connection_out,
     );
     project_service.notify(model_action.clone()).await;
@@ -465,7 +465,7 @@ pub async fn change_connection_value(
     let connection_out = ConnectionOutChangeValueType::from(connection);
     let model_action = ModelActionType::new(
         &project,
-        String::from("change_connection_value"),
+        String::from("changeConnectionValue"),
         connection_out,
     );
     project_service.notify(model_action.clone()).await;
@@ -499,7 +499,7 @@ pub async fn delete_connection(
     }
     let model_action = ModelActionType::new(
         &project,
-        String::from("delete_connection"),
+        String::from("deleteConnection"),
         ConnectionOutDeleteType {
             id: connection_id,
             updated_at: project.updated_at,

@@ -2,7 +2,7 @@
   <BaseModalForm
     ref="modelForm"
     v-model="isActive"
-    :action-key="actionKey"
+    :action-key="ACTION_KEY"
     :title="t('title')"
     :button-text="t('buttonText')"
     :validation-schema="validationSchema"
@@ -49,7 +49,7 @@ const isActive = computed({
   },
 })
 
-const actionKey = 'changeProject'
+const ACTION_KEY = 'changeProject'
 const validationSchema = yup.object({
   name: yup.string().required().min(3).max(255),
   description: yup.string(),
@@ -79,7 +79,7 @@ watch(
 )
 
 const { execute: changeProject, onSuccess } = useChangeProject({
-  key: actionKey,
+  key: ACTION_KEY,
 })
 onSuccess((project) => {
   emit('changeProject', project)

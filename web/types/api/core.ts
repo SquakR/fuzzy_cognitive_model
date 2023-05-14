@@ -165,19 +165,6 @@ export interface ProjectsInType {
   perPage: number | null
 }
 
-export interface ModelActionType<T> {
-  projectId: number
-  projectUpdatedAt: number
-  name: string
-  data: T
-}
-
-export interface ModelActionErrorType {
-  projectId: number
-  name: string
-  message: string
-}
-
 export interface ConceptOutType {
   id: number
   name: string

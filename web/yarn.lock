@@ -1735,6 +1735,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@vee-validate/yup@npm:^4.9.3":
+  version: 4.9.3
+  resolution: "@vee-validate/yup@npm:4.9.3"
+  dependencies:
+    type-fest: ^3.10.0
+    vee-validate: ^4.9.3
+    yup: ^1.1.1
+  checksum: e39bafbc7a7d9ddd653e337ed9a8ffd39a560f148d04b5b71245a5dbf28b060f219f191e8296ece3e166e75c3c1c3e8721f3b9ea6abd39c3577ef5b52f20e7c2
+  languageName: node
+  linkType: hard
+
 "@vercel/nft@npm:^0.22.6":
   version: 0.22.6
   resolution: "@vercel/nft@npm:0.22.6"
@@ -7972,6 +7983,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": ^5.6.0
     "@typescript-eslint/parser": ^5.6.0
     "@vee-validate/nuxt": ^4.9.2
+    "@vee-validate/yup": ^4.9.3
     "@vue/eslint-config-standard": ^8.0.1
     "@vueuse/core": ^10.1.2
     "@vueuse/nuxt": ^10.1.2
@@ -9198,6 +9210,18 @@ __metadata:
   peerDependencies:
     vue: ^3.2.0
   checksum: fb035028c971a8ee7a035a5a8c86ac5f1bfb1fd1f7829ed3fef9f16d43b9826441009c62041ac8a92ae7669b8285b27728100b02ec2e38d436f952cd00b90ae3
+  languageName: node
+  linkType: hard
+
+"vee-validate@npm:^4.9.3":
+  version: 4.9.3
+  resolution: "vee-validate@npm:4.9.3"
+  dependencies:
+    "@vue/devtools-api": ^6.5.0
+    type-fest: ^3.10.0
+  peerDependencies:
+    vue: ^3.2.0
+  checksum: 8171649c90db8de07894655c91a6cd6a8520bf5e6f1420f676846a1e0f6b95065118d2c471d197d7ba2b553431ee230d37ff14dcce9178dc2fc9c6eeca968909
   languageName: node
   linkType: hard
 
