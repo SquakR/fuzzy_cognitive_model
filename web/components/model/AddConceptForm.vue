@@ -37,8 +37,8 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const { $yup } = useNuxtApp()
-const userStore = useUserStore()
 const { t } = useI18n()
+const userStore = useUserStore()
 
 const isActive = computed({
   get: () => props.modelValue,
@@ -75,7 +75,7 @@ const onSubmit = async (values: Record<string, string>) => {
   emit('createConcept', {
     name: values.name,
     description: values.description,
-    value: values.value ? Number(values.value) : null,
+    value: values.value ? Number(values.value.replace(',', '.')) : null,
     xPosition: Number(values.xPosition),
     yPosition: Number(values.yPosition),
   })

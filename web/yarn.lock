@@ -1480,7 +1480,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/cytoscape@npm:^3.19.9":
+"@types/cytoscape-canvas@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@types/cytoscape-canvas@npm:3.0.0"
+  dependencies:
+    "@types/cytoscape": "*"
+  checksum: f49ba1b5839f032192f804a8865a7186c1deac8d5dfec73be56b5fe10f77f015fdbff5509b9c47b37f2b7340fcb6a0fe8090f9b4af59acf6ff6ab5a5761de3f7
+  languageName: node
+  linkType: hard
+
+"@types/cytoscape@npm:*, @types/cytoscape@npm:^3.19.9":
   version: 3.19.9
   resolution: "@types/cytoscape@npm:3.19.9"
   checksum: 773e7c73198a0dc9fe8fe708aca47af5e1fc47ba6e3138e37e3de23cd336441dd79d2a0215473c755a6bdd9842e3ed83e2e6d51abd128a34a5680fc10b3402b5
@@ -3179,6 +3188,13 @@ __metadata:
   version: 0.2.2
   resolution: "cuint@npm:0.2.2"
   checksum: b8127a93a7f16ce120ffcb22108014327c9808b258ee20e7dbb4c6740d7cb0f0c12d18a054eb716b0f2470090666abaae8a082d3cd5ef0e94fa447dd155842c4
+  languageName: node
+  linkType: hard
+
+"cytoscape-canvas@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "cytoscape-canvas@npm:3.0.1"
+  checksum: 3d9406ceb7893e6124898403a967b17a98ca3d4ffb922ce605ab60dc7157d9ee536593721dabb28d4f76cbcb6e677adab14e09ac690b148724a8badff2d332a3
   languageName: node
   linkType: hard
 
@@ -7980,6 +7996,7 @@ __metadata:
     "@pinia/nuxt": ^0.4.9
     "@trivago/prettier-plugin-sort-imports": ^4.1.1
     "@types/cytoscape": ^3.19.9
+    "@types/cytoscape-canvas": ^3.0.0
     "@typescript-eslint/eslint-plugin": ^5.6.0
     "@typescript-eslint/parser": ^5.6.0
     "@vee-validate/nuxt": ^4.9.2
@@ -7988,6 +8005,7 @@ __metadata:
     "@vueuse/core": ^10.1.2
     "@vueuse/nuxt": ^10.1.2
     cytoscape: ^3.24.0
+    cytoscape-canvas: ^3.0.1
     eslint: ^8.40.0
     eslint-config-prettier: ^8.8.0
     eslint-plugin-nuxt: ^4.0.0

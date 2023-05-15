@@ -84,11 +84,7 @@ export const useModelActions = (
   onMounted(() => {
     open()
   })
-  useEventListener(
-    typeof window === 'undefined' ? null : window,
-    'beforeunload',
-    () => close()
-  )
+  onUnmounted(() => close())
 
   return {
     createConcept,

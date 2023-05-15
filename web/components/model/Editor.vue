@@ -76,8 +76,20 @@ const getConceptPositions = () =>
     {}
   )
 
+const NODE_HEIGHT = 50
+const NODE_WIDTH = 50
+const FONT_SIZE = 16
+const FONT_FAMILY = 'Roboto, sans-serif'
+const DESCRIPTION_MAX_WIDTH = 150
+
 onMounted(() => {
-  cy.value = cytoscape({
+  cy.value = createCytoscape()
+  listen()
+  drawLabels()
+})
+
+const createCytoscape = () => {
+  return cytoscape({
     container: container.value,
     elements: [...getConceptElements(), ...getConnectionElements()],
     layout: {
@@ -104,19 +116,22 @@ onMounted(() => {
         selector: 'node',
         style: {
           label: 'data(label)',
-          width: 50,
-          height: 50,
+          height: NODE_HEIGHT,
+          width: NODE_WIDTH,
           backgroundColor: colors.indigo.lighten1,
-          'text-wrap': 'wrap',
-          'text-margin-y': 75,
-          'line-height':
-            props.model.project.conceptValueType === 'none' ? 1.0 : 1.25,
+          'text-valign': 'center',
+          'text-margin-y': 2,
+          'font-size': FONT_SIZE,
+          'font-family': FONT_FAMILY,
         },
       },
       ...plugins.getStyles(),
     ],
   })
-  cy.value.on('drag', 'node', async (e) => {
+}
+
+const listen = () => {
+  cy.value!.on('drag', 'node', async (e) => {
     const node = e.target
     const position = node.position()
     await moveConcept(node.data().conceptId, {
@@ -124,14 +139,54 @@ onMounted(() => {
       yPosition: position.y,
     })
   })
-  cy.value.on('click', (e) => {
+  cy.value!.on('click', (e) => {
     if (mode.value === 'addConcept') {
       addConceptActive.value = true
       addConceptXPosition.value = e.position.x
       addConceptYPosition.value = e.position.y
     }
   })
-})
+}
+
+const drawLabels = () => {
+  const layer = cy.value!.cyCanvas()
+  const canvas = layer.getCanvas()
+  const ctx = canvas.getContext('2d')!
+  cy.value!.on('render cyCanvas.resize', function () {
+    ctx.font = `${FONT_SIZE}px ${FONT_FAMILY}`
+    layer.resetTransform(ctx)
+    layer.clear(ctx)
+    layer.setTransform(ctx)
+    cy.value!.nodes().forEach(function (node) {
+      const position = node.position()
+      const conceptId = node.data().conceptId
+      const concept = props.model.concepts.find(
+        (concept) => concept.id === conceptId
+      )!
+      ctx.fillText(
+        concept.name,
+        position.x - ctx.measureText(concept.name).width / 2,
+        position.y - NODE_HEIGHT / 2 - 7
+      )
+      if (concept.description) {
+        let y = position.y + NODE_HEIGHT / 2 + 17
+        let line = ''
+        for (const word of concept.description.split(' ')) {
+          const nextLine = line ? `${line} ${word}` : word
+          if (line && ctx.measureText(nextLine).width > DESCRIPTION_MAX_WIDTH) {
+            ctx.fillText(line, position.x - ctx.measureText(line).width / 2, y)
+            y += 16
+            line = ''
+          }
+          line += ` ${word}`
+        }
+        if (line) {
+          ctx.fillText(line, position.x - ctx.measureText(line).width / 2, y)
+        }
+      }
+    })
+  })
+}
 </script>
 
 <style lang="sass">

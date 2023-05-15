@@ -28,14 +28,15 @@ export interface Emits {
 
 const emit = defineEmits<Emits>()
 
+const { $yup } = useNuxtApp()
 const { t } = useI18n()
 
 const ACTION_KEY = 'createProject'
 const isActive = ref(false)
-const validationSchema = yup.object({
-  name: yup.string().required().min(3).max(255),
-  description: yup.string(),
-  isPublic: yup.boolean().required(),
+const validationSchema = $yup.object({
+  name: $yup.string().required().min(3).max(255),
+  description: $yup.string(),
+  isPublic: $yup.boolean().required(),
 })
 const initialValues: yup.InferType<typeof validationSchema> = {
   name: '',

@@ -32,24 +32,24 @@ definePageMeta({
   middleware: ['guest'],
 })
 
+const { $yup } = useNuxtApp()
 const { t } = useI18n()
-
 const userStore = useUserStore()
 
 const ACTION_KEY = 'signUp'
-const validationSchema = yup.object({
-  username: yup.string().required().min(3).max(255),
-  email: yup.string().required().email().max(255),
-  firstName: yup.string().required().min(2).max(255),
-  secondName: yup.string().notRequired().min(2).max(255),
-  lastName: yup.string().required().min(2).max(255),
-  avatar: yup.mixed(),
-  password: yup.string().required().min(8),
-  passwordConfirmation: yup
+const validationSchema = $yup.object({
+  username: $yup.string().required().min(3).max(255),
+  email: $yup.string().required().email().max(255),
+  firstName: $yup.string().required().min(2).max(255),
+  secondName: $yup.string().notRequired().min(2).max(255),
+  lastName: $yup.string().required().min(2).max(255),
+  avatar: $yup.mixed(),
+  password: $yup.string().required().min(8),
+  passwordConfirmation: $yup
     .string()
     .required()
     .min(8)
-    .oneOf([yup.ref('password')]),
+    .oneOf([$yup.ref('password')]),
 })
 const initialValues: yup.InferType<typeof validationSchema> = {
   username: '',

@@ -18,16 +18,15 @@ export const getConceptElement = (
   concept: ConceptOutType,
   locale: string,
   plugins: Plugin
-) => {
-  const value =
-    model.project.conceptValueType === 'none'
-      ? '\n'
-      : new Intl.NumberFormat(locale).format(concept.value!)
+): cytoscape.ElementDefinition => {
   return {
     data: {
       conceptId: concept.id,
       id: getConceptId(concept),
-      label: `${concept.name}\n\n${value}\n\n${concept.description}`,
+      label:
+        model.project.conceptValueType === 'none'
+          ? ''
+          : new Intl.NumberFormat(locale).format(concept.value!),
     },
     classes: plugins.getConceptClasses(concept).join(' '),
   }

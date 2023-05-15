@@ -38,6 +38,7 @@ const emit = defineEmits<Emits>()
 
 const modelForm = ref<InstanceType<typeof BaseModalForm> | null>(null)
 
+const { $yup } = useNuxtApp()
 const { t } = useI18n()
 
 const isActive = computed({
@@ -50,11 +51,11 @@ const isActive = computed({
 })
 
 const ACTION_KEY = 'changeProject'
-const validationSchema = yup.object({
-  name: yup.string().required().min(3).max(255),
-  description: yup.string(),
-  isPublic: yup.boolean().required(),
-  isArchived: yup.boolean().required(),
+const validationSchema = $yup.object({
+  name: $yup.string().required().min(3).max(255),
+  description: $yup.string(),
+  isPublic: $yup.boolean().required(),
+  isArchived: $yup.boolean().required(),
 })
 const initialValues: Ref<yup.InferType<typeof validationSchema>> = ref({
   name: '',
