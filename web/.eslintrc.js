@@ -45,6 +45,7 @@ module.exports = {
         'components/**/*.vue',
         'composables/**/*.ts',
         'store/*.ts',
+        'utils/*.ts',
       ],
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',

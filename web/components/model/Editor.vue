@@ -1,44 +1,57 @@
 <template>
+  <ModelEditorToolbar v-model:mode="mode" />
+  <ModelAddConceptForm
+    v-model="addConceptActive"
+    :model="model"
+    :x-position="addConceptXPosition"
+    :y-position="addConceptYPosition"
+    @create-concept="createConceptHandler"
+  />
   <div ref="container" class="model-editor__cytoscape-container"></div>
 </template>
 
 <script setup lang="ts">
+import { Mode } from './EditorToolbar.vue'
 import cytoscape from 'cytoscape'
 import colors from 'vuetify/lib/util/colors'
 import { usePlugins } from '~/composables/plugins'
 import { useUserStore } from '~/store'
-import { ModelOutType } from '~/types'
+import { ConceptInCreateType, ModelOutType } from '~/types'
 
 export interface Props {
   model: ModelOutType
 }
 const props = defineProps<Props>()
 
+const mode = ref<Mode>('change')
+
+const addConceptActive = ref(false)
+const addConceptXPosition = ref(0.0)
+const addConceptYPosition = ref(0.0)
+
 const container = ref<HTMLDivElement | null>(null)
 const cy = shallowRef<cytoscape.Core | null>(null)
 
 const userStore = useUserStore()
 
-const { moveConcept } = useModelActions(toRef(props, 'model'), cy)
+const plugins = usePlugins()
 
-const { getConceptClasses, getConnectionClasses, getStyles } = usePlugins()
+const { createConcept, createConceptOnSuccess, moveConcept } = useModelActions(
+  toRef(props, 'model'),
+  cy,
+  plugins
+)
+createConceptOnSuccess(() => {
+  addConceptActive.value = false
+})
+const createConceptHandler = (conceptIn: ConceptInCreateType) => {
+  createConcept(props.model.project.id, conceptIn)
+}
 
 const getConceptElements = () =>
-  props.model.concepts.map((concept) => {
-    const value =
-      props.model.project.conceptValueType === 'none'
-        ? '\n'
-        : new Intl.NumberFormat(userStore.locale).format(concept.value!)
-    return {
-      data: {
-        conceptId: concept.id,
-        id: getConceptId(concept),
-        label: `${concept.name}\n\n${value}\n\n${concept.description}`,
-      },
-      classes: getConceptClasses(concept).join(' '),
-    }
-  })
-
+  props.model.concepts.map((concept) =>
+    getConceptElement(props.model, concept, userStore.locale, plugins)
+  )
 const getConnectionElements = () =>
   props.model.connections.map((connection) => ({
     data: {
@@ -48,7 +61,7 @@ const getConnectionElements = () =>
       target: getConceptId(connection.targetId),
       label: new Intl.NumberFormat(userStore.locale).format(connection.value),
     },
-    classes: getConnectionClasses(connection).join(' '),
+    classes: plugins.getConnectionClasses(connection).join(' '),
   }))
 
 const getConceptPositions = () =>
@@ -100,7 +113,7 @@ onMounted(() => {
             props.model.project.conceptValueType === 'none' ? 1.0 : 1.25,
         },
       },
-      ...getStyles(),
+      ...plugins.getStyles(),
     ],
   })
   cy.value.on('drag', 'node', async (e) => {
@@ -111,6 +124,13 @@ onMounted(() => {
       yPosition: position.y,
     })
   })
+  cy.value.on('click', (e) => {
+    if (mode.value === 'addConcept') {
+      addConceptActive.value = true
+      addConceptXPosition.value = e.position.x
+      addConceptYPosition.value = e.position.y
+    }
+  })
 })
 </script>
 
@@ -119,6 +139,6 @@ $grey-lighten-5: #FAFAFA
 
 .model-editor__cytoscape-container
   width: 100%
-  height: 100%
+  height: calc(100% - 48px)
   background-color: $grey-lighten-5
 </style>
