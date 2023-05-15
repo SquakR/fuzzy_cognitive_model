@@ -1,4 +1,4 @@
-import { ConceptOutMoveType, ConceptOutType } from './core'
+import { ConceptOutMoveType, ConceptOutType, ConnectionOutType } from './core'
 
 export interface ModelActionType<N, T> {
   projectId: number
@@ -25,7 +25,14 @@ export type MoveConceptType = ModelActionType<
   ConceptOutMoveType
 >
 
+export const CREATE_CONNECTION_KEY = 'createConnection'
+export type CreateConnectionType = ModelActionType<
+  typeof CREATE_CONNECTION_KEY,
+  ConnectionOutType
+>
+
 export type ModelActionResult =
   | ModelActionErrorType
   | CreateConceptType
   | MoveConceptType
+  | CreateConnectionType

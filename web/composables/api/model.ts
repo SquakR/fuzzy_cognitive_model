@@ -1,7 +1,9 @@
 import {
   ConceptInCreateType,
   ConceptInMoveType,
+  ConnectionInCreateType,
   CreateConceptType,
+  CreateConnectionType,
   LocalFetchFuncOptions,
   LocalFetchOptions,
   ModelOutType,
@@ -31,6 +33,22 @@ export const useMoveConcept = (opts: LocalFetchFuncOptions) => {
   })
   const execute = async (conceptId: number, conceptIn: ConceptInMoveType) => {
     return await fetch(`/concepts/${conceptId}/move`, conceptIn)
+  }
+  return { execute, ...rest }
+}
+
+export const useCreateConnection = (opts: LocalFetchFuncOptions) => {
+  const { execute: fetch, ...rest } = useLocalFetchFunc<CreateConnectionType>(
+    opts,
+    {
+      method: 'POST',
+    }
+  )
+  const execute = async (
+    projectId: number,
+    connectionIn: ConnectionInCreateType
+  ) => {
+    return await fetch(`/projects/${projectId}/connection`, connectionIn)
   }
   return { execute, ...rest }
 }

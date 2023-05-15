@@ -1,68 +1,74 @@
 <template>
   <ModelEditorToolbar v-model:mode="mode" />
   <ModelAddConceptForm
-    v-model="addConceptActive"
     :model="model"
-    :x-position="addConceptXPosition"
-    :y-position="addConceptYPosition"
-    @create-concept="createConceptHandler"
+    :mode="mode"
+    :cy="cy"
+    :create-concept="createConcept"
+    :create-concept-on-success="createConceptOnSuccess"
+  />
+  <ModelAddConnectionForm
+    ref="modelAddConnectionForm"
+    :model="model"
+    :mode="mode"
+    :cy="cy"
+    :create-connection="createConnection"
+    :create-connection-on-success="createConnectionOnSuccess"
   />
   <div ref="container" class="model-editor__cytoscape-container"></div>
 </template>
 
 <script setup lang="ts">
-import { Mode } from './EditorToolbar.vue'
 import cytoscape from 'cytoscape'
 import colors from 'vuetify/lib/util/colors'
+import ModelAddConnectionForm from '~/components/model/AddConnectionForm.vue'
 import { usePlugins } from '~/composables/plugins'
 import { useUserStore } from '~/store'
-import { ConceptInCreateType, ModelOutType } from '~/types'
+import { EditorMode, ModelOutType } from '~/types'
 
 export interface Props {
   model: ModelOutType
 }
 const props = defineProps<Props>()
 
-const mode = ref<Mode>('change')
+const modelAddConnectionForm = ref<InstanceType<
+  typeof ModelAddConnectionForm
+> | null>(null)
 
-const addConceptActive = ref(false)
-const addConceptXPosition = ref(0.0)
-const addConceptYPosition = ref(0.0)
+const mode = ref<EditorMode>('change')
+watch(mode, (newValue, oldValue) => {
+  if (newValue === 'change') {
+    cy.value!.$('node').grabify()
+  } else {
+    cy.value!.$('node').ungrabify()
+  }
+  if (oldValue === 'addConnection') {
+    modelAddConnectionForm.value!.clear()
+  }
+})
 
 const container = ref<HTMLDivElement | null>(null)
 const cy = shallowRef<cytoscape.Core | null>(null)
 
 const userStore = useUserStore()
-
 const plugins = usePlugins()
 
-const { createConcept, createConceptOnSuccess, moveConcept } = useModelActions(
-  toRef(props, 'model'),
-  cy,
-  plugins
-)
-createConceptOnSuccess(() => {
-  addConceptActive.value = false
-})
-const createConceptHandler = (conceptIn: ConceptInCreateType) => {
-  createConcept(props.model.project.id, conceptIn)
-}
+const {
+  createConcept,
+  createConceptOnSuccess,
+  moveConcept,
+  createConnection,
+  createConnectionOnSuccess,
+} = useModelActions(toRef(props, 'model'), cy, plugins)
 
 const getConceptElements = () =>
   props.model.concepts.map((concept) =>
     getConceptElement(props.model, concept, userStore.locale, plugins)
   )
 const getConnectionElements = () =>
-  props.model.connections.map((connection) => ({
-    data: {
-      connectionId: connection.id,
-      id: getConnectionId(connection),
-      source: getConceptId(connection.sourceId),
-      target: getConceptId(connection.targetId),
-      label: new Intl.NumberFormat(userStore.locale).format(connection.value),
-    },
-    classes: plugins.getConnectionClasses(connection).join(' '),
-  }))
+  props.model.connections.map((connection) =>
+    getConnectionElement(connection, userStore.locale, plugins)
+  )
 
 const getConceptPositions = () =>
   props.model.concepts.reduce(
@@ -125,6 +131,18 @@ const createCytoscape = () => {
           'font-family': FONT_FAMILY,
         },
       },
+      {
+        selector: 'node.add-connection-source',
+        style: {
+          backgroundColor: colors.red.lighten1,
+        },
+      },
+      {
+        selector: 'node.add-connection-target',
+        style: {
+          backgroundColor: colors.purple.lighten1,
+        },
+      },
       ...plugins.getStyles(),
     ],
   })
@@ -132,19 +150,15 @@ const createCytoscape = () => {
 
 const listen = () => {
   cy.value!.on('drag', 'node', async (e) => {
+    if (mode.value !== 'change') {
+      return
+    }
     const node = e.target
     const position = node.position()
     await moveConcept(node.data().conceptId, {
       xPosition: position.x,
       yPosition: position.y,
     })
-  })
-  cy.value!.on('click', (e) => {
-    if (mode.value === 'addConcept') {
-      addConceptActive.value = true
-      addConceptXPosition.value = e.position.x
-      addConceptYPosition.value = e.position.y
-    }
   })
 }
 

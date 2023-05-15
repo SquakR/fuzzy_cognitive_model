@@ -1,7 +1,12 @@
 <template>
   <VRow class="mb-1" dense>
     <VCol>
-      <VBtnToggle v-model="localMode" density="compact" color="primary">
+      <VBtnToggle
+        v-model="localMode"
+        :mandatory="true"
+        density="compact"
+        color="primary"
+      >
         <VBtn class="model-editor-toolbar__button" value="change">{{
           t('change')
         }}</VBtn>
@@ -18,13 +23,13 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { EditorMode } from '~/types'
 
-export type Mode = 'change' | 'addConcept' | 'addConnection'
 export interface Props {
-  mode: Mode
+  mode: EditorMode
 }
 export interface Emits {
-  (e: 'update:mode', mode: Mode): void
+  (e: 'update:mode', mode: EditorMode): void
 }
 
 const props = defineProps<Props>()
@@ -34,7 +39,7 @@ const { t } = useI18n()
 
 const localMode = computed({
   get: () => props.mode,
-  set: (value: Mode) => {
+  set: (value: EditorMode) => {
     emit('update:mode', value)
   },
 })

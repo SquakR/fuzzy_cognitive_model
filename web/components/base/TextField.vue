@@ -4,6 +4,7 @@
     :variant="variant"
     :label="label"
     :type="type"
+    :readonly="readonly"
     :clearable="clearable"
     :error-messages="errors"
     :counter="counter"
@@ -27,6 +28,7 @@ export interface Props {
     | 'solo-filled'
   label?: string
   type?: string
+  readonly?: boolean
   clearable?: boolean
   counter?: string | number | true
   appendInnerIcon?: string
@@ -39,6 +41,7 @@ const props = withDefaults(defineProps<Props>(), {
   variant: 'underlined',
   label: undefined,
   type: 'text',
+  readonly: undefined,
   clearable: false,
   counter: undefined,
   appendInnerIcon: undefined,

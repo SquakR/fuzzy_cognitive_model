@@ -1,7 +1,9 @@
 import { useMessageStore, useUserStore } from '~/store'
 import {
   CREATE_CONCEPT_KEY,
+  CREATE_CONNECTION_KEY,
   CreateConceptType,
+  CreateConnectionType,
   ModelOutType,
   Plugin,
 } from '~/types'
@@ -22,12 +24,10 @@ export const useModelActions = (
     })
   const createConceptUpdate = (result: CreateConceptType) => {
     model.value.concepts.push(result.data)
-    cy.value?.add(
+    cy.value!.add(
       getConceptElement(model.value, result.data, userStore.locale, plugins)
     )
-    if (cy.value) {
-      setConceptPosition(cy.value, model.value.concepts.at(-1)!)
-    }
+    setConceptPosition(cy.value!, model.value.concepts.at(-1)!)
   }
 
   const { execute: moveConceptExecute, onSuccess: moveConceptOnSuccess } =
@@ -42,9 +42,14 @@ export const useModelActions = (
     concept.xPosition = result.data.xPosition
     concept.yPosition = result.data.yPosition
     concept.updatedAt = result.data.updatedAt
-    if (cy.value) {
-      setConceptPosition(cy.value, concept)
-    }
+    setConceptPosition(cy.value!, concept)
+  }
+
+  const { execute: createConnection, onSuccess: createConnectionOnSuccess } =
+    useCreateConnection({ key: CREATE_CONNECTION_KEY })
+  const createConnectionUpdate = (result: CreateConnectionType) => {
+    model.value.connections.push(result.data)
+    cy.value!.add(getConnectionElement(result.data, userStore.locale, plugins))
   }
 
   const { data, open, close } = useWebSocket<string>(
@@ -75,6 +80,9 @@ export const useModelActions = (
         case MOVE_CONCEPT_KEY:
           moveConceptUpdate(result)
           break
+        case CREATE_CONNECTION_KEY:
+          createConnectionUpdate(result)
+          break
       }
     } catch {
       return
@@ -91,5 +99,7 @@ export const useModelActions = (
     createConceptOnSuccess,
     moveConcept,
     moveConceptOnSuccess,
+    createConnection,
+    createConnectionOnSuccess,
   }
 }

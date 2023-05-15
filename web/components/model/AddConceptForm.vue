@@ -20,32 +20,56 @@
 import { useI18n } from 'vue-i18n'
 import * as yup from 'yup'
 import { useUserStore } from '~/store'
-import { CREATE_CONCEPT_KEY, ConceptInCreateType, ModelOutType } from '~/types'
+import { CREATE_CONCEPT_KEY, EditorMode, ModelOutType } from '~/types'
 
 export interface Props {
-  modelValue: boolean
   model: ModelOutType
-  xPosition: number
-  yPosition: number
-}
-export interface Emits {
-  (e: 'update:modelValue', modelValue: boolean): void
-  (e: 'createConcept', conceptIn: ConceptInCreateType): void
+  mode: EditorMode
+  cy: cytoscape.Core | null
+  createConcept: ReturnType<typeof useModelActions>['createConcept']
+  createConceptOnSuccess: ReturnType<
+    typeof useModelActions
+  >['createConceptOnSuccess']
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
 
 const { $yup } = useNuxtApp()
 const { t } = useI18n()
 const userStore = useUserStore()
 
-const isActive = computed({
-  get: () => props.modelValue,
-  set: (value) => {
-    emit('update:modelValue', value)
-  },
+const isActive = ref(false)
+const xPosition = ref(0.0)
+const yPosition = ref(0.0)
+const clear = () => {
+  isActive.value = false
+  xPosition.value = 0.0
+  yPosition.value = 0.0
+}
+
+props.createConceptOnSuccess(clear)
+watch(isActive, (newValue) => {
+  if (!newValue) {
+    clear()
+  }
 })
+
+watch(
+  () => props.cy,
+  (newValue) => {
+    newValue?.on('click', (e) => {
+      if (props.mode !== 'addConcept') {
+        return
+      }
+      isActive.value = true
+      xPosition.value = e.position.x
+      yPosition.value = e.position.y
+    })
+  },
+  {
+    immediate: true,
+  }
+)
 
 const validationSchema = computed(() => {
   const validationSchema: yup.ObjectShape = {
@@ -63,8 +87,8 @@ const initialValues = computed(() => {
   const initialValues: Record<string, string> = {
     name: '',
     description: '',
-    xPosition: String(props.xPosition),
-    yPosition: String(props.yPosition),
+    xPosition: String(xPosition.value),
+    yPosition: String(yPosition.value),
   }
   if (props.model.project.conceptValueType === 'from_zero_to_one') {
     initialValues.value = userStore.locale === 'ru-RU' ? '0,0' : '0.0'
@@ -72,7 +96,7 @@ const initialValues = computed(() => {
   return initialValues
 })
 const onSubmit = async (values: Record<string, string>) => {
-  emit('createConcept', {
+  props.createConcept(props.model.project.id, {
     name: values.name,
     description: values.description,
     value: values.value ? Number(values.value.replace(',', '.')) : null,

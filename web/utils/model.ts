@@ -18,19 +18,32 @@ export const getConceptElement = (
   concept: ConceptOutType,
   locale: string,
   plugins: Plugin
-): cytoscape.ElementDefinition => {
-  return {
-    data: {
-      conceptId: concept.id,
-      id: getConceptId(concept),
-      label:
-        model.project.conceptValueType === 'none'
-          ? ''
-          : new Intl.NumberFormat(locale).format(concept.value!),
-    },
-    classes: plugins.getConceptClasses(concept).join(' '),
-  }
-}
+): cytoscape.ElementDefinition => ({
+  data: {
+    conceptId: concept.id,
+    id: getConceptId(concept),
+    label:
+      model.project.conceptValueType === 'none'
+        ? ''
+        : new Intl.NumberFormat(locale).format(concept.value!),
+  },
+  classes: plugins.getConceptClasses(concept).join(' '),
+})
+
+export const getConnectionElement = (
+  connection: ConnectionOutType,
+  locale: string,
+  plugins: Plugin
+): cytoscape.ElementDefinition => ({
+  data: {
+    connectionId: connection.id,
+    id: getConnectionId(connection),
+    source: getConceptId(connection.sourceId),
+    target: getConceptId(connection.targetId),
+    label: new Intl.NumberFormat(locale).format(connection.value),
+  },
+  classes: plugins.getConnectionClasses(connection).join(' '),
+})
 
 export const setConceptPosition = (
   cy: cytoscape.Core,
