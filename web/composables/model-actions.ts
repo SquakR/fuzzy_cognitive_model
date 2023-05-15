@@ -4,6 +4,8 @@ import {
   CREATE_CONNECTION_KEY,
   CreateConceptType,
   CreateConnectionType,
+  DELETE_CONCEPT_KEY,
+  DeleteConceptType,
   ModelOutType,
   Plugin,
 } from '~/types'
@@ -45,6 +47,17 @@ export const useModelActions = (
     setConceptPosition(cy.value!, concept)
   }
 
+  const { execute: deleteConcept, onSuccess: deleteConceptOnSuccess } =
+    useDeleteConcept({
+      key: DELETE_CONCEPT_KEY,
+    })
+  const deleteConceptUpdate = (result: DeleteConceptType) => {
+    model.value.concepts = model.value.concepts.filter(
+      (concept) => concept.id !== result.data.id
+    )
+    cy.value!.$(`#${getConceptId(result.data.id)}`).remove()
+  }
+
   const { execute: createConnection, onSuccess: createConnectionOnSuccess } =
     useCreateConnection({ key: CREATE_CONNECTION_KEY })
   const createConnectionUpdate = (result: CreateConnectionType) => {
@@ -80,6 +93,9 @@ export const useModelActions = (
         case MOVE_CONCEPT_KEY:
           moveConceptUpdate(result)
           break
+        case DELETE_CONCEPT_KEY:
+          deleteConceptUpdate(result)
+          break
         case CREATE_CONNECTION_KEY:
           createConnectionUpdate(result)
           break
@@ -99,6 +115,8 @@ export const useModelActions = (
     createConceptOnSuccess,
     moveConcept,
     moveConceptOnSuccess,
+    deleteConcept,
+    deleteConceptOnSuccess,
     createConnection,
     createConnectionOnSuccess,
   }

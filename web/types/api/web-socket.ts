@@ -1,4 +1,9 @@
-import { ConceptOutMoveType, ConceptOutType, ConnectionOutType } from './core'
+import {
+  ConceptOutDeleteType,
+  ConceptOutMoveType,
+  ConceptOutType,
+  ConnectionOutType,
+} from './core'
 
 export interface ModelActionType<N, T> {
   projectId: number
@@ -25,6 +30,12 @@ export type MoveConceptType = ModelActionType<
   ConceptOutMoveType
 >
 
+export const DELETE_CONCEPT_KEY = 'deleteConcept'
+export type DeleteConceptType = ModelActionType<
+  typeof DELETE_CONCEPT_KEY,
+  ConceptOutDeleteType
+>
+
 export const CREATE_CONNECTION_KEY = 'createConnection'
 export type CreateConnectionType = ModelActionType<
   typeof CREATE_CONNECTION_KEY,
@@ -35,4 +46,5 @@ export type ModelActionResult =
   | ModelActionErrorType
   | CreateConceptType
   | MoveConceptType
+  | DeleteConceptType
   | CreateConnectionType

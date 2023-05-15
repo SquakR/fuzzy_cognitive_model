@@ -49,7 +49,7 @@ export const setConceptPosition = (
   cy: cytoscape.Core,
   concept: ConceptOutType
 ) => {
-  cy?.$(`#${getConceptId(concept.id)}`).position({
+  cy.$(`#${getConceptId(concept.id)}`).position({
     x: concept.xPosition,
     y: concept.yPosition,
   })

@@ -87,8 +87,14 @@ const initialValues = computed(() => {
   const initialValues: Record<string, string> = {
     name: '',
     description: '',
-    xPosition: String(xPosition.value),
-    yPosition: String(yPosition.value),
+    xPosition:
+      userStore.locale === 'ru-RU'
+        ? xPosition.value.toFixed(2).replace('.', ',')
+        : xPosition.value.toFixed(2),
+    yPosition:
+      userStore.locale === 'ru-RU'
+        ? yPosition.value.toFixed(2).replace('.', ',')
+        : yPosition.value.toFixed(2),
   }
   if (props.model.project.conceptValueType === 'from_zero_to_one') {
     initialValues.value = userStore.locale === 'ru-RU' ? '0,0' : '0.0'
@@ -100,8 +106,8 @@ const onSubmit = async (values: Record<string, string>) => {
     name: values.name,
     description: values.description,
     value: values.value ? Number(values.value.replace(',', '.')) : null,
-    xPosition: Number(values.xPosition),
-    yPosition: Number(values.yPosition),
+    xPosition: xPosition.value,
+    yPosition: yPosition.value,
   })
 }
 </script>

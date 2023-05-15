@@ -38,9 +38,9 @@ const modelAddConnectionForm = ref<InstanceType<
 const mode = ref<EditorMode>('change')
 watch(mode, (newValue, oldValue) => {
   if (newValue === 'change') {
-    cy.value!.$('node').grabify()
+    cy.value!.$('node').selectify().grabify()
   } else {
-    cy.value!.$('node').ungrabify()
+    cy.value!.$('node').unselect().unselectify().ungrabify()
   }
   if (oldValue === 'addConnection') {
     modelAddConnectionForm.value!.clear()
@@ -57,6 +57,7 @@ const {
   createConcept,
   createConceptOnSuccess,
   moveConcept,
+  deleteConcept,
   createConnection,
   createConnectionOnSuccess,
 } = useModelActions(toRef(props, 'model'), cy, plugins)
@@ -92,6 +93,13 @@ onMounted(() => {
   cy.value = createCytoscape()
   listen()
   drawLabels()
+})
+
+onKeyStroke('Delete', () => {
+  cy.value!.$('node:selected').forEach((node) => {
+    const conceptId = node.data().conceptId
+    deleteConcept(conceptId)
+  })
 })
 
 const createCytoscape = () => {
@@ -132,6 +140,12 @@ const createCytoscape = () => {
         },
       },
       {
+        selector: 'node:selected',
+        style: {
+          backgroundColor: colors.red.lighten1,
+        },
+      },
+      {
         selector: 'node.add-connection-source',
         style: {
           backgroundColor: colors.red.lighten1,
@@ -149,6 +163,9 @@ const createCytoscape = () => {
 }
 
 const listen = () => {
+  cy.value!.on('select', 'node, edge', (e) =>
+    cy.value!.elements().not(e.target).unselect()
+  )
   cy.value!.on('drag', 'node', async (e) => {
     if (mode.value !== 'change') {
       return

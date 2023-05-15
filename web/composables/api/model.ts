@@ -4,6 +4,7 @@ import {
   ConnectionInCreateType,
   CreateConceptType,
   CreateConnectionType,
+  DeleteConceptType,
   LocalFetchFuncOptions,
   LocalFetchOptions,
   ModelOutType,
@@ -33,6 +34,19 @@ export const useMoveConcept = (opts: LocalFetchFuncOptions) => {
   })
   const execute = async (conceptId: number, conceptIn: ConceptInMoveType) => {
     return await fetch(`/concepts/${conceptId}/move`, conceptIn)
+  }
+  return { execute, ...rest }
+}
+
+export const useDeleteConcept = (opts: LocalFetchFuncOptions) => {
+  const { execute: fetch, ...rest } = useLocalFetchFunc<DeleteConceptType>(
+    opts,
+    {
+      method: 'DELETE',
+    }
+  )
+  const execute = async (conceptId: number) => {
+    return await fetch(`/concepts/${conceptId}`)
   }
   return { execute, ...rest }
 }
