@@ -5,7 +5,9 @@ import {
   CreateConceptType,
   CreateConnectionType,
   DELETE_CONCEPT_KEY,
+  DELETE_CONNECTION_KEY,
   DeleteConceptType,
+  DeleteConnectionType,
   ModelOutType,
   Plugin,
 } from '~/types'
@@ -65,6 +67,15 @@ export const useModelActions = (
     cy.value!.add(getConnectionElement(result.data, userStore.locale, plugins))
   }
 
+  const { execute: deleteConnection, onSuccess: deleteConnectionOnSuccess } =
+    useDeleteConnection({ key: DELETE_CONNECTION_KEY })
+  const deleteConnectionUpdate = (result: DeleteConnectionType) => {
+    model.value.connections = model.value.connections.filter(
+      (connection) => connection.id !== result.data.id
+    )
+    cy.value!.$(`#${getConnectionId(result.data.id)}`).remove()
+  }
+
   const { data, open, close } = useWebSocket<string>(
     `${config.public.API_WS_BASE_URL}/project/${model.value.project.id}`,
     {
@@ -99,6 +110,9 @@ export const useModelActions = (
         case CREATE_CONNECTION_KEY:
           createConnectionUpdate(result)
           break
+        case DELETE_CONNECTION_KEY:
+          deleteConnectionUpdate(result)
+          break
       }
     } catch {
       return
@@ -119,5 +133,7 @@ export const useModelActions = (
     deleteConceptOnSuccess,
     createConnection,
     createConnectionOnSuccess,
+    deleteConnection,
+    deleteConnectionOnSuccess,
   }
 }

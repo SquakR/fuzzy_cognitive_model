@@ -2,6 +2,7 @@ import {
   ConceptOutDeleteType,
   ConceptOutMoveType,
   ConceptOutType,
+  ConnectionOutDeleteType,
   ConnectionOutType,
 } from './core'
 
@@ -42,9 +43,16 @@ export type CreateConnectionType = ModelActionType<
   ConnectionOutType
 >
 
+export const DELETE_CONNECTION_KEY = 'deleteConnection'
+export type DeleteConnectionType = ModelActionType<
+  typeof DELETE_CONNECTION_KEY,
+  ConnectionOutDeleteType
+>
+
 export type ModelActionResult =
   | ModelActionErrorType
   | CreateConceptType
   | MoveConceptType
   | DeleteConceptType
   | CreateConnectionType
+  | DeleteConnectionType

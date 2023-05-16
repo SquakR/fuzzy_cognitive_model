@@ -5,6 +5,7 @@ import {
   CreateConceptType,
   CreateConnectionType,
   DeleteConceptType,
+  DeleteConnectionType,
   LocalFetchFuncOptions,
   LocalFetchOptions,
   ModelOutType,
@@ -63,6 +64,19 @@ export const useCreateConnection = (opts: LocalFetchFuncOptions) => {
     connectionIn: ConnectionInCreateType
   ) => {
     return await fetch(`/projects/${projectId}/connection`, connectionIn)
+  }
+  return { execute, ...rest }
+}
+
+export const useDeleteConnection = (opts: LocalFetchFuncOptions) => {
+  const { execute: fetch, ...rest } = useLocalFetchFunc<DeleteConnectionType>(
+    opts,
+    {
+      method: 'DELETE',
+    }
+  )
+  const execute = async (connectionId: number) => {
+    return await fetch(`/connections/${connectionId}`)
   }
   return { execute, ...rest }
 }

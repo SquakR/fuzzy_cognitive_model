@@ -39,8 +39,10 @@ const mode = ref<EditorMode>('change')
 watch(mode, (newValue, oldValue) => {
   if (newValue === 'change') {
     cy.value!.$('node').selectify().grabify()
+    cy.value!.$('edge').selectify()
   } else {
     cy.value!.$('node').unselect().unselectify().ungrabify()
+    cy.value!.$('edge').unselect().unselectify()
   }
   if (oldValue === 'addConnection') {
     modelAddConnectionForm.value!.clear()
@@ -60,6 +62,7 @@ const {
   deleteConcept,
   createConnection,
   createConnectionOnSuccess,
+  deleteConnection,
 } = useModelActions(toRef(props, 'model'), cy, plugins)
 
 const getConceptElements = () =>
@@ -100,6 +103,10 @@ onKeyStroke('Delete', () => {
     const conceptId = node.data().conceptId
     deleteConcept(conceptId)
   })
+  cy.value!.$('edge:selected').forEach((edge) => {
+    const connectionId = edge.data().connectionId
+    deleteConnection(connectionId)
+  })
 })
 
 const createCytoscape = () => {
@@ -112,20 +119,6 @@ const createCytoscape = () => {
       positions: getConceptPositions(),
     },
     style: [
-      {
-        selector: 'edge',
-        style: {
-          label: 'data(label)',
-          width: 2,
-          'line-color': colors.grey.darken3,
-          'curve-style': 'straight',
-          'target-arrow-color': colors.grey.darken3,
-          'target-arrow-shape': 'triangle',
-          'arrow-scale': 1.25,
-          'text-background-opacity': 1,
-          'text-background-color': colors.grey.lighten5,
-        },
-      },
       {
         selector: 'node',
         style: {
@@ -155,6 +148,27 @@ const createCytoscape = () => {
         selector: 'node.add-connection-target',
         style: {
           backgroundColor: colors.purple.lighten1,
+        },
+      },
+      {
+        selector: 'edge',
+        style: {
+          label: 'data(label)',
+          width: 2,
+          'line-color': colors.grey.darken3,
+          'curve-style': 'straight',
+          'target-arrow-color': colors.grey.darken3,
+          'target-arrow-shape': 'triangle',
+          'arrow-scale': 1.25,
+          'text-background-opacity': 1,
+          'text-background-color': colors.grey.lighten5,
+        },
+      },
+      {
+        selector: 'edge:selected',
+        style: {
+          'line-color': colors.red.lighten1,
+          'target-arrow-color': colors.red.lighten1,
         },
       },
       ...plugins.getStyles(),

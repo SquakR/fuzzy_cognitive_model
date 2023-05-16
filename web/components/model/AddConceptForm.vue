@@ -39,12 +39,12 @@ const { t } = useI18n()
 const userStore = useUserStore()
 
 const isActive = ref(false)
-const xPosition = ref(0.0)
-const yPosition = ref(0.0)
+const xPosition = ref(0)
+const yPosition = ref(0)
 const clear = () => {
   isActive.value = false
-  xPosition.value = 0.0
-  yPosition.value = 0.0
+  xPosition.value = 0
+  yPosition.value = 0
 }
 
 props.createConceptOnSuccess(clear)
@@ -89,12 +89,12 @@ const initialValues = computed(() => {
     description: '',
     xPosition:
       userStore.locale === 'ru-RU'
-        ? xPosition.value.toFixed(2).replace('.', ',')
-        : xPosition.value.toFixed(2),
+        ? xPosition.value.toFixed(0)
+        : xPosition.value.toFixed(0),
     yPosition:
       userStore.locale === 'ru-RU'
-        ? yPosition.value.toFixed(2).replace('.', ',')
-        : yPosition.value.toFixed(2),
+        ? yPosition.value.toFixed(0)
+        : yPosition.value.toFixed(0),
   }
   if (props.model.project.conceptValueType === 'from_zero_to_one') {
     initialValues.value = userStore.locale === 'ru-RU' ? '0,0' : '0.0'
