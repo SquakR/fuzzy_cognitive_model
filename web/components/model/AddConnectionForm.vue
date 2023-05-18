@@ -29,7 +29,7 @@ import {
 export interface Props {
   model: ModelOutType
   mode: EditorMode
-  cy: cytoscape.Core | null
+  cy: cytoscape.Core
   createConnection: ReturnType<typeof useModelActions>['createConnection']
   createConnectionOnSuccess: ReturnType<
     typeof useModelActions
@@ -52,10 +52,10 @@ const updateClasses = (
   className: string
 ) => {
   if (oldValue) {
-    props.cy!.$(`#${getConceptId(oldValue)}`).removeClass(className)
+    props.cy.$(`#${getConceptId(oldValue)}`).removeClass(className)
   }
   if (newValue) {
-    props.cy!.$(`#${getConceptId(newValue)}`).addClass(className)
+    props.cy.$(`#${getConceptId(newValue)}`).addClass(className)
   }
 }
 watch(source, (newValue, oldValue) =>
@@ -83,28 +83,34 @@ onKeyStroke('Escape', () => {
   }
 })
 
-watch(
-  () => props.cy,
-  (newValue) => {
-    newValue?.on('click', 'node', async (e) => {
-      if (props.mode !== 'addConnection') {
-        return
-      }
-      const concept = props.model.concepts.find(
-        (concept) => concept.id === e.target.data().conceptId
-      )!
-      if (source.value) {
-        if (source.value.id !== concept.id) {
-          target.value = concept
-          isActive.value = true
-        }
-      } else {
-        source.value = concept
-      }
-    })
-  },
-  { immediate: true }
-)
+props.cy.on('click', (e) => {
+  if (props.mode !== 'addConnection') {
+    return
+  }
+  if (e.target === props.cy || !e.target.isNode()) {
+    source.value = null
+    target.value = null
+    return
+  }
+  const concept = props.model.concepts.find(
+    (concept) => concept.id === e.target.data().conceptId
+  )!
+  if (source.value) {
+    if (
+      source.value.id !== concept.id &&
+      !props.model.connections.find(
+        (connection) =>
+          connection.sourceId === source.value!.id &&
+          connection.targetId === concept.id
+      )
+    ) {
+      target.value = concept
+      isActive.value = true
+    }
+  } else {
+    source.value = concept
+  }
+})
 
 const validationSchema = computed(() => {
   const validationSchema: yup.ObjectShape = {

@@ -36,7 +36,7 @@ import { CREATE_CONCEPT_KEY, ConceptOutType, ModelOutType } from '~/types'
 
 export interface Props {
   model: ModelOutType
-  cy: cytoscape.Core | null
+  cy: cytoscape.Core
   selectedConcept: ConceptOutType
   changeConcept: ReturnType<typeof useModelActions>['changeConcept']
 }
@@ -49,10 +49,10 @@ const { t } = useI18n()
 const userStore = useUserStore()
 
 onMounted(() => {
-  props.cy!.on('drag', 'node', onDrag)
+  props.cy.on('drag', 'node', onDrag)
 })
 onUnmounted(() => {
-  props.cy!.removeListener('drag', 'node', onDrag)
+  props.cy.removeListener('drag', 'node', onDrag)
 })
 const onDrag = (e: cytoscape.EventObject) => {
   if (props.selectedConcept.id === e.target.data().conceptId) {

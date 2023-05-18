@@ -38,7 +38,7 @@ export interface Props {
   model: ModelOutType
   plugins: Plugins
   mode: EditorMode
-  cy: cytoscape.Core | null
+  cy: cytoscape.Core
   changeConcept: ReturnType<typeof useModelActions>['changeConcept']
   changeConceptOnSuccess: ReturnType<
     typeof useModelActions
@@ -54,28 +54,20 @@ const isActive = computed(() => Boolean(selectedConcept.value))
 const tab = ref(null)
 
 props.changeConceptOnSuccess(() => {
-  props.cy!.$('node:selected').unselect()
+  props.cy.$('node:selected').unselect()
 })
 
-watch(
-  () => props.cy,
-  (newValue) => {
-    newValue?.on('select', 'node', (e) => {
-      selectedConcept.value = props.model.concepts.find(
-        (concept) => concept.id === e.target.data().conceptId
-      )!
-    })
-    newValue?.on('unselect', 'node', () => {
-      selectedConcept.value = null
-    })
-    newValue?.on('remove', 'node', () => {
-      selectedConcept.value = null
-    })
-  },
-  {
-    immediate: true,
-  }
-)
+props.cy.on('select', 'node', (e) => {
+  selectedConcept.value = props.model.concepts.find(
+    (concept) => concept.id === e.target.data().conceptId
+  )!
+})
+props.cy.on('unselect', 'node', () => {
+  selectedConcept.value = null
+})
+props.cy.on('remove', 'node', () => {
+  selectedConcept.value = null
+})
 </script>
 
 <style lang="sass">

@@ -1,6 +1,7 @@
 <template>
   <ModelEditorToolbar v-model:mode="mode" />
   <ModelAddConceptForm
+    v-if="cy"
     :model="model"
     :mode="mode"
     :cy="cy"
@@ -8,6 +9,7 @@
     :create-concept-on-success="createConceptOnSuccess"
   />
   <ModelAddConnectionForm
+    v-if="cy"
     ref="modelAddConnectionForm"
     :model="model"
     :mode="mode"
@@ -16,6 +18,7 @@
     :create-connection-on-success="createConnectionOnSuccess"
   />
   <ModelChangeConceptDrawer
+    v-if="cy"
     :model="model"
     :plugins="plugins"
     :mode="mode"
@@ -61,6 +64,18 @@ const container = ref<HTMLDivElement | null>(null)
 const cy = shallowRef<cytoscape.Core | null>(null)
 
 const userStore = useUserStore()
+watch(
+  () => userStore.locale,
+  async (newValue) => {
+    cy.value!.$('node').forEach((node) => {
+      const concept = props.model.concepts.find(
+        (concept) => concept.id === node.data().conceptId
+      )!
+      node.data(createConceptData(props.model, concept, newValue))
+    })
+  }
+)
+
 const plugins = usePlugins(toRef(props, 'model'))
 
 const {

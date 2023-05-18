@@ -27,7 +27,7 @@ import { CREATE_CONCEPT_KEY, EditorMode, ModelOutType } from '~/types'
 export interface Props {
   model: ModelOutType
   mode: EditorMode
-  cy: cytoscape.Core | null
+  cy: cytoscape.Core
   createConcept: ReturnType<typeof useModelActions>['createConcept']
   createConceptOnSuccess: ReturnType<
     typeof useModelActions
@@ -54,25 +54,17 @@ watch(isActive, (newValue) => {
   }
 })
 
-watch(
-  () => props.cy,
-  (newValue) => {
-    newValue?.on('click', async (e) => {
-      if (props.mode !== 'addConcept') {
-        return
-      }
-      isActive.value = true
-      await nextTick()
-      modelForm.value?.form?.setValues({
-        xPosition: e.position.x.toFixed(0),
-        yPosition: e.position.y.toFixed(0),
-      })
-    })
-  },
-  {
-    immediate: true,
+props.cy.on('click', async (e) => {
+  if (props.mode !== 'addConcept') {
+    return
   }
-)
+  isActive.value = true
+  await nextTick()
+  modelForm.value?.form?.setValues({
+    xPosition: e.position.x.toFixed(0),
+    yPosition: e.position.y.toFixed(0),
+  })
+})
 
 const validationSchema = computed(() => {
   const validationSchema: yup.ObjectShape = {
