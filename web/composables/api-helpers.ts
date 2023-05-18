@@ -71,7 +71,12 @@ export const useLocalFetch = <
     (newValue) => {
       if (newValue) {
         if (opts.fatal === undefined || opts.fatal) {
-          throw error
+          throw createError({
+            statusCode: newValue.statusCode,
+            statusMessage: newValue.statusMessage,
+            data: newValue.data,
+            fatal: true,
+          })
         }
         if (opts.emitError === undefined || opts.emitError) {
           messageStore.emitError(opts.key, getErrorMessage(newValue.data))

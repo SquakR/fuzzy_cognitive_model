@@ -6,7 +6,7 @@ export const useUserStore = defineStore('user', () => {
   const nuxtApp = useNuxtApp()
 
   const user = ref<UserOutType | null>(null)
-  const { execute: getMe } = useGetMe({ key: 'getMe', emitError: false })
+  const { execute: getMe } = useGetMe({ key: 'getMe', emitError: true })
   const { execute: changeMeLocale, onSuccess: changeMeLocaleOnSuccess } =
     useChangeMeLocale({
       key: 'changeMeLocale',

@@ -17,6 +17,8 @@
                 :cy="cy"
                 :selected-concept="selectedConcept"
                 :change-concept="changeConcept"
+                :delete-concept="deleteConcept"
+                :delete-concept-pending="deleteConceptPending"
             /></VWindowItem>
             <VWindowItem
               v-if="plugins.adjustment.isInstalled"
@@ -43,6 +45,8 @@ export interface Props {
   changeConceptOnSuccess: ReturnType<
     typeof useModelActions
   >['changeConceptOnSuccess']
+  deleteConcept: ReturnType<typeof useModelActions>['deleteConcept']
+  deleteConceptPending: boolean
 }
 const props = defineProps<Props>()
 

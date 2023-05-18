@@ -100,7 +100,7 @@ const {
   data: projectsPagination,
   pending: projectsPending,
   refresh,
-} = useGetProjects({ key: 'projects' }, projectsIn)
+} = useGetProjects({ key: 'projects', fatal: false }, projectsIn)
 const {
   itemsLength,
   data: projects,

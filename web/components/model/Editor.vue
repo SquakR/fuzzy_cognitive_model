@@ -25,6 +25,8 @@
     :cy="cy"
     :change-concept="changeConcept"
     :change-concept-on-success="changeConceptOnSuccess"
+    :delete-concept="deleteConcept"
+    :delete-concept-pending="deleteConceptPending"
   />
   <div ref="container" class="model-editor__cytoscape-container" />
 </template>
@@ -85,6 +87,7 @@ const {
   changeConceptOnSuccess,
   moveConcept,
   deleteConcept,
+  deleteConceptPending,
   createConnection,
   createConnectionOnSuccess,
   deleteConnection,

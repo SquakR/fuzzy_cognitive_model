@@ -26,10 +26,10 @@
         <slot name="actions" :loading="loading" :button-text="buttonText">
           <VSpacer />
           <VBtn
+            :loading="loading"
             color="primary"
             variant="elevated"
             type="submit"
-            :loading="loading"
             >{{ buttonText }}</VBtn
           >
         </slot>
@@ -44,7 +44,7 @@ import BaseForm from '~/components/base/Form.vue'
 
 export interface Props {
   modelValue: boolean
-  actionKey: string
+  actionKey: string | string[]
   title: string
   buttonText: string
   validationSchema: object

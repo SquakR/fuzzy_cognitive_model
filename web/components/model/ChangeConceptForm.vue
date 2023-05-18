@@ -1,7 +1,7 @@
 <template>
   <BaseForm
     ref="form"
-    :action-key="CREATE_CONCEPT_KEY"
+    :action-key="[CHANGE_CONCEPT_KEY, DELETE_CONCEPT_KEY]"
     :button-text="t('change')"
     :validation-schema="validationSchema"
     :initial-values="initialValues"
@@ -14,13 +14,19 @@
     <BaseTextField :label="t('xPosition')" name="xPosition" />
     <BaseTextField :label="t('yPosition')" name="yPosition" />
     <template #actions="{ loading, buttonText }">
-      <VBtn color="error" variant="elevated">{{ t('delete') }}</VBtn>
+      <VBtn
+        :loading="deleteConceptPending"
+        color="error"
+        variant="elevated"
+        @click="deleteConcept(selectedConcept.id)"
+        >{{ t('delete') }}</VBtn
+      >
       <VSpacer />
       <VBtn
+        :loading="loading"
         color="primary"
         variant="elevated"
         type="submit"
-        :loading="loading"
         >{{ buttonText }}</VBtn
       >
     </template>
@@ -32,13 +38,20 @@ import { useI18n } from 'vue-i18n'
 import * as yup from 'yup'
 import BaseForm from '~/components/base/Form.vue'
 import { useUserStore } from '~/store'
-import { CREATE_CONCEPT_KEY, ConceptOutType, ModelOutType } from '~/types'
+import {
+  CHANGE_CONCEPT_KEY,
+  ConceptOutType,
+  DELETE_CONCEPT_KEY,
+  ModelOutType,
+} from '~/types'
 
 export interface Props {
   model: ModelOutType
   cy: cytoscape.Core
   selectedConcept: ConceptOutType
   changeConcept: ReturnType<typeof useModelActions>['changeConcept']
+  deleteConcept: ReturnType<typeof useModelActions>['deleteConcept']
+  deleteConceptPending: boolean
 }
 const props = defineProps<Props>()
 

@@ -24,10 +24,13 @@ export const useModelActions = (
   const userStore = useUserStore()
   const messageStore = useMessageStore()
 
-  const { execute: createConcept, onSuccess: createConceptOnSuccess } =
-    useCreateConcept({
-      key: CREATE_CONCEPT_KEY,
-    })
+  const {
+    execute: createConcept,
+    onSuccess: createConceptOnSuccess,
+    pending: createConceptPending,
+  } = useCreateConcept({
+    key: CREATE_CONCEPT_KEY,
+  })
   const createConceptUpdate = (result: CreateConceptType) => {
     model.value.concepts.push(result.data)
     cy.value!.add(
@@ -36,8 +39,11 @@ export const useModelActions = (
     setConceptPosition(cy.value!, model.value.concepts.at(-1)!)
   }
 
-  const { execute: changeConcept, onSuccess: changeConceptOnSuccess } =
-    useChangeConcept({ key: CHANGE_CONCEPT_KEY })
+  const {
+    execute: changeConcept,
+    onSuccess: changeConceptOnSuccess,
+    pending: changeConceptPending,
+  } = useChangeConcept({ key: CHANGE_CONCEPT_KEY })
   const changeConceptUpdate = (result: ChangeConceptType) => {
     const concept = model.value.concepts.find(
       (concept) => concept.id === result.data.id
@@ -55,10 +61,13 @@ export const useModelActions = (
     )
   }
 
-  const { execute: moveConceptExecute, onSuccess: moveConceptOnSuccess } =
-    useMoveConcept({
-      key: MOVE_CONCEPT_KEY,
-    })
+  const {
+    execute: moveConceptExecute,
+    onSuccess: moveConceptOnSuccess,
+    pending: moveConceptPending,
+  } = useMoveConcept({
+    key: MOVE_CONCEPT_KEY,
+  })
   const moveConcept = useDebounceFn(moveConceptExecute, 500)
   const moveConceptUpdate = (result: MoveConceptType) => {
     const concept = model.value.concepts.find(
@@ -70,10 +79,13 @@ export const useModelActions = (
     setConceptPosition(cy.value!, concept)
   }
 
-  const { execute: deleteConcept, onSuccess: deleteConceptOnSuccess } =
-    useDeleteConcept({
-      key: DELETE_CONCEPT_KEY,
-    })
+  const {
+    execute: deleteConcept,
+    onSuccess: deleteConceptOnSuccess,
+    pending: deleteConceptPending,
+  } = useDeleteConcept({
+    key: DELETE_CONCEPT_KEY,
+  })
   const deleteConceptUpdate = (result: DeleteConceptType) => {
     model.value.concepts = model.value.concepts.filter(
       (concept) => concept.id !== result.data.id
@@ -81,8 +93,11 @@ export const useModelActions = (
     cy.value!.$(`#${getConceptId(result.data.id)}`).remove()
   }
 
-  const { execute: createConnection, onSuccess: createConnectionOnSuccess } =
-    useCreateConnection({ key: CREATE_CONNECTION_KEY })
+  const {
+    execute: createConnection,
+    onSuccess: createConnectionOnSuccess,
+    pending: createConnectionPending,
+  } = useCreateConnection({ key: CREATE_CONNECTION_KEY })
   const createConnectionUpdate = (result: CreateConnectionType) => {
     model.value.connections.push(result.data)
     cy.value!.add(
@@ -90,8 +105,11 @@ export const useModelActions = (
     )
   }
 
-  const { execute: deleteConnection, onSuccess: deleteConnectionOnSuccess } =
-    useDeleteConnection({ key: DELETE_CONNECTION_KEY })
+  const {
+    execute: deleteConnection,
+    onSuccess: deleteConnectionOnSuccess,
+    pending: deleteConnectionPending,
+  } = useDeleteConnection({ key: DELETE_CONNECTION_KEY })
   const deleteConnectionUpdate = (result: DeleteConnectionType) => {
     model.value.connections = model.value.connections.filter(
       (connection) => connection.id !== result.data.id
@@ -153,15 +171,21 @@ export const useModelActions = (
   return {
     createConcept,
     createConceptOnSuccess,
+    createConceptPending,
     changeConcept,
     changeConceptOnSuccess,
+    changeConceptPending,
     moveConcept,
     moveConceptOnSuccess,
+    moveConceptPending,
     deleteConcept,
     deleteConceptOnSuccess,
+    deleteConceptPending,
     createConnection,
     createConnectionOnSuccess,
+    createConnectionPending,
     deleteConnection,
     deleteConnectionOnSuccess,
+    deleteConnectionPending,
   }
 }

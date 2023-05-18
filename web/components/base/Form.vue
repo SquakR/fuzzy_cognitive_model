@@ -34,10 +34,10 @@
         <slot name="actions" :loading="isSubmitting" :button-text="buttonText">
           <VSpacer />
           <VBtn
+            :loading="isSubmitting"
             color="primary"
             variant="elevated"
             type="submit"
-            :loading="isSubmitting"
             >{{ buttonText }}</VBtn
           >
         </slot>
@@ -51,7 +51,7 @@ import { Form, SubmissionHandler } from 'vee-validate'
 import { useMessageStore } from '~/store'
 
 export interface Props {
-  actionKey: string
+  actionKey: string | string[]
   buttonText: string
   validationSchema: object
   initialValues: Record<string, any>
