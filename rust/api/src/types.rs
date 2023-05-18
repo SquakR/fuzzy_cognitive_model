@@ -403,6 +403,26 @@ pub struct ConceptInType {
     pub y_position: f64,
 }
 
+/// Type of result of changing concept
+#[derive(Clone, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ConceptOutChangeType {
+    /// Concept identifier
+    pub id: i32,
+    /// Concept name
+    pub name: String,
+    /// Concept description
+    pub description: String,
+    /// Concept value
+    pub value: Option<f64>,
+    /// Concept position in x coordinate
+    pub x_position: f64,
+    /// Concept position in y coordinate
+    pub y_position: f64,
+    /// Concept update time
+    pub updated_at: DateTime<Utc>,
+}
+
 /// Type of result of moving concept
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

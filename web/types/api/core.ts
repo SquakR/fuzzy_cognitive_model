@@ -204,6 +204,16 @@ export interface ConceptInType {
   yPosition: number
 }
 
+export interface ConceptOutChangeType {
+  id: number
+  name: string
+  description: string
+  value: number | null
+  xPosition: number
+  yPosition: number
+  updatedAt: string
+}
+
 export interface ConceptOutMoveType {
   id: number
   xPosition: number

@@ -6,10 +6,10 @@ use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{concepts, connections, model_copies, projects};
 use crate::services::{permission_services, project_services};
 use crate::types::{
-    ConceptInMoveType, ConceptInType, ConceptOutDeleteType, ConceptOutMoveType, ConceptOutType,
-    ConnectionInCreateType, ConnectionOutChangeDescriptionType, ConnectionOutChangeValueType,
-    ConnectionOutDeleteType, ConnectionOutType, ModelActionErrorType, ModelActionType,
-    ModelOutType, ProjectOutType,
+    ConceptInMoveType, ConceptInType, ConceptOutChangeType, ConceptOutDeleteType,
+    ConceptOutMoveType, ConceptOutType, ConnectionInCreateType, ConnectionOutChangeDescriptionType,
+    ConnectionOutChangeValueType, ConnectionOutDeleteType, ConnectionOutType, ModelActionErrorType,
+    ModelActionType, ModelOutType, ProjectOutType,
 };
 use crate::validation_error;
 use crate::web_socket::WebSocketProjectService;
@@ -231,7 +231,7 @@ pub async fn change_concept(
     user: &User,
     concept_id: i32,
     concept_in: ConceptInType,
-) -> ServiceResult<ModelActionType<ConceptOutType>> {
+) -> ServiceResult<ModelActionType<ConceptOutChangeType>> {
     let project = find_project_by_concept_id(conn, concept_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
@@ -256,7 +256,7 @@ pub async fn change_concept(
             Ok((concept, project))
         })
         .to_service_result_find(String::from("concept_not_found_error"))?;
-    let concept_out = ConceptOutType::from(concept);
+    let concept_out = ConceptOutChangeType::from(concept);
     let model_action = ModelActionType::new(&project, String::from("changeConcept"), concept_out);
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
@@ -598,6 +598,20 @@ impl From<Concept> for ConceptOutType {
             y_position: concept.y_position,
             plugins_data: Value::Object(Map::new()),
             created_at: concept.created_at,
+            updated_at: concept.updated_at,
+        }
+    }
+}
+
+impl From<Concept> for ConceptOutChangeType {
+    fn from(concept: Concept) -> Self {
+        Self {
+            id: concept.id,
+            name: concept.name,
+            description: concept.description,
+            value: concept.value,
+            x_position: concept.x_position,
+            y_position: concept.y_position,
             updated_at: concept.updated_at,
         }
     }

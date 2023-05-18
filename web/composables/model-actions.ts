@@ -39,17 +39,18 @@ export const useModelActions = (
   const { execute: changeConcept, onSuccess: changeConceptOnSuccess } =
     useChangeConcept({ key: CHANGE_CONCEPT_KEY })
   const changeConceptUpdate = (result: ChangeConceptType) => {
-    model.value.concepts.splice(
-      model.value.concepts.findIndex(
-        (concept) => concept.id === result.data.id
-      ),
-      1,
-      result.data
-    )
+    const concept = model.value.concepts.find(
+      (concept) => concept.id === result.data.id
+    )!
+    concept.name = result.data.name
+    concept.description = result.data.description
+    concept.value = result.data.value
+    concept.xPosition = result.data.xPosition
+    concept.yPosition = result.data.yPosition
     setConceptDataWithPosition(
       cy.value!,
       model.value,
-      result.data,
+      concept,
       userStore.locale
     )
   }

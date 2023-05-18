@@ -4,9 +4,10 @@ use crate::plugins::Plugins;
 use crate::response::{PathResult, ToPathResult};
 use crate::services::model_services;
 use crate::types::{
-    ConceptInMoveType, ConceptInType, ConceptOutDeleteType, ConceptOutMoveType, ConceptOutType,
-    ConnectionInCreateType, ConnectionOutChangeDescriptionType, ConnectionOutChangeValueType,
-    ConnectionOutDeleteType, ConnectionOutType, ModelActionType, ModelOutType, UserOutType,
+    ConceptInMoveType, ConceptInType, ConceptOutChangeType, ConceptOutDeleteType,
+    ConceptOutMoveType, ConceptOutType, ConnectionInCreateType, ConnectionOutChangeDescriptionType,
+    ConnectionOutChangeValueType, ConnectionOutDeleteType, ConnectionOutType, ModelActionType,
+    ModelOutType, UserOutType,
 };
 use crate::web_socket::WebSocketProjectService;
 use rocket::serde::json::Json;
@@ -82,7 +83,7 @@ pub async fn change_concept(
     user: User,
     plugins: &Plugins,
     project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<ConceptOutType>> {
+) -> PathResult<ModelActionType<ConceptOutChangeType>> {
     let conn = &mut db::establish_connection();
     model_services::change_concept(
         conn,

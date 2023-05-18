@@ -1,4 +1,5 @@
 import {
+  ConceptOutChangeType,
   ConceptOutDeleteType,
   ConceptOutMoveType,
   ConceptOutType,
@@ -28,7 +29,7 @@ export type CreateConceptType = ModelActionType<
 export const CHANGE_CONCEPT_KEY = 'changeConcept'
 export type ChangeConceptType = ModelActionType<
   typeof CHANGE_CONCEPT_KEY,
-  ConceptOutType
+  ConceptOutChangeType
 >
 
 export const MOVE_CONCEPT_KEY = 'moveConcept'
