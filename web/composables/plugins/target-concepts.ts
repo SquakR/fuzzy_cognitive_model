@@ -1,8 +1,14 @@
 import colors from 'vuetify/lib/util/colors'
-import { ConceptOutType } from '~/types'
+import { ConceptOutType, ModelOutType } from '~/types'
 import { UsePlugin } from '~/types/plugins'
 
-export const useTargetConcepts: UsePlugin = () => {
+export const useTargetConceptsPlugin: UsePlugin = (
+  model: Ref<ModelOutType>
+) => {
+  const isInstalled = computed(() =>
+    model.value.project.plugins.includes('Target Concepts')
+  )
+
   const getConceptClasses = (concept: ConceptOutType) => {
     if (
       concept.pluginsData.targetConcepts &&
@@ -15,6 +21,7 @@ export const useTargetConcepts: UsePlugin = () => {
   const getConnectionClasses = () => {
     return []
   }
+
   const getStyles = () => {
     return [
       {
@@ -27,6 +34,7 @@ export const useTargetConcepts: UsePlugin = () => {
   }
 
   return {
+    isInstalled,
     getConceptClasses,
     getConnectionClasses,
     getStyles,

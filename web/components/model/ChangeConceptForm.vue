@@ -1,78 +1,74 @@
 <template>
-  <BaseModalForm
-    ref="modelForm"
-    v-model="isActive"
+  <BaseForm
+    ref="form"
     :action-key="CREATE_CONCEPT_KEY"
-    :title="t('title')"
-    :button-text="t('buttonText')"
+    :button-text="t('change')"
     :validation-schema="validationSchema"
     :initial-values="initialValues"
     :on-submit="onSubmit"
+    width="468"
   >
     <BaseTextField :label="t('name')" name="name" />
     <BaseTextarea :label="t('description')" name="description" />
     <BaseTextField :label="t('value')" name="value" />
     <BaseTextField :label="t('xPosition')" name="xPosition" />
     <BaseTextField :label="t('yPosition')" name="yPosition" />
-  </BaseModalForm>
+    <template #actions="{ loading, buttonText }">
+      <VBtn color="error" variant="elevated">{{ t('delete') }}</VBtn>
+      <VSpacer />
+      <VBtn
+        color="primary"
+        variant="elevated"
+        type="submit"
+        :loading="loading"
+        >{{ buttonText }}</VBtn
+      >
+    </template>
+  </BaseForm>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import * as yup from 'yup'
-import BaseModalForm from '~/components/base/ModalForm.vue'
+import BaseForm from '~/components/base/Form.vue'
 import { useUserStore } from '~/store'
-import { CREATE_CONCEPT_KEY, EditorMode, ModelOutType } from '~/types'
+import { CREATE_CONCEPT_KEY, ConceptOutType, ModelOutType } from '~/types'
 
 export interface Props {
   model: ModelOutType
-  mode: EditorMode
   cy: cytoscape.Core | null
-  createConcept: ReturnType<typeof useModelActions>['createConcept']
-  createConceptOnSuccess: ReturnType<
-    typeof useModelActions
-  >['createConceptOnSuccess']
+  selectedConcept: ConceptOutType
+  changeConcept: ReturnType<typeof useModelActions>['changeConcept']
 }
-
 const props = defineProps<Props>()
 
-const modelForm = ref<InstanceType<typeof BaseModalForm> | null>(null)
+const form = ref<InstanceType<typeof BaseForm> | null>(null)
 
 const { $yup } = useNuxtApp()
 const { t } = useI18n()
 const userStore = useUserStore()
 
-const isActive = ref(false)
-const clear = () => {
-  isActive.value = false
-}
-
-props.createConceptOnSuccess(clear)
-watch(isActive, (newValue) => {
-  if (!newValue) {
-    clear()
-  }
+onMounted(() => {
+  props.cy!.on('drag', 'node', onDrag)
 })
-
-watch(
-  () => props.cy,
-  (newValue) => {
-    newValue?.on('click', async (e) => {
-      if (props.mode !== 'addConcept') {
-        return
-      }
-      isActive.value = true
-      await nextTick()
-      modelForm.value?.form?.setValues({
-        xPosition: e.position.x.toFixed(0),
-        yPosition: e.position.y.toFixed(0),
-      })
+onUnmounted(() => {
+  props.cy!.removeListener('drag', 'node', onDrag)
+})
+const onDrag = (e: cytoscape.EventObject) => {
+  if (props.selectedConcept.id === e.target.data().conceptId) {
+    const position = e.target.position()
+    form.value?.form?.setValues({
+      xPosition:
+        userStore.locale === 'ru-RU'
+          ? position.x.toFixed(2).replace('.', ',')
+          : position.x.toFixed(2),
+      yPosition:
+        userStore.locale === 'ru-RU'
+          ? position.y.toFixed(2).replace('.', ',')
+          : position.y.toFixed(2),
     })
-  },
-  {
-    immediate: true,
   }
-)
+}
 
 const validationSchema = computed(() => {
   const validationSchema: yup.ObjectShape = {
@@ -88,18 +84,26 @@ const validationSchema = computed(() => {
 })
 const initialValues = computed(() => {
   const initialValues: Record<string, string> = {
-    name: '',
-    description: '',
-    xPosition: '0',
-    yPosition: '0',
+    name: props.selectedConcept.name,
+    description: props.selectedConcept.description,
+    xPosition:
+      userStore.locale === 'ru-RU'
+        ? props.selectedConcept.xPosition.toFixed(2).replace('.', ',')
+        : props.selectedConcept.xPosition.toFixed(2),
+    yPosition:
+      userStore.locale === 'ru-RU'
+        ? props.selectedConcept.yPosition.toFixed(2).replace('.', ',')
+        : props.selectedConcept.yPosition.toFixed(2),
   }
   if (props.model.project.conceptValueType === 'from_zero_to_one') {
-    initialValues.value = userStore.locale === 'ru-RU' ? '0,0' : '0.0'
+    const value = String(props.selectedConcept.value)
+    initialValues.value =
+      userStore.locale === 'ru-RU' ? value.replace('.', ',') : value
   }
   return initialValues
 })
 const onSubmit = async (values: Record<string, string>) => {
-  props.createConcept(props.model.project.id, {
+  await props.changeConcept(props.selectedConcept.id, {
     name: values.name,
     description: values.description,
     value: values.value ? Number(values.value.replace(',', '.')) : null,
@@ -111,24 +115,24 @@ const onSubmit = async (values: Record<string, string>) => {
 
 <i18n locale="en-US" lang="json">
 {
-  "title": "Add Concept",
-  "buttonText": "Add",
   "name": "Name",
   "description": "Description",
   "value": "Value",
   "xPosition": "Position x",
-  "yPosition": "Position y"
+  "yPosition": "Position y",
+  "delete": "Delete",
+  "change": "Change"
 }
 </i18n>
 
 <i18n locale="ru-RU" lang="json">
 {
-  "title": "Добавление концепта",
-  "buttonText": "Добавить",
   "name": "Название",
   "description": "Описание",
   "value": "Значение",
   "xPosition": "Позиция x",
-  "yPosition": "Позиция y"
+  "yPosition": "Позиция y",
+  "delete": "Удалить",
+  "change": "Изменить"
 }
 </i18n>

@@ -6,11 +6,10 @@ use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{concepts, connections, model_copies, projects};
 use crate::services::{permission_services, project_services};
 use crate::types::{
-    ConceptInChangeDescriptionType, ConceptInCreateType, ConceptInMoveType,
-    ConceptOutChangeDescriptionType, ConceptOutChangeValueType, ConceptOutDeleteType,
-    ConceptOutMoveType, ConceptOutType, ConnectionInCreateType, ConnectionOutChangeDescriptionType,
-    ConnectionOutChangeValueType, ConnectionOutDeleteType, ConnectionOutType, ModelActionErrorType,
-    ModelActionType, ModelOutType, ProjectOutType,
+    ConceptInMoveType, ConceptInType, ConceptOutDeleteType, ConceptOutMoveType, ConceptOutType,
+    ConnectionInCreateType, ConnectionOutChangeDescriptionType, ConnectionOutChangeValueType,
+    ConnectionOutDeleteType, ConnectionOutType, ModelActionErrorType, ModelActionType,
+    ModelOutType, ProjectOutType,
 };
 use crate::validation_error;
 use crate::web_socket::WebSocketProjectService;
@@ -161,7 +160,7 @@ pub async fn create_concept(
     project_service: WebSocketProjectService,
     user: &User,
     project_id: i32,
-    concept_in: ConceptInCreateType,
+    concept_in: ConceptInType,
 ) -> ServiceResult<ModelActionType<ConceptOutType>> {
     let project = project_services::find_project_by_id(conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
@@ -225,52 +224,19 @@ pub fn update_connection(
     })
 }
 
-pub async fn change_concept_description(
-    conn: &mut PgConnection,
-    project_service: WebSocketProjectService,
-    user: &User,
-    concept_id: i32,
-    concept_in: ConceptInChangeDescriptionType,
-) -> ServiceResult<ModelActionType<ConceptOutChangeDescriptionType>> {
-    let project = find_project_by_concept_id(conn, concept_id)
-        .to_service_result_find(String::from("project_not_found_error"))?;
-    permission_services::can_change_model(conn, &project, user.id)?;
-    let (concept, project) = conn
-        .transaction(|conn| {
-            let concept = diesel::update(concepts::table)
-                .filter(concepts::id.eq(concept_id))
-                .set((
-                    concepts::name.eq(concept_in.name),
-                    concepts::description.eq(concept_in.description),
-                ))
-                .get_result::<Concept>(conn)?;
-            let project = project_services::update_project(conn, project.id, concept.updated_at)?;
-            Ok((concept, project))
-        })
-        .to_service_result_find(String::from("concept_not_found_error"))?;
-    let concept_out = ConceptOutChangeDescriptionType::from(concept);
-    let model_action = ModelActionType::new(
-        &project,
-        String::from("changeConceptDescription"),
-        concept_out,
-    );
-    project_service.notify(model_action.clone()).await;
-    Ok(model_action)
-}
-
-pub async fn change_concept_value(
+pub async fn change_concept(
     conn: &mut PgConnection,
     plugins: &Plugins,
     project_service: WebSocketProjectService,
     user: &User,
     concept_id: i32,
-    mut value: Option<f64>,
-) -> ServiceResult<ModelActionType<ConceptOutChangeValueType>> {
+    concept_in: ConceptInType,
+) -> ServiceResult<ModelActionType<ConceptOutType>> {
     let project = find_project_by_concept_id(conn, concept_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
-    value = plugins.change_concept_value_emitter.lock().unwrap().emit(
-        value,
+    let value = plugins.change_concept_value_emitter.lock().unwrap().emit(
+        concept_in.value,
         ChangeConceptValueExtra::new(project.clone(), concept_id),
     )?;
     check_concept_value(&project, value.clone())?;
@@ -278,15 +244,20 @@ pub async fn change_concept_value(
         .transaction(|conn| {
             let concept = diesel::update(concepts::table)
                 .filter(concepts::id.eq(concept_id))
-                .set((concepts::value.eq(value),))
+                .set((
+                    concepts::name.eq(concept_in.name),
+                    concepts::description.eq(concept_in.description),
+                    concepts::value.eq(value),
+                    concepts::x_position.eq(concept_in.x_position),
+                    concepts::y_position.eq(concept_in.y_position),
+                ))
                 .get_result::<Concept>(conn)?;
             let project = project_services::update_project(conn, project.id, concept.updated_at)?;
             Ok((concept, project))
         })
         .to_service_result_find(String::from("concept_not_found_error"))?;
-    let concept_out = ConceptOutChangeValueType::from(concept);
-    let model_action =
-        ModelActionType::new(&project, String::from("changeConceptValue"), concept_out);
+    let concept_out = ConceptOutType::from(concept);
+    let model_action = ModelActionType::new(&project, String::from("changeConcept"), concept_out);
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
@@ -627,27 +598,6 @@ impl From<Concept> for ConceptOutType {
             y_position: concept.y_position,
             plugins_data: Value::Object(Map::new()),
             created_at: concept.created_at,
-            updated_at: concept.updated_at,
-        }
-    }
-}
-
-impl From<Concept> for ConceptOutChangeDescriptionType {
-    fn from(concept: Concept) -> Self {
-        Self {
-            id: concept.id,
-            name: concept.name,
-            description: concept.description,
-            updated_at: concept.updated_at,
-        }
-    }
-}
-
-impl From<Concept> for ConceptOutChangeValueType {
-    fn from(concept: Concept) -> Self {
-        Self {
-            id: concept.id,
-            value: concept.value,
             updated_at: concept.updated_at,
         }
     }

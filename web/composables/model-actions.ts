@@ -1,7 +1,9 @@
 import { useMessageStore, useUserStore } from '~/store'
 import {
+  CHANGE_CONCEPT_KEY,
   CREATE_CONCEPT_KEY,
   CREATE_CONNECTION_KEY,
+  ChangeConceptType,
   CreateConceptType,
   CreateConnectionType,
   DELETE_CONCEPT_KEY,
@@ -9,14 +11,14 @@ import {
   DeleteConceptType,
   DeleteConnectionType,
   ModelOutType,
-  Plugin,
+  Plugins,
 } from '~/types'
 import { MOVE_CONCEPT_KEY, ModelActionResult, MoveConceptType } from '~/types'
 
 export const useModelActions = (
   model: Ref<ModelOutType>,
   cy: Ref<cytoscape.Core | null>,
-  plugins: Plugin
+  plugins: Plugins
 ) => {
   const config = useRuntimeConfig()
   const userStore = useUserStore()
@@ -29,9 +31,27 @@ export const useModelActions = (
   const createConceptUpdate = (result: CreateConceptType) => {
     model.value.concepts.push(result.data)
     cy.value!.add(
-      getConceptElement(model.value, result.data, userStore.locale, plugins)
+      createConceptElement(model.value, result.data, userStore.locale, plugins)
     )
     setConceptPosition(cy.value!, model.value.concepts.at(-1)!)
+  }
+
+  const { execute: changeConcept, onSuccess: changeConceptOnSuccess } =
+    useChangeConcept({ key: CHANGE_CONCEPT_KEY })
+  const changeConceptUpdate = (result: ChangeConceptType) => {
+    model.value.concepts.splice(
+      model.value.concepts.findIndex(
+        (concept) => concept.id === result.data.id
+      ),
+      1,
+      result.data
+    )
+    setConceptDataWithPosition(
+      cy.value!,
+      model.value,
+      result.data,
+      userStore.locale
+    )
   }
 
   const { execute: moveConceptExecute, onSuccess: moveConceptOnSuccess } =
@@ -64,7 +84,9 @@ export const useModelActions = (
     useCreateConnection({ key: CREATE_CONNECTION_KEY })
   const createConnectionUpdate = (result: CreateConnectionType) => {
     model.value.connections.push(result.data)
-    cy.value!.add(getConnectionElement(result.data, userStore.locale, plugins))
+    cy.value!.add(
+      createConnectionElement(result.data, userStore.locale, plugins)
+    )
   }
 
   const { execute: deleteConnection, onSuccess: deleteConnectionOnSuccess } =
@@ -101,6 +123,9 @@ export const useModelActions = (
         case CREATE_CONCEPT_KEY:
           createConceptUpdate(result)
           break
+        case CHANGE_CONCEPT_KEY:
+          changeConceptUpdate(result)
+          break
         case MOVE_CONCEPT_KEY:
           moveConceptUpdate(result)
           break
@@ -127,6 +152,8 @@ export const useModelActions = (
   return {
     createConcept,
     createConceptOnSuccess,
+    changeConcept,
+    changeConceptOnSuccess,
     moveConcept,
     moveConceptOnSuccess,
     deleteConcept,

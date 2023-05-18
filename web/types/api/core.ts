@@ -196,30 +196,12 @@ export interface ConceptOutType {
   updatedAt: string
 }
 
-export interface ConceptInCreateType {
+export interface ConceptInType {
   name: string
   description: string
   value: number | null
   xPosition: number
   yPosition: number
-}
-
-export interface ConceptOutChangeDescriptionType {
-  id: number
-  name: string
-  description: string
-  updatedAt: string
-}
-
-export interface ConceptInChangeDescriptionType {
-  name: string
-  description: string
-}
-
-export interface ConceptOutChangeValueType {
-  id: number
-  value: number | null
-  updatedAt: string
 }
 
 export interface ConceptOutMoveType {

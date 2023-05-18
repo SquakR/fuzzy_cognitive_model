@@ -1,14 +1,27 @@
-import { useControlConcepts } from './control-concepts'
-import { useControlConnections } from './control-connections'
-import { useTargetConcepts } from './target-concepts'
-import { ConceptOutType, ConnectionOutType } from '~/types'
-import { UsePlugin } from '~/types/plugins'
+import { useAdjustmentPlugin } from './adjustment'
+import { useConceptConstraintsPlugin } from './concept-constraints'
+import { useConnectionConstraintsPlugin } from './connection-constraints'
+import { useControlConceptsPlugin } from './control-concepts'
+import { useControlConnectionsPlugin } from './control-connections'
+import { useTargetConceptsPlugin } from './target-concepts'
+import { ConceptOutType, ConnectionOutType, ModelOutType } from '~/types'
+import { UsePlugins } from '~/types/plugins'
 
-export const usePlugins: UsePlugin = () => {
+export const usePlugins: UsePlugins = (model: Ref<ModelOutType>) => {
+  const controlConcepts = useControlConceptsPlugin(model)
+  const targetConcepts = useTargetConceptsPlugin(model)
+  const controlConnections = useControlConnectionsPlugin(model)
+  const conceptConstraints = useConceptConstraintsPlugin(model)
+  const connectionConstraints = useConnectionConstraintsPlugin(model)
+  const adjustment = useAdjustmentPlugin(model)
+
   const plugins = [
-    useControlConcepts(),
-    useTargetConcepts(),
-    useControlConnections(),
+    controlConcepts,
+    targetConcepts,
+    controlConnections,
+    conceptConstraints,
+    connectionConstraints,
+    adjustment,
   ]
 
   const getConceptClasses = (concept: ConceptOutType) => {
@@ -34,6 +47,12 @@ export const usePlugins: UsePlugin = () => {
   }
 
   return {
+    controlConcepts,
+    targetConcepts,
+    controlConnections,
+    conceptConstraints,
+    connectionConstraints,
+    adjustment,
     getConceptClasses,
     getConnectionClasses,
     getStyles,

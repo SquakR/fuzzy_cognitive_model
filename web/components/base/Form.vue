@@ -8,7 +8,7 @@
     :on-submit="onSubmit"
   >
     <VCard :width="computedWidth">
-      <VCardTitle>
+      <VCardTitle v-if="title">
         <slot name="title" :title="title">{{ title }}</slot>
       </VCardTitle>
       <VCardText>
@@ -31,14 +31,16 @@
         <slot />
       </VCardText>
       <VCardActions>
-        <VSpacer />
-        <VBtn
-          color="primary"
-          variant="elevated"
-          type="submit"
-          :loading="isSubmitting"
-          >{{ buttonText }}</VBtn
-        >
+        <slot name="actions" :loading="isSubmitting" :button-text="buttonText">
+          <VSpacer />
+          <VBtn
+            color="primary"
+            variant="elevated"
+            type="submit"
+            :loading="isSubmitting"
+            >{{ buttonText }}</VBtn
+          >
+        </slot>
       </VCardActions>
     </VCard>
   </Form>
@@ -50,16 +52,17 @@ import { useMessageStore } from '~/store'
 
 export interface Props {
   actionKey: string
-  title: string
   buttonText: string
   validationSchema: object
   initialValues: Record<string, any>
   onSubmit: SubmissionHandler<any>
+  title?: string
   width?: string | number
   successMessage?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  title: undefined,
   width: 500,
   successMessage: undefined,
 })

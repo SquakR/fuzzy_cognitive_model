@@ -22,6 +22,18 @@
         </div>
       </template>
       <slot />
+      <template #actions="{ loading, buttonText }">
+        <slot name="actions" :loading="loading" :button-text="buttonText">
+          <VSpacer />
+          <VBtn
+            color="primary"
+            variant="elevated"
+            type="submit"
+            :loading="loading"
+            >{{ buttonText }}</VBtn
+          >
+        </slot>
+      </template>
     </BaseForm>
   </VDialog>
 </template>

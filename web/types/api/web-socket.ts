@@ -25,6 +25,12 @@ export type CreateConceptType = ModelActionType<
   ConceptOutType
 >
 
+export const CHANGE_CONCEPT_KEY = 'changeConcept'
+export type ChangeConceptType = ModelActionType<
+  typeof CHANGE_CONCEPT_KEY,
+  ConceptOutType
+>
+
 export const MOVE_CONCEPT_KEY = 'moveConcept'
 export type MoveConceptType = ModelActionType<
   typeof MOVE_CONCEPT_KEY,
@@ -52,6 +58,7 @@ export type DeleteConnectionType = ModelActionType<
 export type ModelActionResult =
   | ModelActionErrorType
   | CreateConceptType
+  | ChangeConceptType
   | MoveConceptType
   | DeleteConceptType
   | CreateConnectionType

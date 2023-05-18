@@ -387,10 +387,10 @@ pub struct ConceptOutType {
     pub updated_at: DateTime<Utc>,
 }
 
-/// Type of concept to create
+/// Type of concept to create or change
 #[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct ConceptInCreateType {
+pub struct ConceptInType {
     /// Concept name
     pub name: String,
     /// Concept description
@@ -401,42 +401,6 @@ pub struct ConceptInCreateType {
     pub x_position: f64,
     /// Concept position in y coordinate
     pub y_position: f64,
-}
-
-/// Type of result of changing concept description
-#[derive(Clone, Serialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct ConceptOutChangeDescriptionType {
-    /// Concept identifier
-    pub id: i32,
-    /// Concept name
-    pub name: String,
-    /// Concept description
-    pub description: String,
-    /// Concept update time
-    pub updated_at: DateTime<Utc>,
-}
-
-/// Type of concept to change
-#[derive(Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct ConceptInChangeDescriptionType {
-    /// Concept name
-    pub name: String,
-    /// Concept description
-    pub description: String,
-}
-
-/// Type of result of changing concept value
-#[derive(Clone, Serialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct ConceptOutChangeValueType {
-    /// Concept identifier
-    pub id: i32,
-    /// Concept value
-    pub value: Option<f64>,
-    /// Concept update time
-    pub updated_at: DateTime<Utc>,
 }
 
 /// Type of result of moving concept

@@ -4,11 +4,9 @@ use crate::plugins::Plugins;
 use crate::response::{PathResult, ToPathResult};
 use crate::services::model_services;
 use crate::types::{
-    ConceptInChangeDescriptionType, ConceptInCreateType, ConceptInMoveType,
-    ConceptOutChangeDescriptionType, ConceptOutChangeValueType, ConceptOutDeleteType,
-    ConceptOutMoveType, ConceptOutType, ConnectionInCreateType, ConnectionOutChangeDescriptionType,
-    ConnectionOutChangeValueType, ConnectionOutDeleteType, ConnectionOutType, ModelActionType,
-    ModelOutType, UserOutType,
+    ConceptInMoveType, ConceptInType, ConceptOutDeleteType, ConceptOutMoveType, ConceptOutType,
+    ConnectionInCreateType, ConnectionOutChangeDescriptionType, ConnectionOutChangeValueType,
+    ConnectionOutDeleteType, ConnectionOutType, ModelActionType, ModelOutType, UserOutType,
 };
 use crate::web_socket::WebSocketProjectService;
 use rocket::serde::json::Json;
@@ -57,7 +55,7 @@ pub async fn get_active_users(
 )]
 pub async fn create_concept(
     project_id: i32,
-    concept_in: Json<ConceptInCreateType>,
+    concept_in: Json<ConceptInType>,
     user: User,
     plugins: &Plugins,
     project_service: WebSocketProjectService,
@@ -77,51 +75,22 @@ pub async fn create_concept(
 
 /// Change concept description
 #[openapi(tag = "model")]
-#[patch(
-    "/concepts/<concept_id>/change_description",
-    format = "json",
-    data = "<concept_in>"
-)]
-pub async fn change_concept_description(
+#[put("/concepts/<concept_id>", format = "json", data = "<concept_in>")]
+pub async fn change_concept(
     concept_id: i32,
-    concept_in: Json<ConceptInChangeDescriptionType>,
-    user: User,
-    project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<ConceptOutChangeDescriptionType>> {
-    let conn = &mut db::establish_connection();
-    model_services::change_concept_description(
-        conn,
-        project_service,
-        &user,
-        concept_id,
-        concept_in.into_inner(),
-    )
-    .await
-    .to_path_result()
-}
-
-/// Change concept value
-#[openapi(tag = "model")]
-#[patch(
-    "/concepts/<concept_id>/change_value",
-    format = "json",
-    data = "<value>"
-)]
-pub async fn change_concept_value(
-    concept_id: i32,
-    value: Json<Option<f64>>,
+    concept_in: Json<ConceptInType>,
     user: User,
     plugins: &Plugins,
     project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<ConceptOutChangeValueType>> {
+) -> PathResult<ModelActionType<ConceptOutType>> {
     let conn = &mut db::establish_connection();
-    model_services::change_concept_value(
+    model_services::change_concept(
         conn,
         plugins,
         project_service,
         &user,
         concept_id,
-        value.into_inner(),
+        concept_in.into_inner(),
     )
     .await
     .to_path_result()

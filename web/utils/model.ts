@@ -3,7 +3,7 @@ import {
   ConceptOutType,
   ConnectionOutType,
   ModelOutType,
-  Plugin,
+  Plugins,
 } from '~/types'
 
 export const getConceptId = (concept: ConceptOutType | number) => {
@@ -15,27 +15,35 @@ export const getConnectionId = (connection: ConnectionOutType | number) => {
   return `connection${id}`
 }
 
-export const getConceptElement = (
+export const createConceptElement = (
   model: ModelOutType,
   concept: ConceptOutType,
   locale: string,
-  plugins: Plugin
+  plugins: Plugins
 ): cytoscape.ElementDefinition => ({
-  data: {
+  data: createConceptData(model, concept, locale),
+  classes: plugins.getConceptClasses(concept).join(' '),
+})
+
+export const createConceptData = (
+  model: ModelOutType,
+  concept: ConceptOutType,
+  locale: string
+) => {
+  return {
     conceptId: concept.id,
     id: getConceptId(concept),
     label:
       model.project.conceptValueType === 'none'
         ? ''
         : new Intl.NumberFormat(locale).format(concept.value!),
-  },
-  classes: plugins.getConceptClasses(concept).join(' '),
-})
+  }
+}
 
-export const getConnectionElement = (
+export const createConnectionElement = (
   connection: ConnectionOutType,
   locale: string,
-  plugins: Plugin
+  plugins: Plugins
 ): cytoscape.ElementDefinition => ({
   data: {
     connectionId: connection.id,
@@ -46,6 +54,20 @@ export const getConnectionElement = (
   },
   classes: plugins.getConnectionClasses(connection).join(' '),
 })
+
+export const setConceptDataWithPosition = (
+  cy: cytoscape.Core,
+  model: ModelOutType,
+  concept: ConceptOutType,
+  locale: string
+) => {
+  cy.$(`#${getConceptId(concept.id)}`)
+    .data(createConceptData(model, concept, locale))
+    .position({
+      x: concept.xPosition,
+      y: concept.yPosition,
+    })
+}
 
 export const setConceptPosition = (
   cy: cytoscape.Core,

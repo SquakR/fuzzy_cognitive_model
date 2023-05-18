@@ -1,8 +1,14 @@
 import colors from 'vuetify/lib/util/colors'
-import { ConnectionOutType } from '~/types'
+import { ConnectionOutType, ModelOutType } from '~/types'
 import { UsePlugin } from '~/types/plugins'
 
-export const useControlConnections: UsePlugin = () => {
+export const useControlConnectionsPlugin: UsePlugin = (
+  model: Ref<ModelOutType>
+) => {
+  const isInstalled = computed(() =>
+    model.value.project.plugins.includes('Control Connections')
+  )
+
   const getConceptClasses = () => {
     return []
   }
@@ -15,6 +21,7 @@ export const useControlConnections: UsePlugin = () => {
     }
     return []
   }
+
   const getStyles = () => {
     return [
       {
@@ -28,6 +35,7 @@ export const useControlConnections: UsePlugin = () => {
   }
 
   return {
+    isInstalled,
     getConceptClasses,
     getConnectionClasses,
     getStyles,

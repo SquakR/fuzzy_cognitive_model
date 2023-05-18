@@ -15,7 +15,15 @@
     :create-connection="createConnection"
     :create-connection-on-success="createConnectionOnSuccess"
   />
-  <div ref="container" class="model-editor__cytoscape-container"></div>
+  <ModelChangeConceptDrawer
+    :model="model"
+    :plugins="plugins"
+    :mode="mode"
+    :cy="cy"
+    :change-concept="changeConcept"
+    :change-concept-on-success="changeConceptOnSuccess"
+  />
+  <div ref="container" class="model-editor__cytoscape-container" />
 </template>
 
 <script setup lang="ts">
@@ -53,11 +61,13 @@ const container = ref<HTMLDivElement | null>(null)
 const cy = shallowRef<cytoscape.Core | null>(null)
 
 const userStore = useUserStore()
-const plugins = usePlugins()
+const plugins = usePlugins(toRef(props, 'model'))
 
 const {
   createConcept,
   createConceptOnSuccess,
+  changeConcept,
+  changeConceptOnSuccess,
   moveConcept,
   deleteConcept,
   createConnection,
@@ -65,13 +75,13 @@ const {
   deleteConnection,
 } = useModelActions(toRef(props, 'model'), cy, plugins)
 
-const getConceptElements = () =>
+const createConceptElements = () =>
   props.model.concepts.map((concept) =>
-    getConceptElement(props.model, concept, userStore.locale, plugins)
+    createConceptElement(props.model, concept, userStore.locale, plugins)
   )
-const getConnectionElements = () =>
+const createConnectionElements = () =>
   props.model.connections.map((connection) =>
-    getConnectionElement(connection, userStore.locale, plugins)
+    createConnectionElement(connection, userStore.locale, plugins)
   )
 
 const getConceptPositions = () =>
@@ -91,6 +101,7 @@ const NODE_WIDTH = 50
 const FONT_SIZE = 16
 const FONT_FAMILY = 'Roboto, sans-serif'
 const DESCRIPTION_MAX_WIDTH = 150
+const SELECTED_COLOR = colors.teal.lighten1
 
 onMounted(() => {
   cy.value = createCytoscape()
@@ -112,7 +123,7 @@ onKeyStroke('Delete', () => {
 const createCytoscape = () => {
   return cytoscape({
     container: container.value,
-    elements: [...getConceptElements(), ...getConnectionElements()],
+    elements: [...createConceptElements(), ...createConnectionElements()],
     layout: {
       name: 'preset',
       fit: false,
@@ -135,13 +146,13 @@ const createCytoscape = () => {
       {
         selector: 'node:selected',
         style: {
-          backgroundColor: colors.red.lighten1,
+          backgroundColor: SELECTED_COLOR,
         },
       },
       {
         selector: 'node.add-connection-source',
         style: {
-          backgroundColor: colors.red.lighten1,
+          backgroundColor: colors.teal.lighten1,
         },
       },
       {
@@ -167,8 +178,8 @@ const createCytoscape = () => {
       {
         selector: 'edge:selected',
         style: {
-          'line-color': colors.red.lighten1,
-          'target-arrow-color': colors.red.lighten1,
+          'line-color': SELECTED_COLOR,
+          'target-arrow-color': SELECTED_COLOR,
         },
       },
       ...plugins.getStyles(),
@@ -184,6 +195,7 @@ const listen = () => {
     if (mode.value !== 'change') {
       return
     }
+    cy.value!.elements().not(e.target).unselect()
     const node = e.target
     const position = node.position()
     await moveConcept(node.data().conceptId, {
