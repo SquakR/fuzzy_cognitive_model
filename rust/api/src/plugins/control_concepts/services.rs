@@ -3,10 +3,12 @@ use super::models::ControlConcept;
 use super::types::ControlConceptOutType;
 use crate::db;
 use crate::models::{Concept, User};
+use crate::plugins::concept_constraints::models::ConceptConstraint;
+use crate::plugins::concept_constraints::services as concept_constraints_services;
 use crate::plugins::target_concepts::services as target_concepts_services;
 use crate::plugins::Plugin;
 use crate::response::{ServiceResult, ToServiceResult};
-use crate::schema::{concepts, control_concepts, projects};
+use crate::schema::{concept_constraints, concepts, control_concepts, projects};
 use crate::services::{model_services, permission_services};
 use crate::types::{ConceptOutType, ModelActionType};
 use crate::validation_error;
@@ -127,27 +129,42 @@ pub async fn set_is_control(
     }
     let control_concept = find_control_concept_by_id(conn, concept_id)
         .to_service_result_find(String::from("control_concept_not_found_error"))?;
-    if control_concept.is_control && is_control {
-        return validation_error!("concept_already_control_error");
-    }
-    if !control_concept.is_control && !is_control {
-        return validation_error!("concept_not_control_error");
-    }
-    let (control_concept, concept, project) = conn
+    let concept_constraint =
+        concept_constraints_services::find_concept_constraint_by_id(conn, concept_id)
+            .optional()
+            .to_service_result()?;
+    let (control_concept, concept_constraint, concept, project) = conn
         .transaction(|conn| {
             let control_concept = diesel::update(control_concepts::table)
                 .filter(control_concepts::concept_id.eq(control_concept.concept_id))
                 .set(control_concepts::is_control.eq(is_control))
                 .get_result::<ControlConcept>(conn)?;
+            let concept_constraint = match concept_constraint {
+                Some(concept_constraint) => {
+                    if !is_control && concept_constraint.has_constraint {
+                        let concept_constraint = diesel::update(concept_constraints::table)
+                            .filter(
+                                concept_constraints::concept_id.eq(concept_constraint.concept_id),
+                            )
+                            .set((concept_constraints::has_constraint.eq(false),))
+                            .get_result::<ConceptConstraint>(conn)?;
+                        Some(concept_constraint)
+                    } else {
+                        Some(concept_constraint)
+                    }
+                }
+                None => None,
+            };
             let (concept, project) =
                 model_services::update_concept(conn, concept_id, project.id, Utc::now())?;
-            Ok((control_concept, concept, project))
+            Ok((control_concept, concept_constraint, concept, project))
         })
         .to_service_result()?;
-    let control_concept_out = ControlConceptOutType::from((control_concept, concept));
+    let control_concept_out =
+        ControlConceptOutType::from((control_concept, concept_constraint, concept));
     let model_action = ModelActionType::new(
         &project,
-        String::from("change_control_concept"),
+        String::from("changeControlConcept"),
         control_concept_out,
     );
     project_service.notify(model_action.clone()).await;
@@ -195,11 +212,19 @@ fn add_is_control(concept_out: &mut ConceptOutType, control_concept: &ControlCon
         .or_insert(json!({ "isControl": control_concept.is_control }));
 }
 
-impl From<(ControlConcept, Concept)> for ControlConceptOutType {
-    fn from((control_concept, concept): (ControlConcept, Concept)) -> Self {
+impl From<(ControlConcept, Option<ConceptConstraint>, Concept)> for ControlConceptOutType {
+    fn from(
+        (control_concept, concept_constraint, concept): (
+            ControlConcept,
+            Option<ConceptConstraint>,
+            Concept,
+        ),
+    ) -> Self {
         Self {
             concept_id: control_concept.concept_id,
             is_control: control_concept.is_control,
+            has_constraint: concept_constraint
+                .map(|concept_constraint| concept_constraint.has_constraint),
             updated_at: concept.updated_at,
         }
     }

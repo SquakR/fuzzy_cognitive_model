@@ -204,7 +204,7 @@ pub async fn change_concept_constraint(
     let concept_constraint_out = ConceptConstraintOutType::from((concept_constraint, concept));
     let model_action = ModelActionType::new(
         &project,
-        String::from("change_concept_constraint"),
+        String::from("changeConceptConstraint"),
         concept_constraint_out,
     );
     project_service.notify(model_action.clone()).await;

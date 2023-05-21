@@ -26,7 +26,7 @@ const { $yup } = useNuxtApp()
 const { t } = useI18n()
 
 const ACTION_KEY = 'signIn'
-const validationSchema = yup.object({
+const validationSchema = $yup.object({
   username: $yup.string().required().min(3),
   password: $yup.string().required().min(8),
 })

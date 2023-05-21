@@ -1,8 +1,11 @@
 import colors from 'vuetify/lib/util/colors'
-import { ConnectionOutType, ModelOutType } from '~/types'
-import { UsePlugin } from '~/types/plugins'
+import {
+  ConnectionOutType,
+  ModelOutType,
+  UseControlConnectionsPlugin,
+} from '~/types'
 
-export const useControlConnectionsPlugin: UsePlugin = (
+export const useControlConnectionsPlugin: UseControlConnectionsPlugin = (
   model: Ref<ModelOutType>
 ) => {
   const isInstalled = computed(() =>
@@ -25,7 +28,7 @@ export const useControlConnectionsPlugin: UsePlugin = (
   const getStyles = () => {
     return [
       {
-        selector: 'edge.is-control-connection',
+        selector: 'edge:unselected.is-control-connection',
         style: {
           'line-color': colors.amber.lighten1,
           'target-arrow-color': colors.amber.lighten1,

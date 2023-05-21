@@ -24,7 +24,6 @@
     :mode="mode"
     :cy="cy"
     :change-concept="changeConcept"
-    :change-concept-on-success="changeConceptOnSuccess"
     :delete-concept="deleteConcept"
     :delete-concept-pending="deleteConceptPending"
   />
@@ -78,13 +77,12 @@ watch(
   }
 )
 
-const plugins = usePlugins(toRef(props, 'model'))
+const plugins = usePlugins(toRef(props, 'model'), cy)
 
 const {
   createConcept,
   createConceptOnSuccess,
   changeConcept,
-  changeConceptOnSuccess,
   moveConcept,
   deleteConcept,
   deleteConceptPending,

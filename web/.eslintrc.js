@@ -45,6 +45,7 @@ module.exports = {
         'components/**/*.vue',
         'composables/**/*.ts',
         'store/*.ts',
+        'types/*.ts',
         'utils/*.ts',
       ],
       rules: {

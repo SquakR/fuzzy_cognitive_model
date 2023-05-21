@@ -1,5 +1,5 @@
 use crate::internal_server_error;
-use crate::response::{AppError, ServiceResult};
+use crate::response::ServiceResult;
 use crate::utils;
 use lettre::message::header;
 use lettre::transport::smtp::authentication::Credentials;

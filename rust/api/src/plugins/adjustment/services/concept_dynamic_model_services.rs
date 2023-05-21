@@ -138,7 +138,7 @@ pub async fn change_dynamic_model_type(
         ConceptDynamicModelOutType::from((concept_dynamic_model, concept));
     let model_action = ModelActionType::new(
         &project,
-        String::from("change_dynamic_model_type"),
+        String::from("changeDynamicModelType"),
         concept_dynamic_model_out,
     );
     project_service.notify(model_action.clone()).await;
@@ -175,7 +175,7 @@ fn add_dynamic_model(
     };
     plugins_data
         .entry("adjustment")
-        .or_insert(json!({ "dynamic_model_type": concept_dynamic_model.dynamic_model_type }));
+        .or_insert(json!({ "dynamicModelType": concept_dynamic_model.dynamic_model_type }));
 }
 
 impl From<(ConceptDynamicModel, Concept)> for ConceptDynamicModelOutType {

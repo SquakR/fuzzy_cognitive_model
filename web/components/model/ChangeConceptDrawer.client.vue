@@ -1,21 +1,28 @@
 <template>
   <Teleport to=".editor-layout__right-menu">
     <VExpandXTransition>
-      <VCard v-show="isActive" class="model-change-concept-form" width="500">
+      <VCard
+        v-show="isActive"
+        class="model-change-concept-drawer__card"
+        :width="tab === 'adjustment' ? 520 : 500"
+      >
         <VTabs v-model="tab" bg-color="teal-lighten-1">
           <VTab value="concept">{{ t('concept') }}</VTab>
           <VTab v-if="plugins.adjustment.isInstalled" value="adjustment">{{
             t('adjustment')
           }}</VTab>
         </VTabs>
-        <VCardText>
+        <VCardText
+          v-if="selectedConcept"
+          class="model-change-concept-drawer__card-text"
+        >
           <VWindow v-model="tab">
             <VWindowItem value="concept"
               ><ModelChangeConceptForm
-                v-if="selectedConcept"
                 :model="model"
                 :cy="cy"
                 :selected-concept="selectedConcept"
+                :concept-constraints-plugin="plugins.conceptConstraints"
                 :change-concept="changeConcept"
                 :delete-concept="deleteConcept"
                 :delete-concept-pending="deleteConceptPending"
@@ -23,8 +30,28 @@
             <VWindowItem
               v-if="plugins.adjustment.isInstalled"
               value="adjustment"
-              >Adjustment</VWindowItem
             >
+              <PluginsControlConceptsChangeConceptForm
+                :selected-concept="selectedConcept"
+                :control-concepts-plugin="plugins.controlConcepts"
+              />
+              <VDivider />
+              <PluginsConceptConstraintsChangeConceptForm
+                :selected-concept="selectedConcept"
+                :concept-constraints-plugin="plugins.conceptConstraints"
+              />
+              <VDivider />
+              <PluginsTargetConceptsChangeConceptForm
+                :selected-concept="selectedConcept"
+                :target-concepts-plugin="plugins.targetConcepts"
+              />
+              <VDivider />
+              <PluginsAdjustmentChangeConceptForm
+                :selected-concept="selectedConcept"
+                :adjustment-plugin="plugins.adjustment"
+              />
+              <VDivider />
+            </VWindowItem>
           </VWindow>
         </VCardText>
       </VCard>
@@ -42,9 +69,6 @@ export interface Props {
   mode: EditorMode
   cy: cytoscape.Core
   changeConcept: ReturnType<typeof useModelActions>['changeConcept']
-  changeConceptOnSuccess: ReturnType<
-    typeof useModelActions
-  >['changeConceptOnSuccess']
   deleteConcept: ReturnType<typeof useModelActions>['deleteConcept']
   deleteConceptPending: boolean
 }
@@ -55,11 +79,7 @@ const { t } = useI18n()
 const selectedConcept = ref<ConceptOutType | null>(null)
 const isActive = computed(() => Boolean(selectedConcept.value))
 
-const tab = ref(null)
-
-props.changeConceptOnSuccess(() => {
-  props.cy.$('node:selected').unselect()
-})
+const tab = ref<'concept' | 'adjustment' | null>(null)
 
 props.cy.on('select', 'node', (e) => {
   selectedConcept.value = props.model.concepts.find(
@@ -75,11 +95,14 @@ props.cy.on('remove', 'node', () => {
 </script>
 
 <style lang="sass">
-.model-change-concept-form
+.model-change-concept-drawer__card
   pointer-events: auto
   position: absolute
   height: 100%
   right: 0
+.model-change-concept-drawer__card-text
+  height: calc(100% - 32px)
+  overflow-y: auto
 </style>
 
 <i18n locale="en-US" lang="json">

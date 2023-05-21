@@ -1,0 +1,5 @@
+MathJax = {
+  options: {
+    enableMenu: false,
+  },
+}

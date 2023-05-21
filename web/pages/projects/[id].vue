@@ -1,7 +1,4 @@
 <template>
-  <Head>
-    <Style type="text/css" children="html, body, #__nuxt { height: 100% }" />
-  </Head>
   <VProgressLinear v-if="loading" class="mt-2" color="primary" indeterminate />
   <VCard v-else height="100%">
     <VCardTitle>{{ model!.project.name }}</VCardTitle>

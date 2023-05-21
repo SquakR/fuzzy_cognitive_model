@@ -45,7 +45,7 @@ macro_rules! not_found_error {
 #[macro_export]
 macro_rules! internal_server_error {
     () => {
-        Err(AppError::InternalServerError)
+        Err(crate::response::AppError::InternalServerError)
     };
 }
 

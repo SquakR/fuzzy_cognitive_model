@@ -3,7 +3,7 @@
     v-model="value"
     :label="label"
     :error-messages="errors"
-    :color="meta.dirty && !errors.length ? 'success' : undefined"
+    color="primary"
     @blur="handleBlur"
     @click:append-inner="$emit('click:append-inner')"
   />
@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 defineEmits<Emits>()
 
-const { value, handleBlur, errors, meta } = useField(
+const { value, handleBlur, errors } = useField(
   toRef(props, 'name'),
   undefined,
   { type: 'checkbox' }

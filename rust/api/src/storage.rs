@@ -1,4 +1,4 @@
-use crate::response::{AppError, ServiceResult};
+use crate::response::ServiceResult;
 use crate::{internal_server_error, not_found_error, validation_error};
 use path_slash::PathBufExt as _;
 use rocket::fs::{NamedFile, TempFile};

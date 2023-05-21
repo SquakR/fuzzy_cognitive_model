@@ -6,6 +6,23 @@ export default defineNuxtConfig({
     'vuetify/lib/styles/main.sass',
     '@mdi/font/css/materialdesignicons.min.css',
   ],
+  app: {
+    head: {
+      script: [
+        {
+          src: '/mathjax.js',
+        },
+        {
+          src: 'https://polyfill.io/v3/polyfill.min.js?features=es6',
+        },
+        {
+          src: 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js',
+          id: 'MathJax-script',
+          async: true,
+        },
+      ],
+    },
+  },
   build: {
     transpile: ['vuetify', 'rxjs'],
   },

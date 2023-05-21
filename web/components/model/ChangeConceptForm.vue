@@ -7,6 +7,7 @@
     :initial-values="initialValues"
     :on-submit="onSubmit"
     width="468"
+    flat
   >
     <BaseTextField :label="t('name')" name="name" />
     <BaseTextarea :label="t('description')" name="description" />
@@ -40,6 +41,7 @@ import BaseForm from '~/components/base/Form.vue'
 import { useUserStore } from '~/store'
 import {
   CHANGE_CONCEPT_KEY,
+  ConceptConstraintsPlugin,
   ConceptOutType,
   DELETE_CONCEPT_KEY,
   ModelOutType,
@@ -49,6 +51,7 @@ export interface Props {
   model: ModelOutType
   cy: cytoscape.Core
   selectedConcept: ConceptOutType
+  conceptConstraintsPlugin: ConceptConstraintsPlugin
   changeConcept: ReturnType<typeof useModelActions>['changeConcept']
   deleteConcept: ReturnType<typeof useModelActions>['deleteConcept']
   deleteConceptPending: boolean
@@ -91,7 +94,39 @@ const validationSchema = computed(() => {
     yPosition: $yup.number().required(),
   }
   if (props.model.project.conceptValueType === 'from_zero_to_one') {
-    validationSchema.value = $yup.number().required().min(0).max(1)
+    if (
+      props.conceptConstraintsPlugin.isInstalled.value &&
+      props.selectedConcept.pluginsData.conceptConstraints!.hasConstraint
+    ) {
+      const constraints = props.selectedConcept.pluginsData.conceptConstraints!
+      if (constraints.includeMinValue && constraints.includeMaxValue) {
+        validationSchema.value = $yup
+          .number()
+          .required()
+          .min(constraints.minValue)
+          .max(constraints.maxValue)
+      } else if (constraints.includeMinValue) {
+        validationSchema.value = $yup
+          .number()
+          .required()
+          .min(constraints.minValue)
+          .lessThan(constraints.maxValue)
+      } else if (constraints.includeMaxValue) {
+        validationSchema.value = $yup
+          .number()
+          .required()
+          .moreThan(constraints.minValue)
+          .max(constraints.maxValue)
+      } else {
+        validationSchema.value = $yup
+          .number()
+          .required()
+          .moreThan(constraints.minValue)
+          .lessThan(constraints.maxValue)
+      }
+    } else {
+      validationSchema.value = $yup.number().required().min(0).max(1)
+    }
   }
   return $yup.object(validationSchema)
 })

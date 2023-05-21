@@ -160,7 +160,7 @@ pub async fn change_target_concept(
     let target_concept_out = TargetConceptOutType::from((target_concept, concept));
     let model_action = ModelActionType::new(
         &project,
-        String::from("change_target_concept"),
+        String::from("changeTargetConcept"),
         target_concept_out,
     );
     project_service.notify(model_action.clone()).await;

@@ -1,6 +1,9 @@
 import { useMessageStore, useUserStore } from '~/store'
 import {
+  CHANGE_CONCEPT_CONSTRAINT_KEY,
   CHANGE_CONCEPT_KEY,
+  CHANGE_DYNAMIC_MODEL_TYPE_KEY,
+  CHANGE_TARGET_CONCEPT_KEY,
   CREATE_CONCEPT_KEY,
   CREATE_CONNECTION_KEY,
   ChangeConceptType,
@@ -12,6 +15,7 @@ import {
   DeleteConnectionType,
   ModelOutType,
   Plugins,
+  SET_IS_CONTROL_KEY,
 } from '~/types'
 import { MOVE_CONCEPT_KEY, ModelActionResult, MoveConceptType } from '~/types'
 
@@ -53,6 +57,7 @@ export const useModelActions = (
     concept.value = result.data.value
     concept.xPosition = result.data.xPosition
     concept.yPosition = result.data.yPosition
+    concept.updatedAt = result.data.updatedAt
     setConceptDataWithPosition(
       cy.value!,
       model.value,
@@ -156,6 +161,18 @@ export const useModelActions = (
           break
         case DELETE_CONNECTION_KEY:
           deleteConnectionUpdate(result)
+          break
+        case SET_IS_CONTROL_KEY:
+          plugins.controlConcepts.setIsControlUpdate(result)
+          break
+        case CHANGE_TARGET_CONCEPT_KEY:
+          plugins.targetConcepts.changeTargetConceptUpdate(result)
+          break
+        case CHANGE_CONCEPT_CONSTRAINT_KEY:
+          plugins.conceptConstraints.changeConceptConstraintUpdate(result)
+          break
+        case CHANGE_DYNAMIC_MODEL_TYPE_KEY:
+          plugins.adjustment.changeDynamicModelTypeUpdate(result)
           break
       }
     } catch {

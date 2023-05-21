@@ -7,10 +7,13 @@
     :initial-values="initialValues"
     :on-submit="onSubmit"
   >
-    <VCard :width="computedWidth">
+    <VCard :width="computedWidth" :flat="flat">
       <VCardTitle v-if="title">
         <slot name="title" :title="title">{{ title }}</slot>
       </VCardTitle>
+      <VCardSubtitle v-if="subtitle">
+        <slot name="subtitle" :subtitle="subtitle">{{ subtitle }}</slot>
+      </VCardSubtitle>
       <VCardText>
         <VAlert
           v-if="success"
@@ -31,9 +34,15 @@
         <slot />
       </VCardText>
       <VCardActions>
-        <slot name="actions" :loading="isSubmitting" :button-text="buttonText">
+        <slot
+          name="actions"
+          :disabled="disabled"
+          :loading="isSubmitting"
+          :button-text="buttonText"
+        >
           <VSpacer />
           <VBtn
+            :disabled="disabled"
             :loading="isSubmitting"
             color="primary"
             variant="elevated"
@@ -56,14 +65,20 @@ export interface Props {
   validationSchema: object
   initialValues: Record<string, any>
   onSubmit: SubmissionHandler<any>
+  disabled?: boolean
   title?: string
+  subtitle?: string
   width?: string | number
+  flat?: boolean
   successMessage?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  disabled: false,
   title: undefined,
+  subtitle: undefined,
   width: 500,
+  flat: false,
   successMessage: undefined,
 })
 

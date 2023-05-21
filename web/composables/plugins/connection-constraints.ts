@@ -1,7 +1,6 @@
-import { ModelOutType } from '~/types'
-import { UsePlugin } from '~/types/plugins'
+import { ModelOutType, UseConnectionConstraintsPlugin } from '~/types'
 
-export const useConnectionConstraintsPlugin: UsePlugin = (
+export const useConnectionConstraintsPlugin: UseConnectionConstraintsPlugin = (
   model: Ref<ModelOutType>
 ) => {
   const isInstalled = computed(() =>

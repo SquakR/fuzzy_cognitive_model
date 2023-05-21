@@ -10,6 +10,8 @@ pub struct ControlConceptOutType {
     pub concept_id: i32,
     /// Whether concept is control
     pub is_control: bool,
+    /// Whether concept has constraint
+    pub has_constraint: Option<bool>,
     /// Concept update time
     pub updated_at: DateTime<Utc>,
 }

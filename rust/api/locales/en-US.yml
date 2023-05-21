@@ -91,8 +91,6 @@ invalid_connection_value_error: "Invalid connection value, expected `%{expected}
 invalid_connection_value_symbolic_error: "Invalid connection value, expected `0.0` or `1.0`, but got `%{got}`."
 connection_duplication_error: "Unable to create connection because it already exists."
 
-concept_already_control_error: "The concept is already a control."
-concept_not_control_error: "The concept is not a control."
 concept_is_control_error: "The concept is a control."
 concept_is_target_error: "The concept is a target."
 

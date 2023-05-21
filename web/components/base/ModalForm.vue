@@ -6,7 +6,9 @@
     <BaseForm
       ref="baseForm"
       :action-key="actionKey"
+      :disabled="disabled"
       :title="title"
+      :subtitle="subtitle"
       :button-text="buttonText"
       :validation-schema="validationSchema"
       :initial-values="initialValues"
@@ -22,10 +24,11 @@
         </div>
       </template>
       <slot />
-      <template #actions="{ loading, buttonText }">
+      <template #actions="{ disabled, loading, buttonText }">
         <slot name="actions" :loading="loading" :button-text="buttonText">
           <VSpacer />
           <VBtn
+            :disabled="disabled"
             :loading="loading"
             color="primary"
             variant="elevated"
@@ -50,6 +53,8 @@ export interface Props {
   validationSchema: object
   initialValues: Record<string, any>
   onSubmit: SubmissionHandler<any>
+  disabled?: boolean
+  subtitle?: string
   width?: string | number
   successMessage?: string
 }
@@ -59,6 +64,8 @@ export interface Emits {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  disabled: false,
+  subtitle: undefined,
   width: 500,
   successMessage: undefined,
 })

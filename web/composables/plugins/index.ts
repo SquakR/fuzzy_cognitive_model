@@ -5,15 +5,17 @@ import { useControlConceptsPlugin } from './control-concepts'
 import { useControlConnectionsPlugin } from './control-connections'
 import { useTargetConceptsPlugin } from './target-concepts'
 import { ConceptOutType, ConnectionOutType, ModelOutType } from '~/types'
-import { UsePlugins } from '~/types/plugins'
 
-export const usePlugins: UsePlugins = (model: Ref<ModelOutType>) => {
-  const controlConcepts = useControlConceptsPlugin(model)
-  const targetConcepts = useTargetConceptsPlugin(model)
-  const controlConnections = useControlConnectionsPlugin(model)
-  const conceptConstraints = useConceptConstraintsPlugin(model)
-  const connectionConstraints = useConnectionConstraintsPlugin(model)
-  const adjustment = useAdjustmentPlugin(model)
+export const usePlugins = (
+  model: Ref<ModelOutType>,
+  cy: Ref<cytoscape.Core | null>
+) => {
+  const controlConcepts = useControlConceptsPlugin(model, cy)
+  const targetConcepts = useTargetConceptsPlugin(model, cy)
+  const controlConnections = useControlConnectionsPlugin(model, cy)
+  const conceptConstraints = useConceptConstraintsPlugin(model, cy)
+  const connectionConstraints = useConnectionConstraintsPlugin(model, cy)
+  const adjustment = useAdjustmentPlugin(model, cy)
 
   const plugins = [
     controlConcepts,
