@@ -7,8 +7,8 @@ use crate::schema::{concepts, connections, model_copies, projects};
 use crate::services::{permission_services, project_services};
 use crate::types::{
     ConceptInMoveType, ConceptInType, ConceptOutChangeType, ConceptOutDeleteType,
-    ConceptOutMoveType, ConceptOutType, ConnectionInCreateType, ConnectionOutChangeDescriptionType,
-    ConnectionOutChangeValueType, ConnectionOutDeleteType, ConnectionOutType, ModelActionErrorType,
+    ConceptOutMoveType, ConceptOutType, ConnectionInChangeType, ConnectionInCreateType,
+    ConnectionOutChangeType, ConnectionOutDeleteType, ConnectionOutType, ModelActionErrorType,
     ModelActionType, ModelOutType, ProjectOutType,
 };
 use crate::validation_error;
@@ -371,54 +371,23 @@ pub async fn create_connection(
     Ok(model_action)
 }
 
-pub async fn change_connection_description(
-    conn: &mut PgConnection,
-    project_service: WebSocketProjectService,
-    user: &User,
-    connection_id: i32,
-    description: String,
-) -> ServiceResult<ModelActionType<ConnectionOutChangeDescriptionType>> {
-    let project = find_project_by_connection_id(conn, connection_id)
-        .to_service_result_find(String::from("project_not_found_error"))?;
-    permission_services::can_change_model(conn, &project, user.id)?;
-    let (connection, project) = conn
-        .transaction(|conn| {
-            let connection = diesel::update(connections::table)
-                .filter(connections::id.eq(connection_id))
-                .set(connections::description.eq(description))
-                .get_result::<Connection>(conn)?;
-            let project =
-                project_services::update_project(conn, project.id, connection.updated_at)?;
-            Ok((connection, project))
-        })
-        .to_service_result_find(String::from("connection_not_found_error"))?;
-    let connection_out = ConnectionOutChangeDescriptionType::from(connection);
-    let model_action = ModelActionType::new(
-        &project,
-        String::from("changeConnectionDescription"),
-        connection_out,
-    );
-    project_service.notify(model_action.clone()).await;
-    Ok(model_action)
-}
-
-pub async fn change_connection_value(
+pub async fn change_connection(
     conn: &mut PgConnection,
     plugins: &Plugins,
     project_service: WebSocketProjectService,
     user: &User,
     connection_id: i32,
-    mut value: f64,
-) -> ServiceResult<ModelActionType<ConnectionOutChangeValueType>> {
+    connection_in: ConnectionInChangeType,
+) -> ServiceResult<ModelActionType<ConnectionOutChangeType>> {
     let project = find_project_by_connection_id(conn, connection_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     permission_services::can_change_model(conn, &project, user.id)?;
-    value = plugins
+    let value = plugins
         .change_connection_value_emitter
         .lock()
         .unwrap()
         .emit(
-            value,
+            connection_in.value,
             ChangeConnectionValueExtra::new(project.clone(), connection_id),
         )?;
     check_connection_value(&project, value)?;
@@ -426,19 +395,19 @@ pub async fn change_connection_value(
         .transaction(|conn| {
             let connection = diesel::update(connections::table)
                 .filter(connections::id.eq(connection_id))
-                .set((connections::value.eq(value),))
+                .set((
+                    connections::description.eq(connection_in.description),
+                    connections::value.eq(value),
+                ))
                 .get_result::<Connection>(conn)?;
             let project =
                 project_services::update_project(conn, project.id, connection.updated_at)?;
             Ok((connection, project))
         })
         .to_service_result_find(String::from("connection_not_found_error"))?;
-    let connection_out = ConnectionOutChangeValueType::from(connection);
-    let model_action = ModelActionType::new(
-        &project,
-        String::from("changeConnectionValue"),
-        connection_out,
-    );
+    let connection_out = ConnectionOutChangeType::from(connection);
+    let model_action =
+        ModelActionType::new(&project, String::from("changeConnection"), connection_out);
     project_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
@@ -644,20 +613,11 @@ impl From<Connection> for ConnectionOutType {
     }
 }
 
-impl From<Connection> for ConnectionOutChangeDescriptionType {
+impl From<Connection> for ConnectionOutChangeType {
     fn from(connection: Connection) -> Self {
         Self {
             id: connection.id,
             description: connection.description,
-            updated_at: connection.updated_at,
-        }
-    }
-}
-
-impl From<Connection> for ConnectionOutChangeValueType {
-    fn from(connection: Connection) -> Self {
-        Self {
-            id: connection.id,
             value: connection.value,
             updated_at: connection.updated_at,
         }

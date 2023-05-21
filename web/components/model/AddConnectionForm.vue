@@ -38,6 +38,13 @@ export interface Props {
 
 const props = defineProps<Props>()
 
+interface Values {
+  description: string
+  value: string
+  source: string
+  target: string
+}
+
 const { $yup } = useNuxtApp()
 const { t } = useI18n()
 const userStore = useUserStore()
@@ -125,9 +132,10 @@ const validationSchema = computed(() => {
   }
   return $yup.object(validationSchema)
 })
-const initialValues = computed(() => {
-  const initialValues: Record<string, string> = {
+const initialValues = computed<Values>(() => {
+  const initialValues: Values = {
     description: '',
+    value: '',
     source: source.value?.name || '',
     target: target.value?.name || '',
   }
@@ -138,7 +146,7 @@ const initialValues = computed(() => {
   }
   return initialValues
 })
-const onSubmit = async (values: Record<string, string>) => {
+const onSubmit = async (values: Values) => {
   let value
   if (props.model.project.connectionValueType === 'symbolic') {
     value = values.value === '+' ? 1 : -1

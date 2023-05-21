@@ -45,15 +45,22 @@ export const createConnectionElement = (
   locale: string,
   plugins: Plugins
 ): cytoscape.ElementDefinition => ({
-  data: {
+  data: createConnectionData(connection, locale),
+  classes: plugins.getConnectionClasses(connection).join(' '),
+})
+
+export const createConnectionData = (
+  connection: ConnectionOutType,
+  locale: string
+) => {
+  return {
     connectionId: connection.id,
     id: getConnectionId(connection),
     source: getConceptId(connection.sourceId),
     target: getConceptId(connection.targetId),
     label: new Intl.NumberFormat(locale).format(connection.value),
-  },
-  classes: plugins.getConnectionClasses(connection).join(' '),
-})
+  }
+}
 
 export const setConceptDataWithPosition = (
   cy: cytoscape.Core,
@@ -77,4 +84,14 @@ export const setConceptPosition = (
     x: concept.xPosition,
     y: concept.yPosition,
   })
+}
+
+export const setConnectionData = (
+  cy: cytoscape.Core,
+  connection: ConnectionOutType,
+  locale: string
+) => {
+  cy.$(`#${getConnectionId(connection.id)}`).data(
+    createConnectionData(connection, locale)
+  )
 }

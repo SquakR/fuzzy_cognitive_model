@@ -267,16 +267,16 @@ export interface ConnectionInCreateType {
   targetId: number
 }
 
-export interface ConnectionOutChangeDescriptionType {
-  id: number
+export interface ConnectionInChangeType {
   description: string
-  updatedAt: string
+  value: number
 }
 
-export interface ConnectionOutChangeValueType {
+export interface ConnectionOutChangeType {
   id: number
+  description: string
   value: number
-  updateAt: string
+  updatedAt: string
 }
 
 export interface ConnectionOutDeleteType {
@@ -339,6 +339,12 @@ export type CreateConnectionType = ModelActionType<
   ConnectionOutType
 >
 
+export const CHANGE_CONNECTION_KEY = 'changeConnection'
+export type ChangeConnectionType = ModelActionType<
+  typeof CHANGE_CONNECTION_KEY,
+  ConnectionOutChangeType
+>
+
 export const DELETE_CONNECTION_KEY = 'deleteConnection'
 export type DeleteConnectionType = ModelActionType<
   typeof DELETE_CONNECTION_KEY,
@@ -352,6 +358,7 @@ export type ModelActionResult =
   | MoveConceptType
   | DeleteConceptType
   | CreateConnectionType
+  | ChangeConnectionType
   | DeleteConnectionType
   | SetIsControlType
   | ChangeTargetConceptType

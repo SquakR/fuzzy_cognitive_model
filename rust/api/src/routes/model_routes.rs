@@ -5,8 +5,8 @@ use crate::response::{PathResult, ToPathResult};
 use crate::services::model_services;
 use crate::types::{
     ConceptInMoveType, ConceptInType, ConceptOutChangeType, ConceptOutDeleteType,
-    ConceptOutMoveType, ConceptOutType, ConnectionInCreateType, ConnectionOutChangeDescriptionType,
-    ConnectionOutChangeValueType, ConnectionOutDeleteType, ConnectionOutType, ModelActionType,
+    ConceptOutMoveType, ConceptOutType, ConnectionInChangeType, ConnectionInCreateType,
+    ConnectionOutChangeType, ConnectionOutDeleteType, ConnectionOutType, ModelActionType,
     ModelOutType, UserOutType,
 };
 use crate::web_socket::WebSocketProjectService;
@@ -159,53 +159,28 @@ pub async fn create_connection(
     .to_path_result()
 }
 
-/// Change connection description
+/// Change connection
 #[openapi(tag = "model")]
 #[patch(
-    "/connections/<connection_id>/change_description",
+    "/connections/<connection_id>",
     format = "json",
-    data = "<description>"
+    data = "<connection_in>"
 )]
-pub async fn change_connection_description(
+pub async fn change_connection(
     connection_id: i32,
-    description: Json<String>,
-    user: User,
-    project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<ConnectionOutChangeDescriptionType>> {
-    let conn = &mut db::establish_connection();
-    model_services::change_connection_description(
-        conn,
-        project_service,
-        &user,
-        connection_id,
-        description.into_inner(),
-    )
-    .await
-    .to_path_result()
-}
-
-/// Change connection value
-#[openapi(tag = "model")]
-#[patch(
-    "/connections/<connection_id>/change_value",
-    format = "json",
-    data = "<value>"
-)]
-pub async fn change_connection_value(
-    connection_id: i32,
-    value: Json<f64>,
+    connection_in: Json<ConnectionInChangeType>,
     user: User,
     plugins: &Plugins,
     project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<ConnectionOutChangeValueType>> {
+) -> PathResult<ModelActionType<ConnectionOutChangeType>> {
     let conn = &mut db::establish_connection();
-    model_services::change_connection_value(
+    model_services::change_connection(
         conn,
         plugins,
         project_service,
         &user,
         connection_id,
-        value.into_inner(),
+        connection_in.into_inner(),
     )
     .await
     .to_path_result()

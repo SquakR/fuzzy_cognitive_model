@@ -1,7 +1,9 @@
 import {
   ChangeConceptType,
+  ChangeConnectionType,
   ConceptInMoveType,
   ConceptInType,
+  ConnectionInChangeType,
   ConnectionInCreateType,
   CreateConceptType,
   CreateConnectionType,
@@ -76,6 +78,22 @@ export const useCreateConnection = (opts: LocalFetchFuncOptions) => {
     connectionIn: ConnectionInCreateType
   ) => {
     return await fetch(`/projects/${projectId}/connection`, connectionIn)
+  }
+  return { execute, ...rest }
+}
+
+export const useChangeConnection = (opts: LocalFetchFuncOptions) => {
+  const { execute: fetch, ...rest } = useLocalFetchFunc<ChangeConnectionType>(
+    opts,
+    {
+      method: 'PATCH',
+    }
+  )
+  const execute = async (
+    connectionId: number,
+    connectionIn: ConnectionInChangeType
+  ) => {
+    return await fetch(`/connections/${connectionId}`, connectionIn)
   }
   return { execute, ...rest }
 }

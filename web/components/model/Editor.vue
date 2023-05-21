@@ -17,7 +17,7 @@
     :create-connection="createConnection"
     :create-connection-on-success="createConnectionOnSuccess"
   />
-  <ModelChangeConceptDrawer
+  <ModelDrawer
     v-if="cy"
     :model="model"
     :plugins="plugins"
@@ -25,12 +25,9 @@
     :change-concept="changeConcept"
     :delete-concept="deleteConcept"
     :delete-concept-pending="deleteConceptPending"
-  />
-  <ModelChangeConnectionDrawer
-    v-if="cy"
-    :model="model"
-    :plugins="plugins"
-    :cy="cy"
+    :change-connection="changeConnection"
+    :delete-connection="deleteConnection"
+    :delete-connection-pending="deleteConnectionPending"
   />
   <div ref="container" class="model-editor__cytoscape-container" />
 </template>
@@ -93,7 +90,9 @@ const {
   deleteConceptPending,
   createConnection,
   createConnectionOnSuccess,
+  changeConnection,
   deleteConnection,
+  deleteConnectionPending,
 } = useModelActions(toRef(props, 'model'), mode, cy, plugins)
 
 const createConceptElements = () =>

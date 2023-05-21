@@ -2,11 +2,13 @@ import { useMessageStore, useUserStore } from '~/store'
 import {
   CHANGE_CONCEPT_CONSTRAINT_KEY,
   CHANGE_CONCEPT_KEY,
+  CHANGE_CONNECTION_KEY,
   CHANGE_DYNAMIC_MODEL_TYPE_KEY,
   CHANGE_TARGET_CONCEPT_KEY,
   CREATE_CONCEPT_KEY,
   CREATE_CONNECTION_KEY,
   ChangeConceptType,
+  ChangeConnectionType,
   CreateConceptType,
   CreateConnectionType,
   DELETE_CONCEPT_KEY,
@@ -121,6 +123,21 @@ export const useModelActions = (
   }
 
   const {
+    execute: changeConnection,
+    onSuccess: changeConnectionOnSuccess,
+    pending: changeConnectionPending,
+  } = useChangeConnection({ key: CHANGE_CONNECTION_KEY })
+  const changeConnectionUpdate = (result: ChangeConnectionType) => {
+    const connection = model.value.connections.find(
+      (connection) => connection.id === result.data.id
+    )!
+    connection.description = result.data.description
+    connection.value = result.data.value
+    connection.updatedAt = result.data.updatedAt
+    setConnectionData(cy.value!, connection, userStore.locale)
+  }
+
+  const {
     execute: deleteConnection,
     onSuccess: deleteConnectionOnSuccess,
     pending: deleteConnectionPending,
@@ -169,6 +186,9 @@ export const useModelActions = (
         case CREATE_CONNECTION_KEY:
           createConnectionUpdate(result)
           break
+        case CHANGE_CONNECTION_KEY:
+          changeConnectionUpdate(result)
+          break
         case DELETE_CONNECTION_KEY:
           deleteConnectionUpdate(result)
           break
@@ -211,6 +231,9 @@ export const useModelActions = (
     createConnection,
     createConnectionOnSuccess,
     createConnectionPending,
+    changeConnection,
+    changeConnectionOnSuccess,
+    changeConnectionPending,
     deleteConnection,
     deleteConnectionOnSuccess,
     deleteConnectionPending,

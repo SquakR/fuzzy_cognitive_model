@@ -7,8 +7,7 @@
       </VContainer>
       <TheGlobalMessage />
     </VMain>
-    <div id="change-concept-drawer" class="editor-layout__drawer"></div>
-    <div id="change-connection-drawer" class="editor-layout__drawer"></div>
+    <div class="editor-layout__drawer"></div>
   </VLayout>
 </template>
 
@@ -53,5 +52,6 @@ onUnmounted(() => {
 
   .drawer-card-text
     height: calc(100% - 32px)
+    min-width: 500px
     overflow-y: auto
 </style>

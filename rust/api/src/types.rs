@@ -494,24 +494,24 @@ pub struct ConnectionInCreateType {
     pub target_id: i32,
 }
 
-/// Type of result of changing connection description
+/// Type of connection to change
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ConnectionInChangeType {
+    /// Connection description
+    pub description: String,
+    /// Connection value
+    pub value: f64,
+}
+
+/// Type of result of changing connection
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct ConnectionOutChangeDescriptionType {
+pub struct ConnectionOutChangeType {
     /// Connection identifier
     pub id: i32,
     /// Connection description
     pub description: String,
-    /// Connection update time
-    pub updated_at: DateTime<Utc>,
-}
-
-/// Type of result of changing connection value
-#[derive(Clone, Serialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct ConnectionOutChangeValueType {
-    /// Connection identifier
-    pub id: i32,
     /// Connection value
     pub value: f64,
     /// Connection update time
