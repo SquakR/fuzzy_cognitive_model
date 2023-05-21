@@ -89,7 +89,7 @@ const {
   createConnection,
   createConnectionOnSuccess,
   deleteConnection,
-} = useModelActions(toRef(props, 'model'), cy, plugins)
+} = useModelActions(toRef(props, 'model'), mode, cy, plugins)
 
 const createConceptElements = () =>
   props.model.concepts.map((concept) =>

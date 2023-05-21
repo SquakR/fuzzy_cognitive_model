@@ -13,6 +13,7 @@ import {
   DELETE_CONNECTION_KEY,
   DeleteConceptType,
   DeleteConnectionType,
+  EditorMode,
   ModelOutType,
   Plugins,
   SET_IS_CONTROL_KEY,
@@ -21,6 +22,7 @@ import { MOVE_CONCEPT_KEY, ModelActionResult, MoveConceptType } from '~/types'
 
 export const useModelActions = (
   model: Ref<ModelOutType>,
+  mode: Ref<EditorMode>,
   cy: Ref<cytoscape.Core | null>,
   plugins: Plugins
 ) => {
@@ -37,9 +39,16 @@ export const useModelActions = (
   })
   const createConceptUpdate = (result: CreateConceptType) => {
     model.value.concepts.push(result.data)
-    cy.value!.add(
-      createConceptElement(model.value, result.data, userStore.locale, plugins)
-    )
+    cy.value!.add({
+      ...createConceptElement(
+        model.value,
+        result.data,
+        userStore.locale,
+        plugins
+      ),
+      selectable: mode.value === 'change',
+      grabbable: mode.value === 'change',
+    })
     setConceptPosition(cy.value!, model.value.concepts.at(-1)!)
   }
 
@@ -105,9 +114,10 @@ export const useModelActions = (
   } = useCreateConnection({ key: CREATE_CONNECTION_KEY })
   const createConnectionUpdate = (result: CreateConnectionType) => {
     model.value.connections.push(result.data)
-    cy.value!.add(
-      createConnectionElement(result.data, userStore.locale, plugins)
-    )
+    cy.value!.add({
+      ...createConnectionElement(result.data, userStore.locale, plugins),
+      selectable: mode.value === 'change',
+    })
   }
 
   const {
