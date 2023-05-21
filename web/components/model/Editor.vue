@@ -160,24 +160,6 @@ const createCytoscape = () => {
         },
       },
       {
-        selector: 'node:selected',
-        style: {
-          backgroundColor: SELECTED_COLOR,
-        },
-      },
-      {
-        selector: 'node.add-connection-source',
-        style: {
-          backgroundColor: colors.teal.lighten1,
-        },
-      },
-      {
-        selector: 'node.add-connection-target',
-        style: {
-          backgroundColor: colors.purple.lighten1,
-        },
-      },
-      {
         selector: 'edge',
         style: {
           label: 'data(label)',
@@ -192,6 +174,12 @@ const createCytoscape = () => {
         },
       },
       {
+        selector: 'node:selected',
+        style: {
+          backgroundColor: SELECTED_COLOR,
+        },
+      },
+      {
         selector: 'edge:selected',
         style: {
           'line-color': SELECTED_COLOR,
@@ -199,6 +187,18 @@ const createCytoscape = () => {
         },
       },
       ...plugins.getStyles(),
+      {
+        selector: 'node.add-connection-source',
+        style: {
+          backgroundColor: colors.teal.lighten1,
+        },
+      },
+      {
+        selector: 'node.add-connection-target',
+        style: {
+          backgroundColor: colors.purple.lighten1,
+        },
+      },
     ],
   })
 }

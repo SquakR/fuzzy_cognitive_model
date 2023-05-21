@@ -1,5 +1,3 @@
-export {}
-
 declare module 'vuetify/lib/util/colors' {
   interface MainColors {
     base: string
