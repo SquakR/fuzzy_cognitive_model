@@ -129,7 +129,13 @@ onMounted(() => {
   drawLabels()
 })
 
-onKeyStroke('Delete', () => {
+onKeyStroke('Delete', (e) => {
+  if (
+    e.target instanceof HTMLInputElement ||
+    e.target instanceof HTMLTextAreaElement
+  ) {
+    return
+  }
   cy.value!.$('node:selected').forEach((node) => {
     const conceptId = node.data().conceptId
     deleteConcept(conceptId)
