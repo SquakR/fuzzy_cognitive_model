@@ -21,11 +21,16 @@
     v-if="cy"
     :model="model"
     :plugins="plugins"
-    :mode="mode"
     :cy="cy"
     :change-concept="changeConcept"
     :delete-concept="deleteConcept"
     :delete-concept-pending="deleteConceptPending"
+  />
+  <ModelChangeConnectionDrawer
+    v-if="cy"
+    :model="model"
+    :plugins="plugins"
+    :cy="cy"
   />
   <div ref="container" class="model-editor__cytoscape-container" />
 </template>

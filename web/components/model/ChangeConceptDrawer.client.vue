@@ -1,9 +1,9 @@
 <template>
-  <Teleport to=".editor-layout__right-menu">
+  <Teleport to="#change-concept-drawer">
     <VExpandXTransition>
       <VCard
         v-show="isActive"
-        class="model-change-concept-drawer__card"
+        class="drawer-card"
         :width="tab === 'adjustment' ? 520 : 500"
       >
         <VTabs v-model="tab" bg-color="teal-lighten-1">
@@ -12,10 +12,7 @@
             t('adjustment')
           }}</VTab>
         </VTabs>
-        <VCardText
-          v-if="selectedConcept"
-          class="model-change-concept-drawer__card-text"
-        >
+        <VCardText v-if="selectedConcept" class="drawer-card-text">
           <VWindow v-model="tab">
             <VWindowItem value="concept"
               ><ModelChangeConceptForm
@@ -61,12 +58,11 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { ConceptOutType, EditorMode, ModelOutType, Plugins } from '~/types'
+import { ConceptOutType, ModelOutType, Plugins } from '~/types'
 
 export interface Props {
   model: ModelOutType
   plugins: Plugins
-  mode: EditorMode
   cy: cytoscape.Core
   changeConcept: ReturnType<typeof useModelActions>['changeConcept']
   deleteConcept: ReturnType<typeof useModelActions>['deleteConcept']
@@ -93,17 +89,6 @@ props.cy.on('remove', 'node', () => {
   selectedConcept.value = null
 })
 </script>
-
-<style lang="sass">
-.model-change-concept-drawer__card
-  pointer-events: auto
-  position: absolute
-  height: 100%
-  right: 0
-.model-change-concept-drawer__card-text
-  height: calc(100% - 32px)
-  overflow-y: auto
-</style>
 
 <i18n locale="en-US" lang="json">
 {

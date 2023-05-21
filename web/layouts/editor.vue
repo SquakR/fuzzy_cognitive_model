@@ -7,7 +7,8 @@
       </VContainer>
       <TheGlobalMessage />
     </VMain>
-    <div class="editor-layout__right-menu"></div>
+    <div id="change-concept-drawer" class="editor-layout__drawer"></div>
+    <div id="change-connection-drawer" class="editor-layout__drawer"></div>
   </VLayout>
 </template>
 
@@ -37,10 +38,20 @@ onUnmounted(() => {
   overflow: hidden
 .editor-layout_full-height
   height: 100%
-.editor-layout__right-menu
+.editor-layout__drawer
   pointer-events: none
   position: absolute
   top: 64px
   width: 100%
   height: calc(100% - 64px)
+
+  .drawer-card
+    pointer-events: auto
+    position: absolute
+    height: 100%
+    right: 0
+
+  .drawer-card-text
+    height: calc(100% - 32px)
+    overflow-y: auto
 </style>
