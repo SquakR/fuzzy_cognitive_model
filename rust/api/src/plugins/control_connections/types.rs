@@ -10,6 +10,8 @@ pub struct ControlConnectionOutType {
     pub connection_id: i32,
     /// Whether connection is control
     pub is_control: bool,
+    /// Whether connection has constraint
+    pub has_constraint: Option<bool>,
     /// Connection update time
     pub updated_at: DateTime<Utc>,
 }

@@ -212,7 +212,7 @@ pub async fn change_connection_constraint(
         ConnectionConstraintOutType::from((connection_constraint, connection));
     let model_action = ModelActionType::new(
         &project,
-        String::from("change_connection_constraint"),
+        String::from("changeConnectionConstraint"),
         connection_constraint_out,
     );
     project_service.notify(model_action.clone()).await;

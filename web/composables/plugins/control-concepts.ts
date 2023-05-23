@@ -3,8 +3,8 @@ import {
   ConceptOutType,
   LocalFetchFuncOptions,
   ModelOutType,
-  SET_IS_CONTROL_KEY,
-  SetIsControlType,
+  SET_IS_CONTROL_CONCEPT_KEY,
+  SetIsControlConceptType,
   UseControlConceptsPlugin,
 } from '~/types'
 
@@ -47,9 +47,9 @@ export const useControlConceptsPlugin: UseControlConceptsPlugin = (
     onSuccess: setIsControlOnSuccess,
     pending: setIsControlPending,
   } = useSetIsControl({
-    key: SET_IS_CONTROL_KEY,
+    key: SET_IS_CONTROL_CONCEPT_KEY,
   })
-  const setIsControlUpdate = (result: SetIsControlType) => {
+  const setIsControlUpdate = (result: SetIsControlConceptType) => {
     const concept = model.value.concepts.find(
       (concept) => concept.id === result.data.conceptId
     )!
@@ -80,12 +80,10 @@ export const useControlConceptsPlugin: UseControlConceptsPlugin = (
 }
 
 const useSetIsControl = (opts: LocalFetchFuncOptions) => {
-  const { execute: fetch, ...rest } = useLocalFetchFunc<SetIsControlType>(
-    opts,
-    {
+  const { execute: fetch, ...rest } =
+    useLocalFetchFunc<SetIsControlConceptType>(opts, {
       method: 'PATCH',
-    }
-  )
+    })
   const execute = async (conceptId: number, isControl: boolean) => {
     return await fetch(
       `/concepts/${conceptId}/change_is_control`,

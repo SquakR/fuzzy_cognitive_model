@@ -19,7 +19,18 @@
             :delete-connection-pending="deleteConnectionPending"
           />
         </VWindowItem>
-        <VWindowItem v-if="plugins.adjustment.isInstalled" value="adjustment" />
+        <VWindowItem v-if="plugins.adjustment.isInstalled" value="adjustment">
+          <PluginsControlConnectionsChangeConnectionForm
+            :selected-connection="selectedConnection"
+            :control-connections-plugin="plugins.controlConnections"
+          />
+          <VDivider />
+          <PluginsConnectionConstraintsChangeConnectionForm
+            :selected-connection="selectedConnection"
+            :connection-constraints-plugin="plugins.connectionConstraints"
+          />
+          <VDivider />
+        </VWindowItem>
       </VWindow>
     </VCardText>
   </template>

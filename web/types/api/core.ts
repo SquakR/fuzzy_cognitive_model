@@ -1,9 +1,11 @@
 import {
   ChangeConceptConstraintType,
+  ChangeConnectionConstraintType,
   ChangeDynamicModelTypeType,
   ChangeTargetConceptType,
   DynamicModelType,
-  SetIsControlType,
+  SetIsControlConceptType,
+  SetIsControlConnectionType,
 } from './plugins'
 
 export interface UserOutType {
@@ -360,7 +362,9 @@ export type ModelActionResult =
   | CreateConnectionType
   | ChangeConnectionType
   | DeleteConnectionType
-  | SetIsControlType
+  | SetIsControlConceptType
   | ChangeTargetConceptType
+  | SetIsControlConnectionType
   | ChangeConceptConstraintType
+  | ChangeConnectionConstraintType
   | ChangeDynamicModelTypeType

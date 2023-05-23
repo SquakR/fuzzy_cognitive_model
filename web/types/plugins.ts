@@ -1,13 +1,16 @@
 import {
   ChangeConceptConstraintType,
+  ChangeConnectionConstraintType,
   ChangeDynamicModelTypeType,
   ChangeTargetConceptType,
   ConceptConstraintInChangeType,
   ConceptOutType,
+  ConnectionConstraintInChangeType,
   ConnectionOutType,
   DynamicModelType,
   ModelOutType,
-  SetIsControlType,
+  SetIsControlConceptType,
+  SetIsControlConnectionType,
   TargetConceptInChangeType,
 } from './api'
 import { LocalFetchResult } from './api-helpers'
@@ -18,9 +21,9 @@ export interface Plugins {
   getStyles: () => cytoscape.Stylesheet[]
   controlConcepts: ControlConceptsPlugin
   targetConcepts: TargetConceptsPlugin
-  controlConnections: Plugin
+  controlConnections: ControlConnectionsPlugin
   conceptConstraints: ConceptConstraintsPlugin
-  connectionConstraints: Plugin
+  connectionConstraints: ConnectionConstraintsPlugin
   adjustment: AdjustmentPlugin
 }
 
@@ -40,10 +43,12 @@ export type ControlConceptsPlugin = Plugin & {
   setIsControl: (
     conceptId: number,
     isControl: boolean
-  ) => Promise<LocalFetchResult<SetIsControlType>>
-  setIsControlOnSuccess: (callback: (data: SetIsControlType) => void) => void
+  ) => Promise<LocalFetchResult<SetIsControlConceptType>>
+  setIsControlOnSuccess: (
+    callback: (data: SetIsControlConceptType) => void
+  ) => void
   setIsControlPending: Ref<boolean>
-  setIsControlUpdate: (result: SetIsControlType) => void
+  setIsControlUpdate: (result: SetIsControlConceptType) => void
 }
 
 export type TargetConceptsPlugin = Plugin & {
@@ -58,6 +63,18 @@ export type TargetConceptsPlugin = Plugin & {
   changeTargetConceptUpdate: (result: ChangeTargetConceptType) => void
 }
 
+export type ControlConnectionsPlugin = Plugin & {
+  setIsControl: (
+    connectionId: number,
+    isControl: boolean
+  ) => Promise<LocalFetchResult<SetIsControlConnectionType>>
+  setIsControlOnSuccess: (
+    callback: (data: SetIsControlConnectionType) => void
+  ) => void
+  setIsControlPending: Ref<boolean>
+  setIsControlUpdate: (result: SetIsControlConnectionType) => void
+}
+
 export type ConceptConstraintsPlugin = Plugin & {
   changeConceptConstraint: (
     conceptId: number,
@@ -68,6 +85,20 @@ export type ConceptConstraintsPlugin = Plugin & {
   ) => void
   changeConceptConstraintPending: Ref<boolean>
   changeConceptConstraintUpdate: (result: ChangeConceptConstraintType) => void
+}
+
+export type ConnectionConstraintsPlugin = Plugin & {
+  changeConnectionConstraint: (
+    connectionId: number,
+    connectionConstraintIn: ConnectionConstraintInChangeType
+  ) => Promise<LocalFetchResult<ChangeConnectionConstraintType>>
+  changeConnectionConstraintOnSuccess: (
+    callback: (data: ChangeConnectionConstraintType) => void
+  ) => void
+  changeConnectionConstraintPending: Ref<boolean>
+  changeConnectionConstraintUpdate: (
+    result: ChangeConnectionConstraintType
+  ) => void
 }
 
 export type AdjustmentPlugin = Plugin & {
@@ -95,7 +126,7 @@ export type UseTargetConceptsPlugin = (
 export type UseControlConnectionsPlugin = (
   model: Ref<ModelOutType>,
   cy: Ref<cytoscape.Core | null>
-) => Plugin
+) => ControlConnectionsPlugin
 
 export type UseConceptConstraintsPlugin = (
   model: Ref<ModelOutType>,
@@ -105,7 +136,7 @@ export type UseConceptConstraintsPlugin = (
 export type UseConnectionConstraintsPlugin = (
   model: Ref<ModelOutType>,
   cy: Ref<cytoscape.Core | null>
-) => Plugin
+) => ConnectionConstraintsPlugin
 
 export type UseAdjustmentPlugin = (
   model: Ref<ModelOutType>,

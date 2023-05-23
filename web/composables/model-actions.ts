@@ -2,6 +2,7 @@ import { useMessageStore, useUserStore } from '~/store'
 import {
   CHANGE_CONCEPT_CONSTRAINT_KEY,
   CHANGE_CONCEPT_KEY,
+  CHANGE_CONNECTION_CONSTRAINT_KEY,
   CHANGE_CONNECTION_KEY,
   CHANGE_DYNAMIC_MODEL_TYPE_KEY,
   CHANGE_TARGET_CONCEPT_KEY,
@@ -18,7 +19,8 @@ import {
   EditorMode,
   ModelOutType,
   Plugins,
-  SET_IS_CONTROL_KEY,
+  SET_IS_CONTROL_CONCEPT_KEY,
+  SET_IS_CONTROL_CONNECTION_KEY,
 } from '~/types'
 import { MOVE_CONCEPT_KEY, ModelActionResult, MoveConceptType } from '~/types'
 
@@ -192,14 +194,20 @@ export const useModelActions = (
         case DELETE_CONNECTION_KEY:
           deleteConnectionUpdate(result)
           break
-        case SET_IS_CONTROL_KEY:
+        case SET_IS_CONTROL_CONCEPT_KEY:
           plugins.controlConcepts.setIsControlUpdate(result)
           break
         case CHANGE_TARGET_CONCEPT_KEY:
           plugins.targetConcepts.changeTargetConceptUpdate(result)
           break
+        case SET_IS_CONTROL_CONNECTION_KEY:
+          plugins.controlConnections.setIsControlUpdate(result)
+          break
         case CHANGE_CONCEPT_CONSTRAINT_KEY:
           plugins.conceptConstraints.changeConceptConstraintUpdate(result)
+          break
+        case CHANGE_CONNECTION_CONSTRAINT_KEY:
+          plugins.connectionConstraints.changeConnectionConstraintUpdate(result)
           break
         case CHANGE_DYNAMIC_MODEL_TYPE_KEY:
           plugins.adjustment.changeDynamicModelTypeUpdate(result)

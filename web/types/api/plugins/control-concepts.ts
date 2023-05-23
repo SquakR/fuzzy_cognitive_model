@@ -7,8 +7,8 @@ export interface ControlConceptOutType {
   updatedAt: string
 }
 
-export const SET_IS_CONTROL_KEY = 'changeControlConcept'
-export type SetIsControlType = ModelActionType<
-  typeof SET_IS_CONTROL_KEY,
+export const SET_IS_CONTROL_CONCEPT_KEY = 'changeControlConcept'
+export type SetIsControlConceptType = ModelActionType<
+  typeof SET_IS_CONTROL_CONCEPT_KEY,
   ControlConceptOutType
 >

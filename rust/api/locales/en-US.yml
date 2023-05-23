@@ -94,9 +94,6 @@ connection_duplication_error: "Unable to create connection because it already ex
 concept_is_control_error: "The concept is a control."
 concept_is_target_error: "The concept is a target."
 
-connection_already_control_error: "The connection is already a control."
-connection_not_control_error: "The connection is not a control."
-
 concept_constraint_range_error: "The constraint range `%{range}` does not match the concept value `%{value}`."
 
 connection_constraint_range_error: "The constraint range `%{range}` does not match the connection value `%{value}`."

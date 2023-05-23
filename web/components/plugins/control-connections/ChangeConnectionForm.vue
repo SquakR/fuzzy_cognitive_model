@@ -1,7 +1,6 @@
 <template>
   <BaseForm
-    :action-key="SET_IS_CONTROL_CONCEPT_KEY"
-    :disabled="selectedConcept.pluginsData.targetConcepts?.isTarget"
+    :action-key="SET_IS_CONTROL_CONNECTION_KEY"
     :title="t('isControl')"
     :button-text="t('buttonText')"
     :validation-schema="validationSchema"
@@ -18,14 +17,14 @@
 import { useI18n } from 'vue-i18n'
 import * as yup from 'yup'
 import {
-  ConceptOutType,
-  ControlConceptsPlugin,
-  SET_IS_CONTROL_CONCEPT_KEY,
+  ConnectionOutType,
+  ControlConnectionsPlugin,
+  SET_IS_CONTROL_CONNECTION_KEY,
 } from '~/types'
 
 export interface Props {
-  selectedConcept: ConceptOutType
-  controlConceptsPlugin: ControlConceptsPlugin
+  selectedConnection: ConnectionOutType
+  controlConnectionsPlugin: ControlConnectionsPlugin
 }
 const props = defineProps<Props>()
 
@@ -36,11 +35,11 @@ const validationSchema = $yup.object({
   isControl: $yup.boolean().required(),
 })
 const initialValues = computed(() => ({
-  isControl: props.selectedConcept.pluginsData.controlConcepts!.isControl,
+  isControl: props.selectedConnection.pluginsData.controlConnections!.isControl,
 }))
 const onSubmit = async (values: yup.InferType<typeof validationSchema>) => {
-  await props.controlConceptsPlugin.setIsControl(
-    props.selectedConcept.id,
+  await props.controlConnectionsPlugin.setIsControl(
+    props.selectedConnection.id,
     values.isControl
   )
 }
@@ -48,14 +47,14 @@ const onSubmit = async (values: yup.InferType<typeof validationSchema>) => {
 
 <i18n locale="en-US" lang="json">
 {
-  "isControl": "Control Concept",
+  "isControl": "Control Connection",
   "buttonText": "Change"
 }
 </i18n>
 
 <i18n locale="ru-RU" lang="json">
 {
-  "isControl": "Управляющий концепт",
+  "isControl": "Управляющая связь",
   "buttonText": "Изменить"
 }
 </i18n>
