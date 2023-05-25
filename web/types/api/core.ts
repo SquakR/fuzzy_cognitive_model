@@ -305,12 +305,6 @@ export interface ModelActionType<N, T> {
   data: T
 }
 
-export interface ModelActionErrorType {
-  projectId: number
-  name: string
-  message: string
-}
-
 export const CREATE_CONCEPT_KEY = 'createConcept'
 export type CreateConceptType = ModelActionType<
   typeof CREATE_CONCEPT_KEY,
@@ -354,7 +348,6 @@ export type DeleteConnectionType = ModelActionType<
 >
 
 export type ModelActionResult =
-  | ModelActionErrorType
   | CreateConceptType
   | ChangeConceptType
   | MoveConceptType

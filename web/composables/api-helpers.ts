@@ -45,7 +45,7 @@ export const useLocalFetchRaw = <
   })
 }
 
-export const useLocalFetch = <
+export const useLocalFetch = async <
   ResT = void,
   _ResT = ResT extends void ? NuxtFetchResult<NitroFetchRequest, 'get'> : ResT,
   DataT = _ResT,
@@ -59,13 +59,15 @@ export const useLocalFetch = <
   fetchOpts?: UseFetchOptions<_ResT, DataT, PickKeys, NitroFetchRequest, 'get'>
 ) => {
   const messageStore = useMessageStore()
-  const { error, ...rest } = useLocalFetchRaw<ResT, _ResT, DataT, PickKeys>(
-    request,
-    {
-      key: opts.key,
-      ...fetchOpts,
-    }
-  )
+  const { error, ...rest } = await useLocalFetchRaw<
+    ResT,
+    _ResT,
+    DataT,
+    PickKeys
+  >(request, {
+    key: opts.key,
+    ...fetchOpts,
+  })
   watch(
     error,
     (newValue) => {

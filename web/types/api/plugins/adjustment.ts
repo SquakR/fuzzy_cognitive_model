@@ -21,7 +21,7 @@ export interface StopConditionType {
 export interface AdjustmentInType {
   name: string
   description: string
-  maxModelTime: string
+  maxModelTime: number
   dynamicModelType: DynamicModelType
   generationSize: number
   generationSaveInterval: number
@@ -92,3 +92,41 @@ export type ChangeDynamicModelTypeType = ModelActionType<
   typeof CHANGE_DYNAMIC_MODEL_TYPE_KEY,
   ConceptDynamicModelOutType
 >
+
+export interface AdjustmentRunActionType<N, T> {
+  projectId: number
+  adjustmentRunId: number
+  name: N
+  data: T
+}
+
+export interface AdjustmentRunActionErrorType {
+  projectId: number
+  adjustmentRunId: number
+  name: string
+  message: string
+}
+
+export const ADJUST_KEY = 'adjust'
+export type AdjustType = AdjustmentRunActionType<
+  typeof ADJUST_KEY,
+  AdjustmentRunOutType
+>
+
+export const ADJUSTMENT_RESULT_KEY = 'adjustmentResult'
+export type AdjustmentResultType = AdjustmentRunActionType<
+  typeof ADJUSTMENT_RESULT_KEY,
+  AdjustmentRunOutType
+>
+
+export const ADJUSTMENT_GENERATION_KEY = 'adjustmentGeneration'
+export type AdjustmentGenerationType = AdjustmentRunActionType<
+  typeof ADJUSTMENT_GENERATION_KEY,
+  AdjustmentGenerationOutType
+>
+
+export type AdjustmentRunActionResult =
+  | AdjustType
+  | AdjustmentResultType
+  | AdjustmentGenerationType
+  | AdjustmentRunActionErrorType

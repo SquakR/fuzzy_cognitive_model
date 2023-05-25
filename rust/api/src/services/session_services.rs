@@ -3,7 +3,7 @@ use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::sessions;
 use crate::services::{password_services, user_services};
 use crate::types::{CredentialsType, DeviceType, OSType, ProductType, SessionType};
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::{WebSocketAdjustmentRunService, WebSocketModelService};
 use crate::{forbidden_error, validation_error};
 use diesel::prelude::*;
 use diesel::PgConnection;
@@ -58,11 +58,15 @@ pub fn sign_in(
 
 pub async fn sign_out(
     conn: &mut PgConnection,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
+    adjustment_run_service: WebSocketAdjustmentRunService,
     session_ids: &[i32],
 ) -> QueryResult<Vec<Session>> {
     let sessions = deactivate_user_sessions(conn, session_ids)?;
-    project_service.disconnect_sessions(session_ids).await;
+    model_service.disconnect_sessions(session_ids).await;
+    adjustment_run_service
+        .disconnect_sessions(&session_ids)
+        .await;
     Ok(sessions)
 }
 

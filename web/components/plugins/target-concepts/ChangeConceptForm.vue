@@ -28,6 +28,7 @@ export interface Props {
   selectedConcept: ConceptOutType
   targetConceptsPlugin: TargetConceptsPlugin
 }
+
 const props = defineProps<Props>()
 
 interface Values {

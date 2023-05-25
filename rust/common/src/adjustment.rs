@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use ordered_float::OrderedFloat;
 use rand::rngs::ThreadRng;
 use rand::Rng;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -47,6 +47,10 @@ pub struct AdjustmentModel {
     pub regular_concepts: Vec<Arc<Concept>>,
     pub connections_map: HashMap<i32, Arc<Connection>>,
     pub control_connections: Vec<Arc<Connection>>,
+    without_improvements: i32,
+    current_generation: Option<Generation>,
+    generation_number: i32,
+    is_generation_saved: bool,
 }
 
 #[derive(Deserialize)]
@@ -78,7 +82,7 @@ pub struct Constraint {
     pub include_max_value: bool,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Chromosome {
     pub id: Option<i32>,
     pub concepts: HashMap<i32, f64>,
@@ -86,6 +90,7 @@ pub struct Chromosome {
     pub fitness: f64,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Generation {
     pub chromosomes: Vec<Chromosome>,
     pub fitness: f64,
@@ -95,56 +100,96 @@ const ALPHA: f64 = 0.5;
 const FITNESS_DIFF: f64 = 0.001;
 
 impl AdjustmentModel {
-    pub async fn run<S, T, E>(self, mut save_result: S) -> Result<Chromosome, E>
+    pub fn new(
+        adjustment_input: AdjustmentInput,
+        concepts_map: HashMap<i32, Arc<Concept>>,
+        control_concepts: Vec<Arc<Concept>>,
+        target_concepts: Vec<Arc<Concept>>,
+        regular_concepts: Vec<Arc<Concept>>,
+        connections_map: HashMap<i32, Arc<Connection>>,
+        control_connections: Vec<Arc<Connection>>,
+    ) -> Self {
+        Self {
+            adjustment_input,
+            concepts_map,
+            control_concepts,
+            target_concepts,
+            regular_concepts,
+            connections_map,
+            control_connections,
+            without_improvements: 0,
+            current_generation: None,
+            generation_number: 0,
+            is_generation_saved: false,
+        }
+    }
+    pub fn start(&mut self) -> () {
+        self.without_improvements = 0;
+        self.current_generation = Some(self.create_first_generation());
+        self.generation_number = 0;
+        self.is_generation_saved = false;
+    }
+    pub async fn next<S, T, E>(&mut self, save_result: &mut S) -> Result<bool, E>
     where
         S: SaveResult<T, E>,
     {
-        let mut without_improvements = 0;
-        let mut current_generation = self.create_first_generation();
-        let mut generation_number = 0;
-        let mut is_generation_saved = false;
-        while generation_number < self.adjustment_input.stop_condition.max_generations
-            && without_improvements
-                < self
+        if self.generation_number >= self.adjustment_input.stop_condition.max_generations
+            || self.without_improvements
+                >= self
                     .adjustment_input
                     .stop_condition
                     .max_without_improvements
         {
-            if generation_number % self.adjustment_input.generation_save_interval == 0 {
-                save_result
-                    .save_generation(&mut current_generation, generation_number + 1)
-                    .await?;
-                is_generation_saved = true;
-            }
-            let best_chromosome_fitness = Self::get_best_chromosome(&current_generation).fitness;
-            if 1.0 / best_chromosome_fitness < self.adjustment_input.stop_condition.error {
-                if !is_generation_saved {
-                    save_result
-                        .save_generation(&mut current_generation, generation_number + 1)
-                        .await?;
-                }
-                let best_chromosome = Self::get_best_chromosome(&current_generation);
-                save_result.save_result(best_chromosome).await?;
-                return Ok(best_chromosome.clone());
-            }
-            let next_generation = self.create_next_generation(&current_generation);
-            generation_number += 1;
-            is_generation_saved = false;
-            if (next_generation.fitness - current_generation.fitness).abs() < FITNESS_DIFF {
-                without_improvements += 1;
-            } else {
-                without_improvements = 0;
-            }
-            current_generation = next_generation;
+            return Ok(false);
         }
-        if !is_generation_saved {
+        if self.generation_number % self.adjustment_input.generation_save_interval == 0 {
             save_result
-                .save_generation(&mut current_generation, generation_number + 1)
+                .save_generation(
+                    self.current_generation.as_mut().unwrap(),
+                    self.generation_number + 1,
+                )
+                .await?;
+            self.is_generation_saved = true;
+        }
+        let best_chromosome_fitness = self.get_best_chromosome().fitness;
+        if 1.0 / best_chromosome_fitness < self.adjustment_input.stop_condition.error {
+            return Ok(false);
+        }
+        let next_generation = self.create_next_generation();
+        self.generation_number += 1;
+        self.is_generation_saved = false;
+        if (next_generation.fitness - self.current_generation.as_ref().unwrap().fitness).abs()
+            < FITNESS_DIFF
+        {
+            self.without_improvements += 1;
+        } else {
+            self.without_improvements = 0;
+        }
+        self.current_generation = Some(next_generation);
+        Ok(
+            self.generation_number < self.adjustment_input.stop_condition.max_generations
+                && self.without_improvements
+                    < self
+                        .adjustment_input
+                        .stop_condition
+                        .max_without_improvements,
+        )
+    }
+    pub async fn finish<S, T, E>(&mut self, save_result: &mut S) -> Result<Chromosome, E>
+    where
+        S: SaveResult<T, E>,
+    {
+        if !self.is_generation_saved {
+            save_result
+                .save_generation(
+                    self.current_generation.as_mut().unwrap(),
+                    self.generation_number + 1,
+                )
                 .await?;
         }
-        let best_chromosome = Self::get_best_chromosome(&current_generation);
+        let best_chromosome = self.get_best_chromosome();
         save_result.save_result(best_chromosome).await?;
-        Ok(best_chromosome.clone())
+        return Ok(best_chromosome.clone());
     }
     fn get_chromosome_fitness(
         &self,
@@ -218,11 +263,8 @@ impl AdjustmentModel {
             .sum::<f64>()
             / chromosomes.len() as f64
     }
-    fn select_parent_candidates<'a>(
-        &self,
-        generation: &'a Generation,
-        rng: &mut ThreadRng,
-    ) -> Vec<&'a Chromosome> {
+    fn select_parent_candidates(&self, rng: &mut ThreadRng) -> Vec<&Chromosome> {
+        let generation = self.current_generation.as_ref().unwrap();
         let mut parents = Vec::new();
         for _ in 0..self.adjustment_input.generation_size {
             let candidate1 =
@@ -283,11 +325,11 @@ impl AdjustmentModel {
             fitness,
         }
     }
-    fn create_next_generation(&self, current_generation: &Generation) -> Generation {
+    fn create_next_generation(&self) -> Generation {
         let mut rng = rand::thread_rng();
         let mut rng_clone = rng.clone();
         let chromosomes = self
-            .select_parent_candidates(current_generation, &mut rng)
+            .select_parent_candidates(&mut rng)
             .chunks(2)
             .flat_map(|chunk| match chunk {
                 &[p1, p2] => self.cross_chromosomes(p1, p2, &mut rng),
@@ -381,8 +423,10 @@ impl AdjustmentModel {
             fitness,
         }
     }
-    fn get_best_chromosome<'a>(generation: &'a Generation) -> &'a Chromosome {
-        generation
+    fn get_best_chromosome(&self) -> &Chromosome {
+        self.current_generation
+            .as_ref()
+            .unwrap()
             .chromosomes
             .iter()
             .max_by_key(|chromosome| OrderedFloat(chromosome.fitness))

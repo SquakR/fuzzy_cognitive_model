@@ -1,4 +1,5 @@
-use super::project_service::WebSocketProjectService;
+use super::model_service::WebSocketModelService;
+use super::WebSocketAdjustmentRunService;
 use crate::authenticate;
 use crate::cookies::GetPrivate;
 use crate::db;
@@ -6,23 +7,22 @@ use crate::models::{Session, User};
 use crate::services::project_user_services;
 use crate::utils;
 use cookie::{Cookie, CookieJar, Key};
-use futures_channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
 use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
 use rocket::fairing;
 use rocket::http::hyper::Uri;
 use rocket::log::PaintExt;
 use rocket::tokio::net::{TcpListener, TcpStream};
-use rocket::tokio::runtime::Handle;
+use rocket::tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use rocket::tokio::sync::Mutex;
 use rocket::yansi::Paint;
 use rocket::{Build, Data, Orbit, Request as RocketRequest, Rocket};
 use std::collections::HashMap;
+use std::fmt;
 use std::net::SocketAddr;
 use std::sync::mpsc;
 use std::sync::mpsc::channel;
 use std::sync::Arc;
-use std::{fmt, thread};
-use tokio::sync::Mutex;
 use tokio_tungstenite::tungstenite::handshake::server::{ErrorResponse, Request, Response};
 use tokio_tungstenite::tungstenite::http::StatusCode;
 use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
@@ -33,8 +33,26 @@ pub struct WebSocketListener {
     host: String,
     port: i32,
     secret_key: Key,
-    project_connections: ProjectConnections,
-    project_service: WebSocketProjectService,
+    model_connections: ModelConnections,
+    adjustment_run_connections: AdjustmentRunConnections,
+    model_service: WebSocketModelService,
+    adjustment_run_service: WebSocketAdjustmentRunService,
+}
+
+macro_rules! shutdown {
+    ($connection:expr) => {
+        for (_, senders) in $connection.lock().await.iter_mut() {
+            for connection_sender in senders.iter_mut() {
+                connection_sender
+                    .sender
+                    .send(Message::Close(Some(CloseFrame {
+                        code: CloseCode::Away,
+                        reason: "The server has been shut down.".into(),
+                    })))
+                    .unwrap();
+            }
+        }
+    };
 }
 
 #[rocket::async_trait]
@@ -67,22 +85,14 @@ impl fairing::Fairing for WebSocketListener {
         info_!("{}: {}", "Port", Paint::default(self.port));
     }
     async fn on_request(&self, request: &mut RocketRequest<'_>, _: &mut Data<'_>) {
-        let project_service = self.project_service.clone();
-        request.local_cache(move || project_service);
+        let model_service = self.model_service.clone();
+        request.local_cache(move || model_service);
+        let adjustment_run_service = self.adjustment_run_service.clone();
+        request.local_cache(move || adjustment_run_service);
     }
     async fn on_shutdown(&self, _: &Rocket<Orbit>) {
-        for (_, senders) in self.project_connections.lock().await.iter_mut() {
-            for connection_sender in senders.iter_mut() {
-                connection_sender
-                    .sender
-                    .send(Message::Close(Some(CloseFrame {
-                        code: CloseCode::Away,
-                        reason: "The server has been shut down.".into(),
-                    })))
-                    .await
-                    .unwrap();
-            }
-        }
+        shutdown!(self.model_connections);
+        shutdown!(self.adjustment_run_connections);
     }
 }
 
@@ -95,17 +105,35 @@ impl fmt::Display for ListenerError {
 }
 
 enum ConnectionType {
-    Project(ProjectConnectionData),
+    Model(ModelConnectionData),
+    AdjustmentRun(AdjustmentRunConnectionData),
 }
 
 #[derive(Clone, PartialEq, Eq)]
-pub struct ProjectConnectionData {
+pub struct ModelConnectionData {
     pub session_id: i32,
     pub user_id: i32,
     pub project_id: i32,
 }
 
-impl ProjectConnectionData {
+impl ModelConnectionData {
+    pub fn new(session_id: i32, user_id: i32, project_id: i32) -> Self {
+        Self {
+            session_id,
+            user_id,
+            project_id,
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub struct AdjustmentRunConnectionData {
+    pub session_id: i32,
+    pub user_id: i32,
+    pub project_id: i32,
+}
+
+impl AdjustmentRunConnectionData {
     pub fn new(session_id: i32, user_id: i32, project_id: i32) -> Self {
         Self {
             session_id,
@@ -135,12 +163,15 @@ impl<T: PartialEq> Eq for ConnectionSender<T> {}
 
 pub type Connections<K, V> = Arc<Mutex<HashMap<K, V>>>;
 
-pub type ProjectConnections = Connections<i32, Vec<ConnectionSender<ProjectConnectionData>>>;
+pub type ModelConnections = Connections<i32, Vec<ConnectionSender<ModelConnectionData>>>;
+pub type AdjustmentRunConnections =
+    Connections<i32, Vec<ConnectionSender<AdjustmentRunConnectionData>>>;
 
 impl WebSocketListener {
     pub fn new(host: String, port: i32) -> Self {
         let mut buf = [0u8; 88];
-        let project_connections = Arc::new(Mutex::new(HashMap::new()));
+        let model_connections = Arc::new(Mutex::new(HashMap::new()));
+        let adjustment_run_connections = Arc::new(Mutex::new(HashMap::new()));
         Self {
             host,
             port,
@@ -148,53 +179,54 @@ impl WebSocketListener {
                 binascii::b64decode(utils::get_env("ROCKET_SECRET_KEY").as_bytes(), &mut buf)
                     .unwrap(),
             ),
-            project_connections: Arc::clone(&project_connections),
-            project_service: WebSocketProjectService::new(project_connections),
+            model_connections: Arc::clone(&model_connections),
+            adjustment_run_connections: Arc::clone(&adjustment_run_connections),
+            model_service: WebSocketModelService::new(model_connections),
+            adjustment_run_service: WebSocketAdjustmentRunService::new(adjustment_run_connections),
         }
     }
     fn listen(&self) -> Result<(), ListenerError> {
-        let handle = Handle::current();
         let host = self.host.clone();
         let port = self.port;
         let secret_key = self.secret_key.clone();
-        let project_connections = Arc::clone(&self.project_connections);
+        let model_connections = Arc::clone(&self.model_connections);
+        let adjustment_run_connections = Arc::clone(&self.adjustment_run_connections);
         let (tx, rx) = mpsc::channel();
-        thread::spawn(move || {
-            let inner_handle = Handle::clone(&handle);
-            handle.spawn(async move {
-                let addr = format!("{}:{}", host, port);
-                let listener = match TcpListener::bind(&addr).await {
-                    Ok(listener) => {
-                        tx.send(Ok(())).unwrap();
-                        listener
-                    }
-                    Err(_) => {
-                        tx.send(Err(ListenerError(String::from(
-                            "Failed to create WebSocket listener.",
-                        ))))
-                        .unwrap();
-                        return;
-                    }
-                };
-                let mut connection_id = 1;
-                while let Ok((stream, addr)) = listener.accept().await {
-                    inner_handle.spawn(WebSocketListener::handle_connection(
-                        connection_id,
-                        secret_key.clone(),
-                        Arc::clone(&project_connections),
-                        stream,
-                        addr,
-                    ));
-                    connection_id += 1;
+        rocket::tokio::spawn(async move {
+            let addr = format!("{}:{}", host, port);
+            let listener = match TcpListener::bind(&addr).await {
+                Ok(listener) => {
+                    tx.send(Ok(())).unwrap();
+                    listener
                 }
-            });
+                Err(_) => {
+                    tx.send(Err(ListenerError(String::from(
+                        "Failed to create WebSocket listener.",
+                    ))))
+                    .unwrap();
+                    return;
+                }
+            };
+            let mut connection_id = 1;
+            while let Ok((stream, addr)) = listener.accept().await {
+                rocket::tokio::spawn(WebSocketListener::handle_connection(
+                    connection_id,
+                    secret_key.clone(),
+                    Arc::clone(&model_connections),
+                    Arc::clone(&adjustment_run_connections),
+                    stream,
+                    addr,
+                ));
+                connection_id += 1;
+            }
         });
         rx.recv().unwrap()
     }
     async fn handle_connection(
         connection_id: u32,
         secret_key: Key,
-        project_connections: ProjectConnections,
+        model_connections: ModelConnections,
+        adjustment_run_connections: AdjustmentRunConnections,
         raw_stream: TcpStream,
         addr: SocketAddr,
     ) {
@@ -212,23 +244,41 @@ impl WebSocketListener {
                     return;
                 }
             };
-        let (tx, rx) = unbounded();
+        let (tx, rx) = unbounded_channel();
         let (outgoing, incoming) = ws_stream.split();
         match connection_type {
-            ConnectionType::Project(project_connection_data) => {
-                project_connections
+            ConnectionType::Model(model_connection_data) => {
+                model_connections
                     .lock()
                     .await
-                    .entry(project_connection_data.project_id)
+                    .entry(model_connection_data.project_id)
                     .or_insert(vec![])
-                    .push(ConnectionSender::new(project_connection_data.clone(), tx));
-                WebSocketListener::project_connection_loop(outgoing, incoming, rx).await;
-                project_connections
+                    .push(ConnectionSender::new(model_connection_data.clone(), tx));
+                WebSocketListener::base_connection_loop(outgoing, incoming, rx).await;
+                model_connections
                     .lock()
                     .await
-                    .get_mut(&project_connection_data.project_id)
+                    .get_mut(&model_connection_data.project_id)
                     .unwrap()
-                    .retain(|sender| sender.data != project_connection_data);
+                    .retain(|sender| sender.data != model_connection_data);
+            }
+            ConnectionType::AdjustmentRun(adjustment_run_connection_data) => {
+                adjustment_run_connections
+                    .lock()
+                    .await
+                    .entry(adjustment_run_connection_data.project_id)
+                    .or_insert(vec![])
+                    .push(ConnectionSender::new(
+                        adjustment_run_connection_data.clone(),
+                        tx,
+                    ));
+                WebSocketListener::base_connection_loop(outgoing, incoming, rx).await;
+                adjustment_run_connections
+                    .lock()
+                    .await
+                    .get_mut(&adjustment_run_connection_data.project_id)
+                    .unwrap()
+                    .retain(|sender| sender.data != adjustment_run_connection_data);
             }
         };
         info_!(
@@ -237,13 +287,13 @@ impl WebSocketListener {
             Paint::default(&addr)
         );
     }
-    async fn project_connection_loop(
+    async fn base_connection_loop(
         mut outgoing: SplitSink<WebSocketStream<TcpStream>, Message>,
         mut incoming: SplitStream<WebSocketStream<TcpStream>>,
         mut rx: UnboundedReceiver<Message>,
     ) -> () {
         loop {
-            tokio::select! {
+            rocket::tokio::select! {
                 in_msg = incoming.next() => {
                     match in_msg {
                         Some(in_msg) => match in_msg {
@@ -268,11 +318,13 @@ impl WebSocketListener {
                         None => return
                     }
                 }
-                out_msg = rx.next() => {
+                out_msg = rx.recv() => {
                     match out_msg {
-                        Some(out_msg) => match outgoing.send(out_msg).await {
-                            Ok(_) => {},
-                            Err(_) => return
+                        Some(out_msg) => {
+                            match outgoing.send(out_msg).await {
+                                Ok(_) => {},
+                                Err(_) => return
+                            }
                         }
                         None => return
                     }
@@ -319,9 +371,14 @@ impl WebSocketListener {
     ) -> Result<(ConnectionType, Response), (Uri, ErrorResponse)> {
         let (user, session) = WebSocketListener::parse_cookie(secret_key, request)?;
         let uri_string = request.uri().to_string();
-        let project_uri = "/api/v1/project/";
-        if uri_string.starts_with(project_uri) {
-            let project_id_str = uri_string.trim_start_matches(project_uri);
+        let model_uri = "/api/v1/model/";
+        let adjustment_run_uri = "/api/v1/adjustment_run/";
+        if uri_string.starts_with(model_uri) || uri_string.starts_with(adjustment_run_uri) {
+            let project_id_str = if uri_string.starts_with(model_uri) {
+                uri_string.trim_start_matches(model_uri)
+            } else {
+                uri_string.trim_start_matches(adjustment_run_uri)
+            };
             if let Ok(project_id) = project_id_str.parse::<i32>() {
                 let conn = &mut db::establish_connection();
                 let is_project_member =
@@ -336,12 +393,21 @@ impl WebSocketListener {
                         "Forbidden error",
                     ));
                 }
-                return Ok((
-                    ConnectionType::Project(ProjectConnectionData::new(
-                        session.id, user.id, project_id,
-                    )),
-                    response,
-                ));
+                return if uri_string.starts_with(model_uri) {
+                    Ok((
+                        ConnectionType::Model(ModelConnectionData::new(
+                            session.id, user.id, project_id,
+                        )),
+                        response,
+                    ))
+                } else {
+                    Ok((
+                        ConnectionType::AdjustmentRun(AdjustmentRunConnectionData::new(
+                            session.id, user.id, project_id,
+                        )),
+                        response,
+                    ))
+                };
             }
         }
         Err(WebSocketListener::create_or_request_error(

@@ -1,25 +1,22 @@
-use super::listener::ProjectConnections;
+use super::listener::ModelConnections;
 use crate::models::User;
 use crate::response::{ServiceResult, ToServiceResult};
 use crate::services::{permission_services, project_services, user_services};
-use crate::types::{ModelActionErrorType, ModelActionType};
+use crate::types::ModelActionType;
 use diesel::PgConnection;
-use futures_util::SinkExt;
 use schemars::JsonSchema;
 use serde::Serialize;
 use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 use tokio_tungstenite::tungstenite::protocol::{CloseFrame, Message};
 
 #[derive(Clone)]
-pub struct WebSocketProjectService {
-    project_connections: ProjectConnections,
+pub struct WebSocketModelService {
+    model_connections: ModelConnections,
 }
 
-impl WebSocketProjectService {
-    pub fn new(project_connections: ProjectConnections) -> Self {
-        Self {
-            project_connections,
-        }
+impl WebSocketModelService {
+    pub fn new(model_connections: ModelConnections) -> Self {
+        Self { model_connections }
     }
     pub async fn get_active_users(
         &self,
@@ -32,7 +29,7 @@ impl WebSocketProjectService {
         permission_services::can_view_project(conn, &project, user)?;
         user_services::find_users_by_id(
             conn,
-            self.project_connections
+            self.model_connections
                 .lock()
                 .await
                 .get(&project_id)
@@ -43,7 +40,7 @@ impl WebSocketProjectService {
         .to_service_result()
     }
     pub async fn disconnect_sessions(&self, session_ids: &[i32]) -> () {
-        for (_, senders) in self.project_connections.lock().await.iter_mut() {
+        for (_, senders) in self.model_connections.lock().await.iter_mut() {
             for connection_sender in senders
                 .iter_mut()
                 .filter(|sender| session_ids.contains(&sender.data.session_id))
@@ -54,14 +51,13 @@ impl WebSocketProjectService {
                         code: CloseCode::Normal,
                         reason: "The user session has ended.".into(),
                     })))
-                    .await
                     .unwrap();
             }
         }
     }
     pub async fn disconnect_project(&self, project_id: i32) -> () {
         for project_connection in self
-            .project_connections
+            .model_connections
             .lock()
             .await
             .get_mut(&project_id)
@@ -73,7 +69,6 @@ impl WebSocketProjectService {
                     code: CloseCode::Normal,
                     reason: "The project has been deleted.".into(),
                 })))
-                .await
                 .unwrap()
         }
     }
@@ -84,24 +79,15 @@ impl WebSocketProjectService {
         let message = Message::Text(serde_json::to_string(&model_action).unwrap());
         self.send_message(message, model_action.project_id).await;
     }
-    pub async fn notify_error(&self, model_action_error: ModelActionErrorType) -> () {
-        let message = Message::Text(serde_json::to_string(&model_action_error).unwrap());
-        self.send_message(message, model_action_error.project_id)
-            .await;
-    }
     pub async fn send_message(&self, message: Message, project_id: i32) -> () {
         for connection_sender in self
-            .project_connections
+            .model_connections
             .lock()
             .await
             .get_mut(&project_id)
             .unwrap_or(&mut vec![])
         {
-            connection_sender
-                .sender
-                .send(message.clone())
-                .await
-                .unwrap()
+            connection_sender.sender.send(message.clone()).unwrap()
         }
     }
 }

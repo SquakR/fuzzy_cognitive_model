@@ -2,14 +2,13 @@ use super::super::models::AdjustmentGeneration;
 use super::super::types::AdjustmentRunOutType;
 use super::adjustment_out_services;
 use crate::plugins::adjustment::models::{AdjustmentChromosome, AdjustmentRun};
-use crate::plugins::adjustment::types::AdjustmentGenerationOutType;
+use crate::plugins::adjustment::types::{AdjustmentGenerationOutType, AdjustmentRunActionType};
 use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{
     adjustment_chromosomes, adjustment_concept_values, adjustment_connection_values,
     adjustment_generations, adjustment_runs,
 };
-use crate::types::ModelActionType;
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::WebSocketAdjustmentRunService;
 use diesel::prelude::*;
 use diesel::{Connection, PgConnection};
 use fuzzy_cognitive_model_common::adjustment::{Chromosome, Generation, SaveResult};
@@ -17,7 +16,7 @@ use fuzzy_cognitive_model_common::adjustment::{Chromosome, Generation, SaveResul
 pub struct SaveResultServer {
     pub conn: PgConnection,
     pub adjustment_run_id: i32,
-    pub project_service: WebSocketProjectService,
+    pub adjustment_run_service: WebSocketAdjustmentRunService,
 }
 
 #[rocket::async_trait]
@@ -35,12 +34,15 @@ impl SaveResult<(), AppError> for SaveResultServer {
             .to_service_result()?;
         let adjustment_run_out =
             AdjustmentRunOutType::from_adjustment_run(&mut self.conn, adjustment_run)?;
-        let model_action = ModelActionType::new(
-            &project,
-            String::from("adjustment_result"),
+        let adjustment_run_action = AdjustmentRunActionType::new(
+            project.id,
+            self.adjustment_run_id,
+            String::from("adjustmentResult"),
             adjustment_run_out,
         );
-        self.project_service.notify(model_action.clone()).await;
+        self.adjustment_run_service
+            .notify(adjustment_run_action.clone())
+            .await;
         Ok(())
     }
     async fn save_generation(
@@ -96,12 +98,15 @@ impl SaveResult<(), AppError> for SaveResultServer {
                 Ok(adjustment_generation)
             })
             .to_service_result()?;
-        let model_action = ModelActionType::new(
-            &project,
-            String::from("adjustment_generation"),
+        let adjustment_run_action = AdjustmentRunActionType::new(
+            project.id,
+            self.adjustment_run_id,
+            String::from("adjustmentGeneration"),
             AdjustmentGenerationOutType::from(adjustment_generation),
         );
-        self.project_service.notify(model_action.clone()).await;
+        self.adjustment_run_service
+            .notify(adjustment_run_action.clone())
+            .await;
         Ok(())
     }
 }

@@ -10,6 +10,7 @@ use crate::types::{
     IntervalInType, PaginationInType, PaginationOutType, ProjectGroupFilterType, ProjectInType,
     ProjectOutType, UserOutType,
 };
+use crate::web_socket::{WebSocketAdjustmentRunService, WebSocketModelService};
 use crate::{filter_date_time, validation_error};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
@@ -163,11 +164,19 @@ pub fn change_project(
     )
 }
 
-pub fn delete_project(conn: &mut PgConnection, user: &User, project_id: i32) -> ServiceResult<()> {
+pub async fn delete_project(
+    conn: &mut PgConnection,
+    model_service: WebSocketModelService,
+    adjustment_run_service: WebSocketAdjustmentRunService,
+    user: &User,
+    project_id: i32,
+) -> ServiceResult<()> {
     permission_services::can_delete_project(conn, project_id, user.id)?;
     diesel::delete(projects::table.filter(projects::id.eq(project_id)))
         .execute(conn)
         .to_service_result()?;
+    model_service.disconnect_project(project_id).await;
+    adjustment_run_service.disconnect_project(project_id).await;
     Ok(())
 }
 

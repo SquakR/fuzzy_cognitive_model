@@ -1,5 +1,5 @@
 <template>
-  <ModelEditorToolbar v-model:mode="mode" />
+  <ModelEditorToolbar v-model:mode="mode" :model="model" :plugins="plugins" />
   <ModelAddConceptForm
     v-if="cy"
     :model="model"
@@ -36,7 +36,6 @@
 import cytoscape from 'cytoscape'
 import colors from 'vuetify/lib/util/colors'
 import ModelAddConnectionForm from '~/components/model/AddConnectionForm.vue'
-import { usePlugins } from '~/composables/plugins'
 import { useUserStore } from '~/store'
 import { EditorMode, ModelOutType } from '~/types'
 

@@ -1,4 +1,4 @@
-import { useMessageStore, useUserStore } from '~/store'
+import { useUserStore } from '~/store'
 import {
   CHANGE_CONCEPT_CONSTRAINT_KEY,
   CHANGE_CONCEPT_KEY,
@@ -32,7 +32,6 @@ export const useModelActions = (
 ) => {
   const config = useRuntimeConfig()
   const userStore = useUserStore()
-  const messageStore = useMessageStore()
 
   const {
     execute: createConcept,
@@ -152,7 +151,7 @@ export const useModelActions = (
   }
 
   const { data, open, close } = useWebSocket<string>(
-    `${config.public.API_WS_BASE_URL}/project/${model.value.project.id}`,
+    `${config.public.API_WS_BASE_URL}/model/${model.value.project.id}`,
     {
       autoReconnect: true,
       heartbeat: true,
@@ -167,10 +166,6 @@ export const useModelActions = (
     let result: ModelActionResult
     try {
       result = JSON.parse(newValue)
-      if (!('data' in result)) {
-        messageStore.emitError(result.name, result.message)
-        return
-      }
       model.value.project.updatedAt = result.projectUpdatedAt
       switch (result.name) {
         case CREATE_CONCEPT_KEY:

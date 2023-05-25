@@ -15,7 +15,7 @@ definePageMeta({
 })
 const route = useRoute()
 
-const { data: model, pending: loading } = useGetModel(
+const { data: model, pending: loading } = await useGetModel(
   { key: 'model' },
   Number(route.params.id)
 )

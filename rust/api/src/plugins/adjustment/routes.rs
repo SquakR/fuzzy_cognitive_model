@@ -4,7 +4,8 @@ use super::services::{
 };
 use super::types::{
     AdjustmentChromosomeOutType, AdjustmentGenerationOutType, AdjustmentInType,
-    AdjustmentRunOutType, AdjustmentRunsInType, ConceptDynamicModelOutType,
+    AdjustmentRunActionType, AdjustmentRunOutType, AdjustmentRunsInType,
+    ConceptDynamicModelOutType,
 };
 use crate::db;
 use crate::locale::Locale;
@@ -12,7 +13,7 @@ use crate::models::User;
 use crate::plugins::Plugins;
 use crate::response::{PathResult, ToPathResult};
 use crate::types::{IntervalInType, ModelActionType, PaginationInType, PaginationOutType};
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::{WebSocketAdjustmentRunService, WebSocketModelService};
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
 
@@ -27,12 +28,12 @@ pub async fn change_dynamic_model_type(
     concept_id: i32,
     dynamic_model_type: Json<Option<DynamicModelType>>,
     user: User,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
 ) -> PathResult<ModelActionType<ConceptDynamicModelOutType>> {
     let conn = &mut db::establish_connection();
     concept_dynamic_model_services::change_dynamic_model_type(
         conn,
-        project_service,
+        model_service,
         &user,
         concept_id,
         dynamic_model_type.into_inner(),
@@ -54,13 +55,13 @@ pub async fn adjust(
     user: User,
     locale: &Locale,
     plugins: &Plugins,
-    project_service: WebSocketProjectService,
-) -> PathResult<ModelActionType<AdjustmentRunOutType>> {
+    adjustment_run_service: WebSocketAdjustmentRunService,
+) -> PathResult<AdjustmentRunActionType<AdjustmentRunOutType>> {
     let conn = db::establish_connection();
     adjustment_services::adjust(
         conn,
         plugins,
-        project_service,
+        adjustment_run_service,
         &user,
         locale,
         project_id,

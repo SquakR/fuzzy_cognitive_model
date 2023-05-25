@@ -27,6 +27,7 @@ export interface Props {
   selectedConcept: ConceptOutType
   controlConceptsPlugin: ControlConceptsPlugin
 }
+
 const props = defineProps<Props>()
 
 const { $yup } = useNuxtApp()

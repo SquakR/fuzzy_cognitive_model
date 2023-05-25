@@ -9,7 +9,7 @@ use crate::types::{
     ConnectionOutChangeType, ConnectionOutDeleteType, ConnectionOutType, ModelActionType,
     ModelOutType, UserOutType,
 };
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::WebSocketModelService;
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
 
@@ -35,10 +35,10 @@ pub fn get_model_copy(model_copy_id: i32, user: User) -> PathResult<ModelOutType
 pub async fn get_active_users(
     project_id: i32,
     user: User,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
 ) -> PathResult<Vec<UserOutType>> {
     let conn = &mut db::establish_connection();
-    let users = project_service
+    let users = model_service
         .get_active_users(conn, &user, project_id)
         .await?
         .into_iter()
@@ -59,13 +59,13 @@ pub async fn create_concept(
     concept_in: Json<ConceptInType>,
     user: User,
     plugins: &Plugins,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
 ) -> PathResult<ModelActionType<ConceptOutType>> {
     let conn = &mut db::establish_connection();
     model_services::create_concept(
         conn,
         plugins,
-        project_service,
+        model_service,
         &user,
         project_id,
         concept_in.into_inner(),
@@ -82,13 +82,13 @@ pub async fn change_concept(
     concept_in: Json<ConceptInType>,
     user: User,
     plugins: &Plugins,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
 ) -> PathResult<ModelActionType<ConceptOutChangeType>> {
     let conn = &mut db::establish_connection();
     model_services::change_concept(
         conn,
         plugins,
-        project_service,
+        model_service,
         &user,
         concept_id,
         concept_in.into_inner(),
@@ -104,12 +104,12 @@ pub async fn move_concept(
     concept_id: i32,
     concept_in: Json<ConceptInMoveType>,
     user: User,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
 ) -> PathResult<ModelActionType<ConceptOutMoveType>> {
     let conn = &mut db::establish_connection();
     model_services::move_concept(
         conn,
-        project_service,
+        model_service,
         &user,
         concept_id,
         concept_in.into_inner(),
@@ -124,10 +124,10 @@ pub async fn move_concept(
 pub async fn delete_concept(
     concept_id: i32,
     user: User,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
 ) -> PathResult<ModelActionType<ConceptOutDeleteType>> {
     let conn = &mut db::establish_connection();
-    model_services::delete_concept(conn, project_service, &user, concept_id)
+    model_services::delete_concept(conn, model_service, &user, concept_id)
         .await
         .to_path_result()
 }
@@ -144,13 +144,13 @@ pub async fn create_connection(
     connection_in: Json<ConnectionInCreateType>,
     user: User,
     plugins: &Plugins,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
 ) -> PathResult<ModelActionType<ConnectionOutType>> {
     let conn = &mut db::establish_connection();
     model_services::create_connection(
         conn,
         plugins,
-        project_service,
+        model_service,
         &user,
         project_id,
         connection_in.into_inner(),
@@ -171,13 +171,13 @@ pub async fn change_connection(
     connection_in: Json<ConnectionInChangeType>,
     user: User,
     plugins: &Plugins,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
 ) -> PathResult<ModelActionType<ConnectionOutChangeType>> {
     let conn = &mut db::establish_connection();
     model_services::change_connection(
         conn,
         plugins,
-        project_service,
+        model_service,
         &user,
         connection_id,
         connection_in.into_inner(),
@@ -192,10 +192,10 @@ pub async fn change_connection(
 pub async fn delete_connection(
     connection_id: i32,
     user: User,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
 ) -> PathResult<ModelActionType<ConnectionOutDeleteType>> {
     let conn = &mut db::establish_connection();
-    model_services::delete_connection(conn, project_service, &user, connection_id)
+    model_services::delete_connection(conn, model_service, &user, connection_id)
         .await
         .to_path_result()
 }

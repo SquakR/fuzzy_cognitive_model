@@ -11,7 +11,7 @@ use crate::types::{
     IntervalInType, PaginationInType, PaginationOutType, PermissionType, PluginType, ProjectInType,
     ProjectOutType, ProjectUserType, ProjectsInType,
 };
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::{WebSocketAdjustmentRunService, WebSocketModelService};
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
 
@@ -232,10 +232,17 @@ pub fn exclude_user(project_id: i32, user_id: i32, user: User) -> PathEmptyResul
 pub async fn delete_project(
     project_id: i32,
     user: User,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
+    adjustment_run_service: WebSocketAdjustmentRunService,
 ) -> PathEmptyResult {
     let conn = &mut db::establish_connection();
-    project_services::delete_project(conn, &user, project_id)?;
-    project_service.disconnect_project(project_id).await;
+    project_services::delete_project(
+        conn,
+        model_service,
+        adjustment_run_service,
+        &user,
+        project_id,
+    )
+    .await?;
     Ok(())
 }

@@ -2,21 +2,20 @@ use crate::models::{
     Concept, ConceptValueType, Connection, ConnectionValueType, ModelCopy, Project, User,
 };
 use crate::plugins::{ChangeConceptValueExtra, ChangeConnectionValueExtra, Plugins};
-use crate::response::{AppError, ServiceResult, ToServiceResult};
+use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::{concepts, connections, model_copies, projects};
 use crate::services::{permission_services, project_services};
 use crate::types::{
     ConceptInMoveType, ConceptInType, ConceptOutChangeType, ConceptOutDeleteType,
     ConceptOutMoveType, ConceptOutType, ConnectionInChangeType, ConnectionInCreateType,
-    ConnectionOutChangeType, ConnectionOutDeleteType, ConnectionOutType, ModelActionErrorType,
-    ModelActionType, ModelOutType, ProjectOutType,
+    ConnectionOutChangeType, ConnectionOutDeleteType, ConnectionOutType, ModelActionType,
+    ModelOutType, ProjectOutType,
 };
 use crate::validation_error;
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::WebSocketModelService;
 use chrono::DateTime;
 use chrono::Utc;
 use diesel::prelude::*;
-use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::Connection as DieselConnection;
 use diesel::PgConnection;
 use schemars::JsonSchema;
@@ -157,7 +156,7 @@ pub fn find_project_by_connection_id(
 pub async fn create_concept(
     conn: &mut PgConnection,
     plugins: &Plugins,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
     user: &User,
     project_id: i32,
     concept_in: ConceptInType,
@@ -188,7 +187,7 @@ pub async fn create_concept(
         .unwrap()
         .emit(ConceptOutType::from(concept), project.clone())?;
     let model_action = ModelActionType::new(&project, String::from("createConcept"), concept_out);
-    project_service.notify(model_action.clone()).await;
+    model_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
 
@@ -227,7 +226,7 @@ pub fn update_connection(
 pub async fn change_concept(
     conn: &mut PgConnection,
     plugins: &Plugins,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
     user: &User,
     concept_id: i32,
     concept_in: ConceptInType,
@@ -258,13 +257,13 @@ pub async fn change_concept(
         .to_service_result_find(String::from("concept_not_found_error"))?;
     let concept_out = ConceptOutChangeType::from(concept);
     let model_action = ModelActionType::new(&project, String::from("changeConcept"), concept_out);
-    project_service.notify(model_action.clone()).await;
+    model_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
 
 pub async fn move_concept(
     conn: &mut PgConnection,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
     user: &User,
     concept_id: i32,
     concept_in: ConceptInMoveType,
@@ -287,13 +286,13 @@ pub async fn move_concept(
         .to_service_result_find(String::from("concept_not_found_error"))?;
     let concept_out = ConceptOutMoveType::from(concept);
     let model_action = ModelActionType::new(&project, String::from("moveConcept"), concept_out);
-    project_service.notify(model_action.clone()).await;
+    model_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
 
 pub async fn delete_concept(
     conn: &mut PgConnection,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
     user: &User,
     concept_id: i32,
 ) -> ServiceResult<ModelActionType<ConceptOutDeleteType>> {
@@ -324,14 +323,14 @@ pub async fn delete_concept(
             updated_at: project.updated_at,
         },
     );
-    project_service.notify(model_action.clone()).await;
+    model_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
 
 pub async fn create_connection(
     conn: &mut PgConnection,
     plugins: &Plugins,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
     user: &User,
     project_id: i32,
     connection_in: ConnectionInCreateType,
@@ -367,14 +366,14 @@ pub async fn create_connection(
         .emit(ConnectionOutType::from(connection), project.clone())?;
     let model_action =
         ModelActionType::new(&project, String::from("createConnection"), connection_out);
-    project_service.notify(model_action.clone()).await;
+    model_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
 
 pub async fn change_connection(
     conn: &mut PgConnection,
     plugins: &Plugins,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
     user: &User,
     connection_id: i32,
     connection_in: ConnectionInChangeType,
@@ -408,13 +407,13 @@ pub async fn change_connection(
     let connection_out = ConnectionOutChangeType::from(connection);
     let model_action =
         ModelActionType::new(&project, String::from("changeConnection"), connection_out);
-    project_service.notify(model_action.clone()).await;
+    model_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
 
 pub async fn delete_connection(
     conn: &mut PgConnection,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
     user: &User,
     connection_id: i32,
 ) -> ServiceResult<ModelActionType<ConnectionOutDeleteType>> {
@@ -445,7 +444,7 @@ pub async fn delete_connection(
             updated_at: project.updated_at,
         },
     );
-    project_service.notify(model_action.clone()).await;
+    model_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
 
@@ -517,40 +516,6 @@ where
             project_updated_at: project.updated_at,
             name,
             data,
-        }
-    }
-}
-
-impl ModelActionErrorType {
-    pub fn new(project_id: i32, name: String, app_error: AppError, locale: String) -> Self {
-        Self {
-            project_id,
-            name,
-            message: match app_error {
-                AppError::ValidationError(get_message) => get_message(&locale),
-                AppError::DieselError(diesel_error, not_found_key, unique_error_key) => {
-                    match diesel_error {
-                        DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
-                            t!(&unique_error_key.unwrap(), locale = &locale)
-                        }
-                        DieselError::NotFound => {
-                            t!(&not_found_key.unwrap(), locale = &locale)
-                        }
-                        _ => {
-                            t!("internal_server_error", locale = &locale)
-                        }
-                    }
-                }
-                AppError::ForbiddenError(forbidden_key) => {
-                    t!(&forbidden_key, locale = &locale)
-                }
-                AppError::NotFoundError(not_found_key) => {
-                    t!(&not_found_key, locale = &locale)
-                }
-                AppError::InternalServerError => {
-                    t!("internal_server_error", locale = &locale)
-                }
-            },
         }
     }
 }

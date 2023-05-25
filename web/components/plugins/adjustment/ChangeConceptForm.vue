@@ -9,22 +9,7 @@
     width="468"
     flat
   >
-    <BaseSelect
-      class="plugins-adjustment-change-concept-form__base-select"
-      :items="dynamicModelTypeItems"
-      :label="t('dynamicModelType')"
-      name="dynamicModelType"
-      clearable
-    >
-      <template #selection="{ item }">
-        <BaseMathJax :formula="'$$' + item.title + '$$'" />
-      </template>
-      <template #item="{ item, props }">
-        <VListItem v-bind="{ ...props, title: undefined }">
-          <BaseMathJax :formula="'$$' + item.title + '$$'" />
-        </VListItem>
-      </template>
-    </BaseSelect>
+    <PluginsAdjustmentDynamicModelTypeSelect />
   </BaseForm>
 </template>
 
@@ -42,32 +27,17 @@ export interface Props {
   selectedConcept: ConceptOutType
   adjustmentPlugin: AdjustmentPlugin
 }
+
 const props = defineProps<Props>()
 
 const { $yup } = useNuxtApp()
 const { t } = useI18n()
 
-const dynamicModelTypeItems = [
-  {
-    value: 'delta_delta',
-    title: '\\Delta K_j(t+1)=\\sum_{i=1}^Nw_{ij}\\Delta K_i(t)',
-  },
-  {
-    value: 'delta_value',
-    title: '\\Delta K_j(t+1)=\\sum_{i=1}^Nw_{ij}K_i(t)',
-  },
-  {
-    value: 'value_delta',
-    title: 'K_j(t+1)=\\sum_{i=1}^Nw_{ij}\\Delta K_i(t)',
-  },
-  { value: 'value_value', title: 'K_j(t+1)=\\sum_{i=1}^Nw_{ij}K_i(t)' },
-]
-
 const validationSchema = $yup.object({
   dynamicModelType: $yup
     .string()
     .notRequired()
-    .oneOf(dynamicModelTypeItems.map((item) => item.value)),
+    .oneOf(['delta_delta', 'delta_value', 'value_delta', 'value_value']),
 })
 const initialValues = computed<yup.InferType<typeof validationSchema>>(() => ({
   dynamicModelType: props.selectedConcept.pluginsData.adjustment!
@@ -76,7 +46,6 @@ const initialValues = computed<yup.InferType<typeof validationSchema>>(() => ({
     : null,
 }))
 const onSubmit = async (values: yup.InferType<typeof validationSchema>) => {
-  console.log(values)
   await props.adjustmentPlugin.changeDynamicModelType(
     props.selectedConcept.id,
     values.dynamicModelType
@@ -99,9 +68,3 @@ const onSubmit = async (values: yup.InferType<typeof validationSchema>) => {
   "buttonText": "Изменить"
 }
 </i18n>
-
-<style lang="sass">
-.plugins-adjustment-change-concept-form__base-select
-  .MathJax
-    font-size: 1.1rem !important
-</style>

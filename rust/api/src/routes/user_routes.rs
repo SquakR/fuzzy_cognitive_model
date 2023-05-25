@@ -14,7 +14,7 @@ use crate::types::{
     ChangePasswordType, CredentialsType, PaginationInType, PaginationOutType, ResetPasswordType,
     SessionType, UserInChangeType, UserInCreateType, UserOutType,
 };
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::{WebSocketAdjustmentRunService, WebSocketModelService};
 use crate::{get_session_id, internal_server_error, validation_error};
 use ipnetwork::IpNetwork;
 use rocket::form::Form;
@@ -116,7 +116,8 @@ pub async fn change_me_password(
     change_password: Json<ChangePasswordType>,
     cookies_jar: &CookieJar<'_>,
     user: User,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
+    adjustment_run_service: WebSocketAdjustmentRunService,
 ) -> PathEmptyResult {
     let session_id = match get_session_id!(cookies_jar) {
         Some(session_id) => session_id,
@@ -125,7 +126,8 @@ pub async fn change_me_password(
     let conn = &mut db::establish_connection();
     password_services::change_user_password(
         conn,
-        project_service,
+        model_service,
+        adjustment_run_service,
         &user,
         session_id,
         change_password.into_inner(),
@@ -186,12 +188,13 @@ pub fn sign_in(
 pub async fn sign_out_multiple(
     session_ids: Json<Vec<i32>>,
     user: User,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
+    adjustment_run_service: WebSocketAdjustmentRunService,
 ) -> PathEmptyResult {
     let conn = &mut db::establish_connection();
     let session_ids = session_ids.into_inner();
     session_services::check_user_sessions(conn, &user, &session_ids)?;
-    session_services::sign_out(conn, project_service, &session_ids)
+    session_services::sign_out(conn, model_service, adjustment_run_service, &session_ids)
         .await
         .to_service_result()
         .to_path_empty_result()
@@ -203,14 +206,15 @@ pub async fn sign_out_multiple(
 pub async fn sign_out(
     cookies_jar: &CookieJar<'_>,
     _user: User,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
+    adjustment_run_service: WebSocketAdjustmentRunService,
 ) -> PathEmptyResult {
     let session_id = match get_session_id!(cookies_jar) {
         Some(session_id) => session_id,
         None => return internal_server_error!(),
     };
     let conn = &mut db::establish_connection();
-    session_services::sign_out(conn, project_service, &[session_id])
+    session_services::sign_out(conn, model_service, adjustment_run_service, &[session_id])
         .await
         .to_service_result()?;
     cookies::remove_session_id(cookies_jar);

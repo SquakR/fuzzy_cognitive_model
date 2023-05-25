@@ -26,6 +26,7 @@ export interface Props {
   selectedConnection: ConnectionOutType
   controlConnectionsPlugin: ControlConnectionsPlugin
 }
+
 const props = defineProps<Props>()
 
 const { $yup } = useNuxtApp()

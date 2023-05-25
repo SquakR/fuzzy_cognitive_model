@@ -59,7 +59,6 @@
 import { useI18n } from 'vue-i18n'
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import { ProjectOutType, ProjectsInType } from '~/types'
-import { dateTimeFilter, userNameFilter } from '~/utils'
 
 definePageMeta({
   middleware: 'auth',
@@ -100,7 +99,7 @@ const {
   data: projectsPagination,
   pending: projectsPending,
   refresh,
-} = useGetProjects({ key: 'projects', fatal: false }, projectsIn)
+} = await useGetProjects({ key: 'projects', fatal: false }, projectsIn)
 const {
   itemsLength,
   data: projects,

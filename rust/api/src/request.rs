@@ -3,7 +3,7 @@ use crate::db;
 use crate::locale::Locale;
 use crate::models::User;
 use crate::plugins::Plugins;
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::{WebSocketAdjustmentRunService, WebSocketModelService};
 use chrono::{DateTime, Utc};
 use rocket::form::{self, FromFormField, ValueField};
 use rocket::http::Status;
@@ -142,16 +142,37 @@ impl<'r> OpenApiFromRequest<'r> for &'r Locale {
 }
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for WebSocketProjectService {
+impl<'r> FromRequest<'r> for WebSocketModelService {
     type Error = ();
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let project_service = request.local_cache::<WebSocketProjectService, _>(|| unreachable!());
-        Outcome::Success(project_service.clone())
+        let model_service = request.local_cache::<WebSocketModelService, _>(|| unreachable!());
+        Outcome::Success(model_service.clone())
     }
 }
 
-impl<'r> OpenApiFromRequest<'r> for WebSocketProjectService {
+impl<'r> OpenApiFromRequest<'r> for WebSocketModelService {
+    fn from_request_input(
+        _gen: &mut OpenApiGenerator,
+        _name: String,
+        _required: bool,
+    ) -> RocketOkapiResult<RequestHeaderInput> {
+        Ok(RequestHeaderInput::None)
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for WebSocketAdjustmentRunService {
+    type Error = ();
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let adjustment_run_service =
+            request.local_cache::<WebSocketAdjustmentRunService, _>(|| unreachable!());
+        Outcome::Success(adjustment_run_service.clone())
+    }
+}
+
+impl<'r> OpenApiFromRequest<'r> for WebSocketAdjustmentRunService {
     fn from_request_input(
         _gen: &mut OpenApiGenerator,
         _name: String,

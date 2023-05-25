@@ -14,7 +14,7 @@
       <VCardSubtitle v-if="subtitle">
         <slot name="subtitle" :subtitle="subtitle">{{ subtitle }}</slot>
       </VCardSubtitle>
-      <VCardText>
+      <VCardText :style="{ height: computedHeight }">
         <VAlert
           v-if="success"
           color="success"
@@ -69,6 +69,7 @@ export interface Props {
   title?: string
   subtitle?: string
   width?: string | number
+  height?: string | number
   flat?: boolean
   successMessage?: string
 }
@@ -78,6 +79,7 @@ const props = withDefaults(defineProps<Props>(), {
   title: undefined,
   subtitle: undefined,
   width: 500,
+  height: undefined,
   flat: false,
   successMessage: undefined,
 })
@@ -90,6 +92,12 @@ defineExpose({
 const computedWidth = computed(() =>
   typeof props.width === 'number' ? `${props.width}px` : props.width
 )
+const computedHeight = computed(() => {
+  if (!props.height) {
+    return undefined
+  }
+  return typeof props.height === 'number' ? `${props.height}px` : props.height
+})
 
 const messageStore = useMessageStore()
 const { success, error, unsubscribe } = messageStore.subscribeLocal(

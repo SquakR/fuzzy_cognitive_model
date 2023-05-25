@@ -1,38 +1,39 @@
 use super::super::models::{AdjustmentRun, DynamicModelType};
-use super::super::types::{AdjustmentInType, AdjustmentRunOutType};
+use super::super::types::{AdjustmentInType, AdjustmentRunActionErrorType, AdjustmentRunOutType};
 use super::adjustment_save_result_services::SaveResultServer;
 use super::permission_services;
 use crate::forbidden_error;
 use crate::locale::Locale;
 use crate::models::User;
+use crate::plugins::adjustment::types::AdjustmentRunActionType;
 use crate::plugins::Plugins;
-use crate::response::{ServiceResult, ToServiceResult};
+use crate::response::{AppError, ServiceResult, ToServiceResult};
 use crate::schema::{
     adjustment_runs, concept_constraints, concept_dynamic_models, concepts, connection_constraints,
     connections, control_concepts, control_connections, target_concepts,
 };
 use crate::services::{model_services, project_services};
-use crate::types::{ModelActionErrorType, ModelActionType};
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::WebSocketAdjustmentRunService;
 use diesel::prelude::*;
+use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::PgConnection;
 use fuzzy_cognitive_model_common::adjustment::{
     AdjustmentInput, AdjustmentModel, Concept, Connection, Constraint, DynamicModel, StopCondition,
 };
-use rocket::tokio::runtime::Handle;
+use schemars::JsonSchema;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::thread;
 
 pub async fn adjust(
     mut conn: PgConnection,
     plugins: &Plugins,
-    project_service: WebSocketProjectService,
+    adjustment_run_service: WebSocketAdjustmentRunService,
     user: &User,
     locale: &Locale,
     project_id: i32,
     adjustment_in: AdjustmentInType,
-) -> ServiceResult<ModelActionType<AdjustmentRunOutType>> {
+) -> ServiceResult<AdjustmentRunActionType<AdjustmentRunOutType>> {
     let project = project_services::find_project_by_id(&mut conn, project_id)
         .to_service_result_find(String::from("project_not_found_error"))?;
     if !plugins
@@ -56,32 +57,88 @@ pub async fn adjust(
     )?;
     let adjustment_run_id = adjustment_run.id;
     let adjustment_run_out = AdjustmentRunOutType::from_adjustment_run(&mut conn, adjustment_run)?;
-    let model_action = ModelActionType::new(&project, String::from("adjust"), adjustment_run_out);
-    project_service.notify(model_action.clone()).await;
-    let handle = Handle::current();
+    let adjustment_run_action = AdjustmentRunActionType::new(
+        project.id,
+        adjustment_run_id,
+        String::from("adjust"),
+        adjustment_run_out,
+    );
+    adjustment_run_service
+        .notify(adjustment_run_action.clone())
+        .await;
     let locale = locale.get_locale();
-    thread::spawn(move || {
-        handle.spawn(async move {
-            let project_service_copy = project_service.clone();
-            if let Err(app_error) = adjustment_model
-                .run(SaveResultServer {
-                    conn,
-                    adjustment_run_id,
-                    project_service,
-                })
-                .await
-            {
-                let model_action_error = ModelActionErrorType::new(
-                    project_id,
-                    String::from("adjust_error"),
+    rocket::tokio::spawn(run_adjust(
+        conn,
+        adjustment_run_service,
+        adjustment_model,
+        project_id,
+        adjustment_run_id,
+        locale,
+    ));
+    Ok(adjustment_run_action)
+}
+
+async fn run_adjust(
+    conn: PgConnection,
+    adjustment_run_service: WebSocketAdjustmentRunService,
+    mut adjustment_model: AdjustmentModel,
+    project_id: i32,
+    adjustment_run_id: i32,
+    locale: String,
+) -> () {
+    let adjustment_run_service_copy = adjustment_run_service.clone();
+    let mut save_result = SaveResultServer {
+        conn,
+        adjustment_run_id,
+        adjustment_run_service,
+    };
+    adjustment_model.start();
+    let mut run_next = true;
+    while run_next {
+        run_next = match adjustment_model.next(&mut save_result).await {
+            Ok(run_next) => run_next,
+            Err(app_error) => {
+                return notify_error(
+                    adjustment_run_service_copy,
                     app_error,
+                    project_id,
+                    adjustment_run_id,
                     locale,
-                );
-                project_service_copy.notify_error(model_action_error).await;
+                )
+                .await;
             }
-        })
-    });
-    Ok(model_action)
+        };
+        rocket::tokio::task::yield_now().await;
+    }
+    if let Err(app_error) = adjustment_model.finish(&mut save_result).await {
+        notify_error(
+            adjustment_run_service_copy,
+            app_error,
+            project_id,
+            adjustment_run_id,
+            locale,
+        )
+        .await;
+    }
+}
+
+async fn notify_error(
+    adjustment_run_service: WebSocketAdjustmentRunService,
+    app_error: AppError,
+    project_id: i32,
+    adjustment_run_id: i32,
+    locale: String,
+) -> () {
+    let model_action_error = AdjustmentRunActionErrorType::new(
+        project_id,
+        adjustment_run_id,
+        String::from("adjustError"),
+        app_error,
+        locale,
+    );
+    adjustment_run_service
+        .notify_error(model_action_error)
+        .await;
 }
 
 fn get_adjustment_model(
@@ -121,15 +178,15 @@ fn get_adjustment_model(
         .filter(|connection| connection.is_control)
         .cloned()
         .collect();
-    Ok(AdjustmentModel {
-        adjustment_input: AdjustmentInput::from(adjustment_in),
+    Ok(AdjustmentModel::new(
+        AdjustmentInput::from(adjustment_in),
         concepts_map,
         control_concepts,
         target_concepts,
         regular_concepts,
         connections_map,
         control_connections,
-    })
+    ))
 }
 
 fn create_adjustment_run(
@@ -329,6 +386,61 @@ impl From<AdjustmentInType> for AdjustmentInput {
                 max_generations: adjustment_in.stop_condition.max_generations,
                 max_without_improvements: adjustment_in.stop_condition.max_without_improvements,
                 error: adjustment_in.stop_condition.error,
+            },
+        }
+    }
+}
+
+impl<T> AdjustmentRunActionType<T>
+where
+    T: Clone + Serialize + JsonSchema,
+{
+    pub fn new(project_id: i32, adjustment_run_id: i32, name: String, data: T) -> Self {
+        Self {
+            project_id,
+            adjustment_run_id,
+            name,
+            data,
+        }
+    }
+}
+
+impl AdjustmentRunActionErrorType {
+    pub fn new(
+        project_id: i32,
+        adjustment_run_id: i32,
+        name: String,
+        app_error: AppError,
+        locale: String,
+    ) -> Self {
+        Self {
+            project_id,
+            adjustment_run_id,
+            name,
+            message: match app_error {
+                AppError::ValidationError(get_message) => get_message(&locale),
+                AppError::DieselError(diesel_error, not_found_key, unique_error_key) => {
+                    match diesel_error {
+                        DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
+                            t!(&unique_error_key.unwrap(), locale = &locale)
+                        }
+                        DieselError::NotFound => {
+                            t!(&not_found_key.unwrap(), locale = &locale)
+                        }
+                        _ => {
+                            t!("internal_server_error", locale = &locale)
+                        }
+                    }
+                }
+                AppError::ForbiddenError(forbidden_key) => {
+                    t!(&forbidden_key, locale = &locale)
+                }
+                AppError::NotFoundError(not_found_key) => {
+                    t!(&not_found_key, locale = &locale)
+                }
+                AppError::InternalServerError => {
+                    t!("internal_server_error", locale = &locale)
+                }
             },
         }
     }

@@ -1,7 +1,7 @@
 <template>
-  <VDialog v-model="isActive" :width="width" persistent>
+  <VDialog v-model="isActive" :width="width" persistent scrollable>
     <template #activator="{ props }">
-      <slot name="activator" :props="props" />
+      <slot name="activator" :props="props"></slot>
     </template>
     <BaseForm
       ref="baseForm"
@@ -14,6 +14,7 @@
       :initial-values="initialValues"
       :on-submit="onSubmit"
       :width="width"
+      :height="height"
       :success-message="successMessage"
     >
       <template #title="{ title }">
@@ -23,7 +24,7 @@
           <VBtn icon="mdi-close" variant="flat" @click="close" />
         </div>
       </template>
-      <slot />
+      <slot></slot>
       <template #actions="{ disabled, loading, buttonText }">
         <slot name="actions" :loading="loading" :button-text="buttonText">
           <VSpacer />
@@ -56,6 +57,7 @@ export interface Props {
   disabled?: boolean
   subtitle?: string
   width?: string | number
+  height?: string | number
   successMessage?: string
 }
 export interface Emits {
@@ -67,6 +69,7 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   subtitle: undefined,
   width: 500,
+  height: undefined,
   successMessage: undefined,
 })
 const emit = defineEmits<Emits>()

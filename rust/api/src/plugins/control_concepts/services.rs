@@ -12,7 +12,7 @@ use crate::schema::{concept_constraints, concepts, control_concepts, projects};
 use crate::services::{model_services, permission_services};
 use crate::types::{ConceptOutType, ModelActionType};
 use crate::validation_error;
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::WebSocketModelService;
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::PgConnection;
@@ -116,7 +116,7 @@ pub fn create_control_concept(
 
 pub async fn set_is_control(
     conn: &mut PgConnection,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
     user: &User,
     concept_id: i32,
     is_control: bool,
@@ -167,7 +167,7 @@ pub async fn set_is_control(
         String::from("changeControlConcept"),
         control_concept_out,
     );
-    project_service.notify(model_action.clone()).await;
+    model_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
 

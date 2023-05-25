@@ -8,7 +8,7 @@ use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::{concept_dynamic_models, concepts, projects};
 use crate::services::{model_services, permission_services};
 use crate::types::{ConceptOutType, ModelActionType};
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::WebSocketModelService;
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::PgConnection;
@@ -113,7 +113,7 @@ pub fn create_concept_dynamic_model(
 
 pub async fn change_dynamic_model_type(
     conn: &mut PgConnection,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
     user: &User,
     concept_id: i32,
     dynamic_model_type: Option<DynamicModelType>,
@@ -141,7 +141,7 @@ pub async fn change_dynamic_model_type(
         String::from("changeDynamicModelType"),
         concept_dynamic_model_out,
     );
-    project_service.notify(model_action.clone()).await;
+    model_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
 

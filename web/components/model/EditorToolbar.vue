@@ -1,6 +1,6 @@
 <template>
   <VRow class="mb-1" dense>
-    <VCol>
+    <VCol class="d-flex">
       <VBtnToggle
         v-model="localMode"
         :mandatory="true"
@@ -17,16 +17,28 @@
           t('addConnection')
         }}</VBtn>
       </VBtnToggle>
+      <VSpacer />
+      <VBtn
+        :to="{
+          name: 'adjustment-project_id',
+          params: { project_id: model.project.id },
+        }"
+        class="model-editor-toolbar__button"
+        color="primary"
+        >{{ t('adjustment') }}</VBtn
+      >
     </VCol>
   </VRow>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { EditorMode } from '~/types'
+import { EditorMode, ModelOutType, Plugins } from '~/types'
 
 export interface Props {
+  model: ModelOutType
   mode: EditorMode
+  plugins: Plugins
 }
 export interface Emits {
   (e: 'update:mode', mode: EditorMode): void
@@ -49,7 +61,8 @@ const localMode = computed({
 {
   "change": "Change",
   "addConcept": "Add Concept",
-  "addConnection": "Add Connection"
+  "addConnection": "Add Connection",
+  "adjustment": "Adjustment With Genetic Algorithms"
 }
 </i18n>
 
@@ -57,7 +70,8 @@ const localMode = computed({
 {
   "change": "Изменить",
   "addConcept": "Добавить концепт",
-  "addConnection": "Добавить связь"
+  "addConnection": "Добавить связь",
+  "adjustment": "Структурно-параметрическая настройка"
 }
 </i18n>
 

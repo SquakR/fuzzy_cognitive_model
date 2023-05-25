@@ -51,7 +51,7 @@ onUnmounted(() => {
     right: 0
 
   .drawer-card-text
-    height: calc(100% - 32px)
+    height: calc(100% - 48px)
     min-width: 500px
     overflow-y: auto
 </style>

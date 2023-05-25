@@ -5,7 +5,7 @@ use crate::services::{mailing_services, session_services, user_services};
 use crate::types::{ChangePasswordType, ResetPasswordType};
 use crate::utils;
 use crate::validation_error;
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::{WebSocketAdjustmentRunService, WebSocketModelService};
 use argon2::password_hash::{PasswordHash, Salt};
 use argon2::{Argon2, PasswordHasher, PasswordVerifier};
 use diesel::prelude::*;
@@ -15,7 +15,8 @@ use std::collections::BTreeMap;
 
 pub async fn change_user_password(
     conn: &mut PgConnection,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
+    adjustment_run_service: WebSocketAdjustmentRunService,
     user: &User,
     session_id: i32,
     change_password: ChangePasswordType,
@@ -33,7 +34,10 @@ pub async fn change_user_password(
         session_services::deactivate_user_sessions(conn, &session_ids)
     })
     .to_service_result()?;
-    project_service.disconnect_sessions(&session_ids).await;
+    model_service.disconnect_sessions(&session_ids).await;
+    adjustment_run_service
+        .disconnect_sessions(&session_ids)
+        .await;
     Ok(())
 }
 

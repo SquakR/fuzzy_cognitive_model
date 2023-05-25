@@ -36,6 +36,7 @@ pub fn paginate_adjustment_runs(
     permission_services::can_view_project(conn, &project, user)?;
     let mut query = adjustment_runs::table
         .filter(adjustment_runs::project_id.eq(project_id))
+        .order(adjustment_runs::created_at.desc())
         .into_boxed();
     if let Some(search) = search {
         let like_pattern = format!("{}%", search);

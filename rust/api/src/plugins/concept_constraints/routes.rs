@@ -4,7 +4,7 @@ use crate::db;
 use crate::models::User;
 use crate::response::{PathResult, ToPathResult};
 use crate::types::ModelActionType;
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::WebSocketModelService;
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
 
@@ -19,12 +19,12 @@ pub async fn change_concept_constraint(
     concept_id: i32,
     concept_constraint_in: Json<ConceptConstraintInChangeType>,
     user: User,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
 ) -> PathResult<ModelActionType<ConceptConstraintOutType>> {
     let conn = &mut db::establish_connection();
     services::change_concept_constraint(
         conn,
-        project_service,
+        model_service,
         &user,
         concept_id,
         concept_constraint_in.into_inner(),

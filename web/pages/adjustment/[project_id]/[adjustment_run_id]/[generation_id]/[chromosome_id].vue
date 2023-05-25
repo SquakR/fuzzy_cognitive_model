@@ -1,0 +1,6 @@
+<template>
+  <div>{{ $route.params.project_id }}</div>
+  <div>{{ $route.params.adjustment_run_id }}</div>
+  <div>{{ $route.params.generation_id }}</div>
+  <div>{{ $route.params.chromosome_id }}</div>
+</template>

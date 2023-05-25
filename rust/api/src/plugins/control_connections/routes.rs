@@ -4,7 +4,7 @@ use crate::db;
 use crate::models::User;
 use crate::response::{PathResult, ToPathResult};
 use crate::types::ModelActionType;
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::WebSocketModelService;
 use rocket::serde::json::Json;
 use rocket_okapi::openapi;
 
@@ -19,12 +19,12 @@ pub async fn change_connection_is_control(
     connection_id: i32,
     is_control: Json<bool>,
     user: User,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
 ) -> PathResult<ModelActionType<ControlConnectionOutType>> {
     let conn = &mut db::establish_connection();
     services::set_is_control(
         conn,
-        project_service,
+        model_service,
         &user,
         connection_id,
         is_control.into_inner(),

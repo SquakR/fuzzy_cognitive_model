@@ -10,7 +10,7 @@ use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::{connection_constraints, connections, control_connections, projects};
 use crate::services::{model_services, permission_services};
 use crate::types::{ConnectionOutType, ModelActionType};
-use crate::web_socket::WebSocketProjectService;
+use crate::web_socket::WebSocketModelService;
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::Connection as DieselConnection;
@@ -117,7 +117,7 @@ pub fn create_control_connection(
 
 pub async fn set_is_control(
     conn: &mut PgConnection,
-    project_service: WebSocketProjectService,
+    model_service: WebSocketModelService,
     user: &User,
     connection_id: i32,
     is_control: bool,
@@ -171,7 +171,7 @@ pub async fn set_is_control(
         String::from("changeControlConnection"),
         control_connection_out,
     );
-    project_service.notify(model_action.clone()).await;
+    model_service.notify(model_action.clone()).await;
     Ok(model_action)
 }
 

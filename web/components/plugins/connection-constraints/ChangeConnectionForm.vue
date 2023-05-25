@@ -31,6 +31,7 @@ export interface Props {
   selectedConnection: ConnectionOutType
   connectionConstraintsPlugin: ConnectionConstraintsPlugin
 }
+
 const props = defineProps<Props>()
 
 interface Values {
