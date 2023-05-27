@@ -1,3 +1,4 @@
+import { UseFetchOptions } from 'nuxt/app'
 import {
   LocalFetchFuncOptions,
   LocalFetchOptions,
@@ -8,11 +9,25 @@ import {
   ProjectsInType,
 } from '~/types'
 
+export const useGetProject = (
+  opts: LocalFetchOptions,
+  projectId: number,
+  fetchOptions?: UseFetchOptions<ProjectOutType>
+) => {
+  return useLocalFetch<ProjectOutType>(`/projects/${projectId}`, opts, {
+    ...fetchOptions,
+    method: 'GET',
+  })
+}
+
 export const useGetProjects = (
   opts: LocalFetchOptions,
-  projectsIn: Ref<ProjectsInType>
+  projectsIn: Ref<ProjectsInType>,
+  fetchOptions?: UseFetchOptions<PaginationOutType<ProjectOutType>>
 ) => {
   return useLocalFetch<PaginationOutType<ProjectOutType>>('/projects', opts, {
+    ...fetchOptions,
+    method: 'GET',
     params: computed(() =>
       Object.fromEntries(
         Object.entries(projectsIn.value).filter(([_, v]) => !!v)
@@ -31,8 +46,14 @@ export const useCreateProject = (opts: LocalFetchFuncOptions) => {
   return { execute, ...rest }
 }
 
-export const useGetPlugins = (opts: LocalFetchOptions) => {
-  return useLocalFetch<PluginType[]>('/plugins', opts)
+export const useGetPlugins = (
+  opts: LocalFetchOptions,
+  fetchOptions?: UseFetchOptions<PluginType[]>
+) => {
+  return useLocalFetch<PluginType[]>('/plugins', opts, {
+    ...fetchOptions,
+    method: 'GET',
+  })
 }
 
 export const useChangeProject = (opts: LocalFetchFuncOptions) => {

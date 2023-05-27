@@ -23,6 +23,18 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::PgConnection;
 
+pub fn get_adjustment_run(
+    conn: &mut PgConnection,
+    user: &User,
+    adjustment_run_id: i32,
+) -> ServiceResult<AdjustmentRunOutType> {
+    let project = find_project_by_adjustment_run_id(conn, adjustment_run_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_view_project(conn, &project, user)?;
+    let adjustment_run = find_adjustment_run_by_id(conn, adjustment_run_id).to_service_result()?;
+    AdjustmentRunOutType::from_adjustment_run(conn, adjustment_run)
+}
+
 pub fn paginate_adjustment_runs(
     conn: &mut PgConnection,
     user: &User,
@@ -61,6 +73,19 @@ pub fn paginate_adjustment_runs(
     })
 }
 
+pub fn get_adjustment_generation(
+    conn: &mut PgConnection,
+    user: &User,
+    adjustment_generation_id: i32,
+) -> ServiceResult<AdjustmentGenerationOutType> {
+    let project = find_project_by_adjustment_generation_id(conn, adjustment_generation_id)
+        .to_service_result_find(String::from("adjustment_generation_not_found_error"))?;
+    permission_services::can_view_project(conn, &project, user)?;
+    let adjustment_generation =
+        find_adjustment_generation_by_id(conn, adjustment_generation_id).to_service_result()?;
+    Ok(AdjustmentGenerationOutType::from(adjustment_generation))
+}
+
 pub fn paginate_adjustment_generations(
     conn: &mut PgConnection,
     user: &User,
@@ -72,6 +97,7 @@ pub fn paginate_adjustment_generations(
     permission_services::can_view_project(conn, &project, user)?;
     let (generations, total_count, total_pages) = adjustment_generations::table
         .filter(adjustment_generations::adjustment_run_id.eq(adjustment_run_id))
+        .order(adjustment_generations::number.desc())
         .paginate(pagination_in.page as i64)
         .per_page(pagination_in.per_page as i64)
         .load_and_count_pages::<AdjustmentGeneration>(conn)
@@ -108,6 +134,15 @@ pub fn paginate_adjustment_chromosomes(
     })
 }
 
+pub fn find_adjustment_run_by_id(
+    conn: &mut PgConnection,
+    adjustment_run_id: i32,
+) -> QueryResult<AdjustmentRun> {
+    adjustment_runs::table
+        .filter(adjustment_runs::id.eq(adjustment_run_id))
+        .get_result::<AdjustmentRun>(conn)
+}
+
 pub fn find_project_by_adjustment_run_id(
     conn: &mut PgConnection,
     adjustment_run_id: i32,
@@ -117,6 +152,15 @@ pub fn find_project_by_adjustment_run_id(
         .filter(adjustment_runs::id.eq(adjustment_run_id))
         .select(projects::all_columns)
         .get_result::<Project>(conn)
+}
+
+pub fn find_adjustment_generation_by_id(
+    conn: &mut PgConnection,
+    adjustment_generation_id: i32,
+) -> QueryResult<AdjustmentGeneration> {
+    adjustment_generations::table
+        .filter(adjustment_generations::id.eq(adjustment_generation_id))
+        .get_result::<AdjustmentGeneration>(conn)
 }
 
 pub fn find_project_by_adjustment_generation_id(

@@ -15,7 +15,7 @@ use rocket_okapi::openapi;
 
 /// Get model
 #[openapi(tag = "model")]
-#[get("/projects/<project_id>")]
+#[get("/projects/<project_id>/model")]
 pub fn get_model(project_id: i32, user: User, plugins: &Plugins) -> PathResult<ModelOutType> {
     let conn = &mut db::establish_connection();
     model_services::get_model(conn, plugins, &user, project_id).to_path_result()

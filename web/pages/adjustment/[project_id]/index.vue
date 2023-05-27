@@ -1,9 +1,10 @@
 <template>
+  <PluginsAdjustmentBreadcrumbs :items="bc" />
   <VCard class="mt-2">
     <VCardTitle>{{ t('title') }}</VCardTitle>
     <VCardText>
       <VRow>
-        <VCol cols="12">
+        <VCol class="d-flex" cols="12">
           <PluginsAdjustmentAdjustForm
             :project-id="Number($route.params.project_id)"
             :adjust="adjust"
@@ -12,6 +13,10 @@
               <VBtn v-bind="props" color="primary">{{ t('adjust') }}</VBtn>
             </template>
           </PluginsAdjustmentAdjustForm>
+          <VSpacer />
+          <PluginsAdjustmentModelButton
+            :project-id="Number($route.params.project_id)"
+          />
         </VCol>
       </VRow>
       <VDataTableServer
@@ -105,7 +110,7 @@ import { useI18n } from 'vue-i18n'
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import { LocalAdjustmentRunsInType } from '~/composables/plugins/adjustment'
 import { useUserStore } from '~/store'
-import { AdjustmentRunOutType } from '~/types'
+import { AdjustmentRunOutType, BreadcrumbsItem } from '~/types'
 
 definePageMeta({
   middleware: 'auth',
@@ -128,6 +133,12 @@ const dynamicModelTypes = {
   value_value: '\\(K_j(t+1)=\\sum_{i=1}^Nw_{ij}K_i(t)\\)',
 }
 
+const { data: project } = await useGetProject(
+  { key: 'project' },
+  Number(route.params.project_id),
+  { pick: ['name'] }
+)
+
 const adjustmentRunsIn = ref<LocalAdjustmentRunsInType>({
   search: null,
   createdAtStart: null,
@@ -144,6 +155,16 @@ const {
   lastGenerations,
   adjust,
 } = await useAdjustmentRuns(Number(route.params.project_id), adjustmentRunsIn)
+
+const bc = computed<BreadcrumbsItem[]>(() => [
+  {
+    title: project.value!.name,
+    to: {
+      name: 'adjustment-project_id',
+      params: { project_id: route.params.project_id },
+    },
+  },
+])
 
 const getGenerationLink = (adjustmentRun: AdjustmentRunOutType) => {
   return {

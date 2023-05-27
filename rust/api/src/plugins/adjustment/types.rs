@@ -171,6 +171,28 @@ pub struct AdjustmentRunsInType {
     pub per_page: Option<u16>,
 }
 
+/// Input type for getting adjustment generations
+#[derive(FromForm, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AdjustmentGenerationsInType {
+    /// Page number
+    pub page: Option<u16>,
+    /// Number of records per page
+    #[field(name = "perPage")]
+    pub per_page: Option<u16>,
+}
+
+/// Input type for getting adjustment chromosomes
+#[derive(FromForm, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AdjustmentChromosomesInType {
+    /// Page number
+    pub page: Option<u16>,
+    /// Number of records per page
+    #[field(name = "perPage")]
+    pub per_page: Option<u16>,
+}
+
 /// Type of model action
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

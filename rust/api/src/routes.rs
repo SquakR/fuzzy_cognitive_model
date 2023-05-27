@@ -104,6 +104,7 @@ impl MountRoutes for Rocket<Build> {
                 user_routes::get_sessions,
                 user_routes::get_user_avatar,
                 project_routes::create_project,
+                project_routes::get_project,
                 project_routes::get_projects,
                 project_routes::get_plugins,
                 project_routes::get_permissions,
@@ -134,7 +135,9 @@ impl MountRoutes for Rocket<Build> {
                 connection_constraints_routes::change_connection_constraint,
                 adjustment_routes::change_dynamic_model_type,
                 adjustment_routes::adjust,
+                adjustment_routes::get_adjustment_run,
                 adjustment_routes::get_adjustment_runs,
+                adjustment_routes::get_adjustment_generation,
                 adjustment_routes::get_adjustment_generations,
                 adjustment_routes::get_adjustment_chromosomes
             ),

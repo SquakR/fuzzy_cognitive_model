@@ -24,6 +24,14 @@ pub fn create_project(project_in: Json<ProjectInType>, user: User) -> PathResult
     ProjectOutType::from_project(conn, project).to_path_result()
 }
 
+/// Get project
+#[openapi(tag = "projects")]
+#[get("/projects/<project_id>")]
+pub fn get_project(project_id: i32, user: User) -> PathResult<ProjectOutType> {
+    let conn = &mut db::establish_connection();
+    project_services::get_project(conn, &user, project_id).to_path_result()
+}
+
 /// Get projects
 #[openapi(tag = "projects")]
 #[get("/projects?<projects_in..>")]

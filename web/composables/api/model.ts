@@ -1,3 +1,4 @@
+import { UseFetchOptions } from 'nuxt/app'
 import {
   ChangeConceptType,
   ChangeConnectionType,
@@ -15,8 +16,15 @@ import {
   MoveConceptType,
 } from '~/types'
 
-export const useGetModel = (opts: LocalFetchOptions, projectId: number) => {
-  return useLocalFetch<ModelOutType>(`/projects/${projectId}`, opts)
+export const useGetModel = (
+  opts: LocalFetchOptions,
+  projectId: number,
+  fetchOptions?: UseFetchOptions<ModelOutType>
+) => {
+  return useLocalFetch<ModelOutType>(`/projects/${projectId}/model`, opts, {
+    ...fetchOptions,
+    method: 'GET',
+  })
 }
 
 export const useCreateConcept = (opts: LocalFetchFuncOptions) => {

@@ -6,7 +6,13 @@ import { useControlConnectionsPlugin } from './control-connections'
 import { useTargetConceptsPlugin } from './target-concepts'
 import { ConceptOutType, ConnectionOutType, ModelOutType } from '~/types'
 
-export { useAdjustmentRuns } from './adjustment'
+export {
+  useGetAdjustmentRun,
+  useAdjustmentRuns,
+  useGetAdjustmentGeneration,
+  useGetAdjustmentGenerations,
+  useGetAdjustmentChromosomes,
+} from './adjustment'
 
 export const usePlugins = (
   model: Ref<ModelOutType>,

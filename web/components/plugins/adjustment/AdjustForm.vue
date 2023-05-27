@@ -37,7 +37,7 @@ import { ADJUST_KEY, DynamicModelType } from '~/types'
 
 export interface Props {
   projectId: number
-  adjust: ReturnType<typeof useAdjustmentRuns>['adjust']
+  adjust: Awaited<ReturnType<typeof useAdjustmentRuns>>['adjust']
 }
 
 const props = defineProps<Props>()

@@ -3,9 +3,9 @@ use super::services::{
     adjustment_out_services, adjustment_services, concept_dynamic_model_services,
 };
 use super::types::{
-    AdjustmentChromosomeOutType, AdjustmentGenerationOutType, AdjustmentInType,
-    AdjustmentRunActionType, AdjustmentRunOutType, AdjustmentRunsInType,
-    ConceptDynamicModelOutType,
+    AdjustmentChromosomeOutType, AdjustmentChromosomesInType, AdjustmentGenerationOutType,
+    AdjustmentGenerationsInType, AdjustmentInType, AdjustmentRunActionType, AdjustmentRunOutType,
+    AdjustmentRunsInType, ConceptDynamicModelOutType,
 };
 use crate::db;
 use crate::locale::Locale;
@@ -71,9 +71,17 @@ pub async fn adjust(
     .to_path_result()
 }
 
+/// Get adjustment run
+#[openapi(tag = "adjustment")]
+#[get("/adjustment_runs/<adjustment_run_id>")]
+pub fn get_adjustment_run(adjustment_run_id: i32, user: User) -> PathResult<AdjustmentRunOutType> {
+    let conn = &mut db::establish_connection();
+    adjustment_out_services::get_adjustment_run(conn, &user, adjustment_run_id).to_path_result()
+}
+
 /// Get adjustment runs
 #[openapi(tag = "adjustment")]
-#[get("/project/<project_id>/adjustment_runs?<adjustment_runs_in..>")]
+#[get("/projects/<project_id>/adjustment_runs?<adjustment_runs_in..>")]
 pub fn get_adjustment_runs(
     project_id: i32,
     adjustment_runs_in: AdjustmentRunsInType,
@@ -107,19 +115,30 @@ pub fn get_adjustment_runs(
     .to_path_result()
 }
 
+/// Get adjustment generation
+#[openapi(tag = "adjustment")]
+#[get("/adjustment_generations/<adjustment_generation_id>")]
+pub fn get_adjustment_generation(
+    adjustment_generation_id: i32,
+    user: User,
+) -> PathResult<AdjustmentGenerationOutType> {
+    let conn = &mut db::establish_connection();
+    adjustment_out_services::get_adjustment_generation(conn, &user, adjustment_generation_id)
+        .to_path_result()
+}
+
 /// Get adjustment generations
 #[openapi(tag = "adjustment")]
-#[get("/adjustment_runs/<adjustment_run_id>/adjustment_generations?<page>&<per_page>")]
+#[get("/adjustment_runs/<adjustment_run_id>/adjustment_generations?<adjustment_generations_in..>")]
 pub fn get_adjustment_generations(
     adjustment_run_id: i32,
-    page: Option<u16>,
-    per_page: Option<u16>,
+    adjustment_generations_in: AdjustmentGenerationsInType,
     user: User,
 ) -> PathResult<PaginationOutType<AdjustmentGenerationOutType>> {
     let conn = &mut db::establish_connection();
     let pagination_in = PaginationInType {
-        page: page.unwrap_or(1),
-        per_page: per_page.unwrap_or(15),
+        page: adjustment_generations_in.page.unwrap_or(1),
+        per_page: adjustment_generations_in.per_page.unwrap_or(15),
     };
     adjustment_out_services::paginate_adjustment_generations(
         conn,
@@ -133,18 +152,17 @@ pub fn get_adjustment_generations(
 /// Get adjustment chromosomes
 #[openapi(tag = "adjustment")]
 #[get(
-    "/adjustment_generations/<adjustment_generation_id>/adjustment_chromosomes?<page>&<per_page>"
+    "/adjustment_generations/<adjustment_generation_id>/adjustment_chromosomes?<adjustment_chromosomes_in..>"
 )]
 pub fn get_adjustment_chromosomes(
     adjustment_generation_id: i32,
-    page: Option<u16>,
-    per_page: Option<u16>,
+    adjustment_chromosomes_in: AdjustmentChromosomesInType,
     user: User,
 ) -> PathResult<PaginationOutType<AdjustmentChromosomeOutType>> {
     let conn = &mut db::establish_connection();
     let pagination_in = PaginationInType {
-        page: page.unwrap_or(1),
-        per_page: per_page.unwrap_or(15),
+        page: adjustment_chromosomes_in.page.unwrap_or(1),
+        per_page: adjustment_chromosomes_in.per_page.unwrap_or(15),
     };
     adjustment_out_services::paginate_adjustment_chromosomes(
         conn,

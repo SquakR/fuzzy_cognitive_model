@@ -53,6 +53,17 @@ pub fn find_project_by_id(conn: &mut PgConnection, project_id: i32) -> QueryResu
     projects::table.find(project_id).first::<Project>(conn)
 }
 
+pub fn get_project(
+    conn: &mut PgConnection,
+    user: &User,
+    project_id: i32,
+) -> ServiceResult<ProjectOutType> {
+    let project = find_project_by_id(conn, project_id)
+        .to_service_result_find(String::from("project_not_found_error"))?;
+    permission_services::can_view_project(conn, &project, user)?;
+    ProjectOutType::from_project(conn, project)
+}
+
 pub fn paginate_projects(
     conn: &mut PgConnection,
     user: &User,

@@ -1,9 +1,12 @@
+import { UseFetchOptions } from 'nuxt/app'
 import { useMessageStore } from '~/store'
 import {
   ADJUSTMENT_GENERATION_KEY,
   ADJUSTMENT_RESULT_KEY,
   ADJUST_KEY,
   AdjustType,
+  AdjustmentChromosomeOutType,
+  AdjustmentGenerationOutType,
   AdjustmentGenerationType,
   AdjustmentInType,
   AdjustmentResultType,
@@ -218,20 +221,95 @@ const useAdjust = (opts: LocalFetchFuncOptions) => {
   return { execute, ...rest }
 }
 
+export const useGetAdjustmentRun = (
+  opts: LocalFetchOptions,
+  adjustmentRunId: number,
+  fetchOptions?: UseFetchOptions<AdjustmentRunOutType>
+) => {
+  return useLocalFetch<AdjustmentRunOutType>(
+    `/adjustment_runs/${adjustmentRunId}`,
+    opts,
+    {
+      ...fetchOptions,
+      method: 'GET',
+    }
+  )
+}
+
 const useGetAdjustmentRuns = (
   opts: LocalFetchOptions,
   projectId: number,
-  adjustmentRunsIn: Ref<AdjustmentRunsInType>
+  adjustmentRunsIn: Ref<AdjustmentRunsInType>,
+  fetchOptions?: UseFetchOptions<PaginationOutType<AdjustmentRunOutType>>
 ) => {
   return useLocalFetch<PaginationOutType<AdjustmentRunOutType>>(
-    `/project/${projectId}/adjustment_runs`,
+    `/projects/${projectId}/adjustment_runs`,
     opts,
     {
+      ...fetchOptions,
+      method: 'GET',
       params: computed(() =>
         Object.fromEntries(
           Object.entries(adjustmentRunsIn.value).filter(([_, v]) => !!v)
         )
       ),
+    }
+  )
+}
+
+export const useGetAdjustmentGeneration = (
+  opts: LocalFetchOptions,
+  adjustmentGenerationId: number,
+  fetchOptions?: UseFetchOptions<AdjustmentGenerationOutType>
+) => {
+  return useLocalFetch<AdjustmentGenerationOutType>(
+    `/adjustment_generations/${adjustmentGenerationId}`,
+    opts,
+    {
+      ...fetchOptions,
+      method: 'GET',
+    }
+  )
+}
+
+export const useGetAdjustmentGenerations = (
+  opts: LocalFetchOptions,
+  adjustmentRunId: number,
+  page: Ref<number>,
+  perPage: Ref<number>,
+  fetchOptions?: UseFetchOptions<PaginationOutType<AdjustmentGenerationOutType>>
+) => {
+  return useLocalFetch<PaginationOutType<AdjustmentGenerationOutType>>(
+    `/adjustment_runs/${adjustmentRunId}/adjustment_generations`,
+    opts,
+    {
+      ...fetchOptions,
+      method: 'GET',
+      params: computed(() => ({
+        page: page.value,
+        perPage: perPage.value,
+      })),
+    }
+  )
+}
+
+export const useGetAdjustmentChromosomes = (
+  opts: LocalFetchOptions,
+  adjustmentGenerationId: number,
+  page: Ref<number>,
+  perPage: Ref<number>,
+  fetchOptions?: UseFetchOptions<PaginationOutType<AdjustmentChromosomeOutType>>
+) => {
+  return useLocalFetch<PaginationOutType<AdjustmentChromosomeOutType>>(
+    `/adjustment_generations/${adjustmentGenerationId}/adjustment_chromosomes`,
+    opts,
+    {
+      ...fetchOptions,
+      method: 'GET',
+      params: computed(() => ({
+        page: page.value,
+        perPage: perPage.value,
+      })),
     }
   )
 }
