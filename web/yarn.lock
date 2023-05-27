@@ -4516,6 +4516,46 @@ __metadata:
   languageName: node
   linkType: hard
 
+"fuzzy_cognitive_model@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "fuzzy_cognitive_model@workspace:."
+  dependencies:
+    "@commitlint/cli": ^17.6.3
+    "@commitlint/config-conventional": ^17.6.3
+    "@intlify/unplugin-vue-i18n": ^0.10.0
+    "@mdi/font": ^7.2.96
+    "@pinia/nuxt": ^0.4.9
+    "@trivago/prettier-plugin-sort-imports": ^4.1.1
+    "@types/cytoscape": ^3.19.9
+    "@types/cytoscape-canvas": ^3.0.0
+    "@typescript-eslint/eslint-plugin": ^5.6.0
+    "@typescript-eslint/parser": ^5.6.0
+    "@vee-validate/nuxt": ^4.9.2
+    "@vee-validate/yup": ^4.9.3
+    "@vue/eslint-config-standard": ^8.0.1
+    "@vueuse/core": ^10.1.2
+    "@vueuse/nuxt": ^10.1.2
+    cytoscape: ^3.24.0
+    cytoscape-canvas: ^3.0.1
+    eslint: ^8.40.0
+    eslint-config-prettier: ^8.8.0
+    eslint-plugin-nuxt: ^4.0.0
+    eslint-plugin-prettier: ^4.2.1
+    eslint-plugin-vue: ^9.11.0
+    husky: ^8.0.3
+    lint-staged: ^13.2.2
+    mathjax-full: ^3.2.2
+    nuxt: ^3.4.3
+    prettier: ^2.8.8
+    rxjs: ^7.8.1
+    sass: ^1.62.1
+    typescript: ^5.0.4
+    vue-i18n: ^9.2.2
+    vuetify: ^3.2.2
+    yup: ^1.1.1
+  languageName: unknown
+  linkType: soft
+
 "gauge@npm:^3.0.0":
   version: 3.0.2
   resolution: "gauge@npm:3.0.2"
@@ -8024,46 +8064,6 @@ __metadata:
   checksum: dfe2e4002fbfbc0a67591595f137c23082c639b1a790854ebe8611264b945e77caaf8c8ec9365faf9580f5df9cb9a954915443df020dc2ee391c477659484cf0
   languageName: node
   linkType: hard
-
-"root-workspace-0b6124@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "root-workspace-0b6124@workspace:."
-  dependencies:
-    "@commitlint/cli": ^17.6.3
-    "@commitlint/config-conventional": ^17.6.3
-    "@intlify/unplugin-vue-i18n": ^0.10.0
-    "@mdi/font": ^7.2.96
-    "@pinia/nuxt": ^0.4.9
-    "@trivago/prettier-plugin-sort-imports": ^4.1.1
-    "@types/cytoscape": ^3.19.9
-    "@types/cytoscape-canvas": ^3.0.0
-    "@typescript-eslint/eslint-plugin": ^5.6.0
-    "@typescript-eslint/parser": ^5.6.0
-    "@vee-validate/nuxt": ^4.9.2
-    "@vee-validate/yup": ^4.9.3
-    "@vue/eslint-config-standard": ^8.0.1
-    "@vueuse/core": ^10.1.2
-    "@vueuse/nuxt": ^10.1.2
-    cytoscape: ^3.24.0
-    cytoscape-canvas: ^3.0.1
-    eslint: ^8.40.0
-    eslint-config-prettier: ^8.8.0
-    eslint-plugin-nuxt: ^4.0.0
-    eslint-plugin-prettier: ^4.2.1
-    eslint-plugin-vue: ^9.11.0
-    husky: ^8.0.3
-    lint-staged: ^13.2.2
-    mathjax-full: ^3.2.2
-    nuxt: ^3.4.3
-    prettier: ^2.8.8
-    rxjs: ^7.8.1
-    sass: ^1.62.1
-    typescript: ^5.0.4
-    vue-i18n: ^9.2.2
-    vuetify: ^3.2.2
-    yup: ^1.1.1
-  languageName: unknown
-  linkType: soft
 
 "run-async@npm:^2.4.0":
   version: 2.4.1

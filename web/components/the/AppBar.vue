@@ -5,7 +5,7 @@
         <template #activator="{ props }">
           <VBtn
             v-bind="props"
-            href="https://github.com/SquakR/fuzzy_cognitive_model"
+            :href="packageJson.repository.url"
             target="_blank"
             class="mr-1"
             icon
@@ -26,6 +26,7 @@
 </template>
 
 <script setup lang="ts">
+import packageJson from '../../package.json'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '~/store'
 

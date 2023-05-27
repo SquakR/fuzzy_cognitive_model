@@ -1,7 +1,19 @@
 [package]
 name = "fuzzy_cognitive_model_common"
+description = """
+Library for structural and parametric adjustment of fuzzy cognitive models based on genetic algorithms.
+"""
 version = "0.1.0"
-authors = ["squak <squakrazv@gmail.com>"]
+authors = ["Artem Orlov <squakrazv@gmail.com>"]
+homepage = "https://github.com/SquakR/fuzzy_cognitive_model#readme"
+repository = "https://github.com/SquakR/fuzzy_cognitive_model"
+license = "MIT"
+keywords = [
+  "fuzzy",
+  "cognitive map",
+  "genetic algorithm"
+]
+categories = ["algorithms", "science"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

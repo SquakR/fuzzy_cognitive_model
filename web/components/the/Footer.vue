@@ -1,16 +1,16 @@
 <template>
   <VFooter class="the-footer__footer" color="indigo" app>
     <div v-html="t('copyright', { years })" />
-    <div>{{ t('version', { version }) }}</div>
+    <div>{{ t('version', { version: packageJson.version }) }}</div>
   </VFooter>
 </template>
 
 <script setup lang="ts">
+import packageJson from '../../package.json'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-const version = ref('0.1.0')
-const years = ref('2022-2023')
+const years = `2022-${new Date().getFullYear()}`
 </script>
 
 <i18n locale="en-US" lang="json">

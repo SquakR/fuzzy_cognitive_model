@@ -1,5 +1,21 @@
 {
+  "name": "fuzzy_cognitive_model",
+  "description": "Method and software for structural and parametric adjustment of fuzzy cognitive models based on genetic algorithms.",
+  "author": "Artem Orlov <squakrazv@gmail.com> (https://github.com/SquakR)",
+  "version": "0.1.0",
   "private": true,
+  "packageManager": "yarn@3.5.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SquakR/fuzzy_cognitive_model"
+  },
+  "homepage": "https://github.com/SquakR/fuzzy_cognitive_model#readme",
+  "keywords": [
+    "fuzzy",
+    "cognitive map",
+    "genetic algorithm"
+  ],
+  "license": "MIT",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -51,6 +67,5 @@
     "vue-i18n": "^9.2.2",
     "vuetify": "^3.2.2",
     "yup": "^1.1.1"
-  },
-  "packageManager": "yarn@3.5.1"
+  }
 }
