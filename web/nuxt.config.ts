@@ -31,8 +31,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      API_HTTP_BASE_URL: process.env.API_HTTP_BASE_URL,
-      API_WS_BASE_URL: process.env.API_WS_BASE_URL,
+      API_HTTP_BASE_URL: '',
+      API_WS_BASE_URL: '',
     },
   },
   typescript: {
