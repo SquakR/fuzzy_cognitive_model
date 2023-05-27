@@ -19,6 +19,7 @@
       </VBtnToggle>
       <VSpacer />
       <VBtn
+        v-if="plugins.adjustment.isInstalled"
         :to="{
           name: 'adjustment-project_id',
           params: { project_id: model.project.id },

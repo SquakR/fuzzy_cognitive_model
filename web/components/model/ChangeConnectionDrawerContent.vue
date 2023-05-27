@@ -13,6 +13,7 @@
             :model="model"
             :cy="cy"
             :selected-connection="selectedConnection"
+            :connection-constraint-plugin="plugins.connectionConstraints"
             :concept-constraints-plugin="plugins.conceptConstraints"
             :change-connection="changeConnection"
             :delete-connection="deleteConnection"

@@ -38,6 +38,7 @@ import * as yup from 'yup'
 import { useUserStore } from '~/store'
 import {
   CHANGE_CONNECTION_KEY,
+  ConnectionConstraintsPlugin,
   ConnectionOutType,
   DELETE_CONNECTION_KEY,
   ModelOutType,
@@ -47,6 +48,7 @@ export interface Props {
   model: ModelOutType
   cy: cytoscape.Core
   selectedConnection: ConnectionOutType
+  connectionConstraintPlugin: ConnectionConstraintsPlugin
   changeConnection: ReturnType<typeof useModelActions>['changeConnection']
   deleteConnection: ReturnType<typeof useModelActions>['deleteConnection']
   deleteConnectionPending: boolean
@@ -74,7 +76,40 @@ const validationSchema = computed(() => {
   if (props.model.project.connectionValueType === 'symbolic') {
     validationSchema.value = $yup.string().oneOf(['+', '-'])
   } else {
-    validationSchema.value = $yup.number().required().min(-1).max(1)
+    if (
+      props.connectionConstraintPlugin.isInstalled.value &&
+      props.selectedConnection.pluginsData.connectionConstraints!.hasConstraint
+    ) {
+      const constraints =
+        props.selectedConnection.pluginsData.connectionConstraints!
+      if (constraints.includeMinValue && constraints.includeMaxValue) {
+        validationSchema.value = $yup
+          .number()
+          .required()
+          .min(constraints.minValue)
+          .max(constraints.maxValue)
+      } else if (constraints.includeMinValue) {
+        validationSchema.value = $yup
+          .number()
+          .required()
+          .min(constraints.minValue)
+          .lessThan(constraints.maxValue)
+      } else if (constraints.includeMaxValue) {
+        validationSchema.value = $yup
+          .number()
+          .required()
+          .moreThan(constraints.minValue)
+          .max(constraints.maxValue)
+      } else {
+        validationSchema.value = $yup
+          .number()
+          .required()
+          .moreThan(constraints.minValue)
+          .lessThan(constraints.maxValue)
+      }
+    } else {
+      validationSchema.value = $yup.number().required().min(-1).max(1)
+    }
   }
   return $yup.object(validationSchema)
 })
