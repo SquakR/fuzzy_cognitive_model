@@ -21,6 +21,7 @@ CREATE TABLE adjustment_generations (
   adjustment_run_id INTEGER NOT NULL,
   FOREIGN KEY (adjustment_run_id) REFERENCES adjustment_runs(id) ON DELETE CASCADE,
   number INTEGER NOT NULL,
+  error DOUBLE PRECISION NOT NULL,
   fitness DOUBLE PRECISION NOT NULL
 );
 CREATE TABLE adjustment_chromosomes (
@@ -28,6 +29,7 @@ CREATE TABLE adjustment_chromosomes (
   adjustment_generation_id INTEGER NOT NULL,
   FOREIGN KEY (adjustment_generation_id) REFERENCES adjustment_generations(id) ON DELETE CASCADE,
   number INTEGER NOT NULL,
+  error DOUBLE PRECISION NOT NULL,
   fitness DOUBLE PRECISION NOT NULL
 );
 CREATE TABLE adjustment_concept_values (

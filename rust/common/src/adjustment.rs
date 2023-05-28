@@ -87,12 +87,14 @@ pub struct Chromosome {
     pub id: Option<i32>,
     pub concepts: HashMap<i32, f64>,
     pub connections: HashMap<i32, f64>,
+    pub error: f64,
     pub fitness: f64,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Generation {
     pub chromosomes: Vec<Chromosome>,
+    pub error: f64,
     pub fitness: f64,
 }
 
@@ -195,7 +197,7 @@ impl AdjustmentModel {
         &self,
         concepts: &HashMap<i32, f64>,
         connections: &HashMap<i32, f64>,
-    ) -> f64 {
+    ) -> (f64, f64) {
         let mut previous_state = self.get_initial_state(concepts);
         let mut delta_state = previous_state.clone();
         for _ in 0..self.adjustment_input.max_model_time {
@@ -250,18 +252,25 @@ impl AdjustmentModel {
             delta_state = Self::get_delta_state(&current_state, &previous_state);
             previous_state = current_state;
         }
-        1.0 / self
+        let error = self
             .target_concepts
             .iter()
-            .map(|concept| (previous_state[&concept.id] - concept.target_value.unwrap()).abs())
-            .sum::<f64>()
+            .map(|concept| (previous_state[&concept.id] - concept.target_value.unwrap()).powf(2.0))
+            .sum::<f64>();
+        return (error, 1.0 / error);
     }
-    fn get_generation_fitness(chromosomes: &[Chromosome]) -> f64 {
-        chromosomes
+    fn get_generation_fitness(chromosomes: &[Chromosome]) -> (f64, f64) {
+        let error = chromosomes
+            .iter()
+            .map(|chromosome| chromosome.error)
+            .sum::<f64>()
+            / chromosomes.len() as f64;
+        let fitness = chromosomes
             .iter()
             .map(|chromosome| chromosome.fitness)
             .sum::<f64>()
-            / chromosomes.len() as f64
+            / chromosomes.len() as f64;
+        return (error, fitness);
     }
     fn select_parent_candidates(&self, rng: &mut ThreadRng) -> Vec<&Chromosome> {
         let generation = self.current_generation.as_ref().unwrap();
@@ -294,23 +303,29 @@ impl AdjustmentModel {
         ];
     }
     fn mutate_chromosome(&self, mut chromosome: Chromosome, rng: &mut ThreadRng) -> Chromosome {
-        if chromosome.connections.len() == 0 {
-            let concept = &self.control_concepts[rng.gen_range(0..self.control_concepts.len())];
-            *chromosome.concepts.get_mut(&concept.id).unwrap() = concept.generate_value(rng);
-        } else if chromosome.concepts.len() == 0 {
-            let connection =
-                &self.control_connections[rng.gen_range(0..self.control_connections.len())];
-            *chromosome.connections.get_mut(&connection.id).unwrap() =
-                connection.generate_value(rng);
-        } else if rng.gen::<f64>() < 0.5 {
-            let concept = &self.control_concepts[rng.gen_range(0..self.control_concepts.len())];
-            *chromosome.concepts.get_mut(&concept.id).unwrap() = concept.generate_value(rng);
-        } else {
-            let connection =
-                &self.control_connections[rng.gen_range(0..self.control_connections.len())];
-            *chromosome.connections.get_mut(&connection.id).unwrap() =
-                connection.generate_value(rng);
+        if rng.gen::<f64>() < 0.95 {
+            if chromosome.connections.len() == 0 {
+                let concept = &self.control_concepts[rng.gen_range(0..self.control_concepts.len())];
+                *chromosome.concepts.get_mut(&concept.id).unwrap() = concept.generate_value(rng);
+            } else if chromosome.concepts.len() == 0 {
+                let connection =
+                    &self.control_connections[rng.gen_range(0..self.control_connections.len())];
+                *chromosome.connections.get_mut(&connection.id).unwrap() =
+                    connection.generate_value(rng);
+            } else if rng.gen::<f64>() < 0.5 {
+                let concept = &self.control_concepts[rng.gen_range(0..self.control_concepts.len())];
+                *chromosome.concepts.get_mut(&concept.id).unwrap() = concept.generate_value(rng);
+            } else {
+                let connection =
+                    &self.control_connections[rng.gen_range(0..self.control_connections.len())];
+                *chromosome.connections.get_mut(&connection.id).unwrap() =
+                    connection.generate_value(rng);
+            }
         }
+        let (error, fitness) =
+            self.get_chromosome_fitness(&chromosome.concepts, &chromosome.connections);
+        chromosome.error = error;
+        chromosome.fitness = fitness;
         chromosome
     }
     fn create_first_generation(&self) -> Generation {
@@ -319,9 +334,10 @@ impl AdjustmentModel {
         for _ in 0..self.adjustment_input.generation_size {
             chromosomes.push(Self::create_random_chromosome(self, &mut rng));
         }
-        let fitness = Self::get_generation_fitness(&chromosomes);
+        let (error, fitness) = Self::get_generation_fitness(&chromosomes);
         Generation {
             chromosomes,
+            error,
             fitness,
         }
     }
@@ -338,9 +354,10 @@ impl AdjustmentModel {
             })
             .map(|chromosome| self.mutate_chromosome(chromosome, &mut rng_clone))
             .collect::<Vec<_>>();
-        let fitness = Self::get_generation_fitness(&chromosomes);
+        let (error, fitness) = Self::get_generation_fitness(&chromosomes);
         Generation {
             chromosomes,
+            error,
             fitness,
         }
     }
@@ -353,11 +370,12 @@ impl AdjustmentModel {
         for connection in &self.control_connections {
             connections.insert(connection.id, connection.generate_value(rng));
         }
-        let fitness = self.get_chromosome_fitness(&concepts, &connections);
+        let (error, fitness) = self.get_chromosome_fitness(&concepts, &connections);
         Chromosome {
             id: None,
             concepts,
             connections,
+            error,
             fitness,
         }
     }
@@ -384,8 +402,8 @@ impl AdjustmentModel {
             if p1 > p2 {
                 (p1, p2) = (p2, p1);
             }
-            let mut min = p1 - ALPHA * (p2 - p1);
-            let mut max = p2 + ALPHA * (p2 - p1);
+            let mut min = f64::max(p1 - ALPHA * (p2 - p1), 0.0);
+            let mut max = f64::min(p2 + ALPHA * (p2 - p1), 1.0);
             let concept = &self.concepts_map[id];
             match &concept.constraint {
                 Some(constraint) => {
@@ -403,8 +421,8 @@ impl AdjustmentModel {
             if p1 > p2 {
                 (p1, p2) = (p2, p1);
             }
-            let mut min = p1 - ALPHA * (p2 - p1);
-            let mut max = p2 + ALPHA * (p2 - p1);
+            let mut min = f64::max(p1 - ALPHA * (p2 - p1), -1.0);
+            let mut max = f64::min(p2 + ALPHA * (p2 - p1), 1.0);
             let connection = &self.connections_map[id];
             match &connection.constraint {
                 Some(constraint) => {
@@ -415,12 +433,12 @@ impl AdjustmentModel {
             }
             connections.insert(*id, rng.gen_range(min..=max));
         }
-        let fitness = self.get_chromosome_fitness(&concepts, &connections);
         Chromosome {
             id: None,
             concepts,
             connections,
-            fitness,
+            error: 0.0,
+            fitness: 0.0,
         }
     }
     fn get_best_chromosome(&self) -> &Chromosome {

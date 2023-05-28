@@ -24,6 +24,9 @@
             {{ item.raw.number }}
           </NuxtLink>
         </template>
+        <template #item.error="{ item }">
+          {{ formatGenerationError(item.raw) }}
+        </template>
         <template #item.fitness="{ item }">
           {{ formatGenerationFitness(item.raw) }}
         </template>
@@ -48,6 +51,7 @@ const userStore = useUserStore()
 
 const headers = computed(() => [
   { key: 'number', title: t('number'), sortable: false },
+  { key: 'error', title: t('error'), sortable: false },
   { key: 'fitness', title: t('fitness'), sortable: false },
 ])
 
@@ -134,13 +138,20 @@ const getChromosomeLink = (
     },
   }
 }
+
+const formatter = new Intl.NumberFormat(userStore.locale, {
+  minimumFractionDigits: 5,
+})
+
+const formatGenerationError = (
+  adjustmentChromosome: AdjustmentChromosomeOutType
+) => {
+  return formatter.format(adjustmentChromosome.error)
+}
 const formatGenerationFitness = (
   adjustmentChromosome: AdjustmentChromosomeOutType
 ) => {
-  return new Intl.NumberFormat(userStore.locale, {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-  }).format(adjustmentChromosome.fitness)
+  return formatter.format(adjustmentChromosome.fitness)
 }
 </script>
 
@@ -148,6 +159,7 @@ const formatGenerationFitness = (
 {
   "title": "Chromosomes",
   "number": "Number",
+  "error": "Error",
   "fitness": "Fitness"
 }
 </i18n>
@@ -156,6 +168,7 @@ const formatGenerationFitness = (
 {
   "title": "Хромосомы",
   "number": "Номер",
+  "error": "Ошибка",
   "fitness": "Приспособленность"
 }
 </i18n>

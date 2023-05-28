@@ -45,12 +45,14 @@ export interface AdjustmentRunOutType {
 export interface AdjustmentGenerationOutType {
   id: number
   number: number
+  error: number
   fitness: number
 }
 
 export interface AdjustmentChromosomeOutType {
   id: number
   number: number
+  error: number
   fitness: number
   conceptValues: AdjustmentConceptValueOutType[]
   connectionValues: AdjustmentConnectionValueOutType[]
@@ -59,9 +61,11 @@ export interface AdjustmentChromosomeOutType {
 export interface AdjustmentChromosomeGenerationOutType {
   id: number
   number: number
+  error: number
   fitness: number
   generationId: number
   generationNumber: number
+  generationError: number
   generationFitness: number
   conceptValues: AdjustmentConceptValueOutType[]
   connectionValues: AdjustmentConnectionValueOutType[]

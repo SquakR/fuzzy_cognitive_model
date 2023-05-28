@@ -60,6 +60,7 @@ pub struct AdjustmentGeneration {
     pub id: i32,
     pub adjustment_run_id: i32,
     pub number: i32,
+    pub error: f64,
     pub fitness: f64,
 }
 
@@ -69,6 +70,7 @@ pub struct AdjustmentChromosome {
     pub id: i32,
     pub adjustment_generation_id: i32,
     pub number: i32,
+    pub error: f64,
     pub fitness: f64,
 }
 

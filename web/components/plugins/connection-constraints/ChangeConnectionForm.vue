@@ -75,7 +75,7 @@ const validationSchema = $yup.object({
   minValue: $yup
     .number()
     .required()
-    .min(0)
+    .min(-1)
     .when('includeMinValue', {
       is: true,
       then: (schema) => schema.max(props.selectedConnection.value!),

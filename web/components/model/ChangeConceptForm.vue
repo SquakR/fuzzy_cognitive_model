@@ -84,6 +84,7 @@ const userStore = useUserStore()
 const positionFormatter = new Intl.NumberFormat(userStore.locale, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
+  useGrouping: false,
 })
 
 onMounted(() => {

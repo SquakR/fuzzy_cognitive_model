@@ -62,6 +62,7 @@ impl SaveResult<(), AppError> for SaveResultServer {
                     .values((
                         adjustment_generations::adjustment_run_id.eq(self.adjustment_run_id),
                         adjustment_generations::number.eq(number),
+                        adjustment_generations::error.eq(generation.error),
                         adjustment_generations::fitness.eq(generation.fitness),
                     ))
                     .get_result::<AdjustmentGeneration>(conn)?;
@@ -71,6 +72,7 @@ impl SaveResult<(), AppError> for SaveResultServer {
                             adjustment_chromosomes::adjustment_generation_id
                                 .eq(adjustment_generation.id),
                             adjustment_chromosomes::number.eq(i as i32 + 1),
+                            adjustment_chromosomes::error.eq(chromosome.error),
                             adjustment_chromosomes::fitness.eq(chromosome.fitness),
                         ))
                         .get_result::<AdjustmentChromosome>(conn)?;

@@ -2,7 +2,7 @@
   <PluginsAdjustmentBreadcrumbs :items="bc" />
   <VCard height="calc(100% - 40px)">
     <VCardTitle class="d-flex">
-      {{ t('title', { fitness }) }}
+      {{ t('title', { error }) }}
       <VSpacer />
       <PluginsAdjustmentModelButton
         :project-id="Number($route.params.project_id)"
@@ -76,7 +76,7 @@ const model = computed(() => ({
   connections: modelData.value!.connections.map((connection) => {
     const newConnection = { ...connection }
     const connectionValue = adjustmentChromosome.value!.connectionValues.find(
-      (connectionValue) => connectionValue.connectionId === connectionValue.id
+      (connectionValue) => connectionValue.connectionId === connection.id
     )
     if (connectionValue) {
       newConnection.value = connectionValue.value
@@ -128,23 +128,22 @@ const bc = computed<BreadcrumbsItem[]>(() => [
   },
 ])
 
-const fitness = computed(() =>
+const error = computed(() =>
   new Intl.NumberFormat(userStore.locale, {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-  }).format(adjustmentChromosome.value!.fitness)
+    minimumFractionDigits: 5,
+  }).format(adjustmentChromosome.value!.error)
 )
 </script>
 
 <i18n locale="en-US" lang="json">
 {
-  "title": "Chromosome ({fitness})"
+  "title": "Chromosome ({error})"
 }
 </i18n>
 
 <i18n locale="ru-RU" lang="json">
 {
-  "title": "Хромосома ({fitness})"
+  "title": "Хромосома ({error})"
 }
 </i18n>
 

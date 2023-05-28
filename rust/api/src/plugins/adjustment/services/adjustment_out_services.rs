@@ -235,28 +235,40 @@ impl AdjustmentRunOutType {
     ) -> ServiceResult<Self> {
         let result_chromosome = match adjustment_run.result_chromosome_id {
             Some(result_chromosome_id) => {
-                let (id, number, fitness, generation_id, generation_number, generation_fitness) =
-                    adjustment_chromosomes::table
-                        .inner_join(adjustment_generations::table)
-                        .filter(adjustment_chromosomes::id.eq(result_chromosome_id))
-                        .select((
-                            adjustment_chromosomes::id,
-                            adjustment_chromosomes::number,
-                            adjustment_chromosomes::fitness,
-                            adjustment_generations::id,
-                            adjustment_generations::number,
-                            adjustment_generations::fitness,
-                        ))
-                        .get_result::<(i32, i32, f64, i32, i32, f64)>(conn)
-                        .to_service_result()?;
+                let (
+                    id,
+                    number,
+                    error,
+                    fitness,
+                    generation_id,
+                    generation_number,
+                    generation_error,
+                    generation_fitness,
+                ) = adjustment_chromosomes::table
+                    .inner_join(adjustment_generations::table)
+                    .filter(adjustment_chromosomes::id.eq(result_chromosome_id))
+                    .select((
+                        adjustment_chromosomes::id,
+                        adjustment_chromosomes::number,
+                        adjustment_chromosomes::error,
+                        adjustment_chromosomes::fitness,
+                        adjustment_generations::id,
+                        adjustment_generations::number,
+                        adjustment_generations::error,
+                        adjustment_generations::fitness,
+                    ))
+                    .get_result::<(i32, i32, f64, f64, i32, i32, f64, f64)>(conn)
+                    .to_service_result()?;
                 let concept_values = Self::get_concept_values(conn, result_chromosome_id)?;
                 let connection_values = Self::get_connection_values(conn, result_chromosome_id)?;
                 Some(AdjustmentChromosomeGenerationOutType {
                     id,
                     number,
+                    error,
                     fitness,
                     generation_id,
                     generation_number,
+                    generation_error,
                     generation_fitness,
                     concept_values,
                     connection_values,
@@ -292,8 +304,16 @@ impl AdjustmentRunOutType {
                         .find(|(_, rc)| rc.0 == *result_chromosome_id)
                         .unwrap()
                         .0;
-                    let (id, number, fitness, generation_id, generation_number, generation_fitness) =
-                        result_chromosomes.remove(result_chromosome_index);
+                    let (
+                        id,
+                        number,
+                        error,
+                        fitness,
+                        generation_id,
+                        generation_number,
+                        generation_error,
+                        generation_fitness,
+                    ) = result_chromosomes.remove(result_chromosome_index);
                     let concept_value_indices = concept_values
                         .iter()
                         .enumerate()
@@ -321,9 +341,11 @@ impl AdjustmentRunOutType {
                     Some(AdjustmentChromosomeGenerationOutType {
                         id,
                         number,
+                        error,
                         fitness,
                         generation_id,
                         generation_number,
+                        generation_error,
                         generation_fitness,
                         concept_values: concept_out_values,
                         connection_values: connection_out_values,
@@ -338,19 +360,21 @@ impl AdjustmentRunOutType {
     fn find_chromosomes(
         conn: &mut PgConnection,
         chromosome_ids: &[i32],
-    ) -> QueryResult<Vec<(i32, i32, f64, i32, i32, f64)>> {
+    ) -> QueryResult<Vec<(i32, i32, f64, f64, i32, i32, f64, f64)>> {
         adjustment_chromosomes::table
             .inner_join(adjustment_generations::table)
             .filter(adjustment_chromosomes::id.eq_any(chromosome_ids))
             .select((
                 adjustment_chromosomes::id,
                 adjustment_chromosomes::number,
+                adjustment_chromosomes::error,
                 adjustment_chromosomes::fitness,
                 adjustment_generations::id,
                 adjustment_generations::number,
+                adjustment_generations::error,
                 adjustment_generations::fitness,
             ))
-            .get_results::<(i32, i32, f64, i32, i32, f64)>(conn)
+            .get_results::<(i32, i32, f64, f64, i32, i32, f64, f64)>(conn)
     }
     fn get_concept_values(
         conn: &mut PgConnection,
@@ -432,6 +456,7 @@ impl From<AdjustmentGeneration> for AdjustmentGenerationOutType {
         Self {
             id: adjustment_generation.id,
             number: adjustment_generation.number,
+            error: adjustment_generation.error,
             fitness: adjustment_generation.fitness,
         }
     }
@@ -449,6 +474,7 @@ impl AdjustmentChromosomeOutType {
         Ok(Self {
             id: adjustment_chromosome.id,
             number: adjustment_chromosome.number,
+            error: adjustment_chromosome.error,
             fitness: adjustment_chromosome.fitness,
             concept_values: concept_values
                 .into_iter()
@@ -500,6 +526,7 @@ impl AdjustmentChromosomeOutType {
             result.push(Self {
                 id: adjustment_chromosome.id,
                 number: adjustment_chromosome.number,
+                error: adjustment_chromosome.error,
                 fitness: adjustment_chromosome.fitness,
                 concept_values: concept_out_values,
                 connection_values: connection_out_values,

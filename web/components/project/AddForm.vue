@@ -47,7 +47,7 @@ const { execute: createProject } = useCreateProject({
   key: ACTION_KEY,
 })
 
-const { data: plugins } = useGetPlugins({ key: 'plugins' })
+const { data: plugins } = await useGetPlugins({ key: 'plugins' })
 const pluginNames = computed(() => {
   if (!plugins.value) {
     return []
