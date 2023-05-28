@@ -11,6 +11,7 @@ export {
   useAdjustmentRuns,
   useGetAdjustmentGeneration,
   useGetAdjustmentGenerations,
+  useGetAdjustmentChromosome,
   useGetAdjustmentChromosomes,
 } from './adjustment'
 

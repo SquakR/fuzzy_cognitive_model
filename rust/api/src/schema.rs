@@ -22,6 +22,7 @@ diesel::table! {
     adjustment_chromosomes (id) {
         id -> Int4,
         adjustment_generation_id -> Int4,
+        number -> Int4,
         fitness -> Float8,
     }
 }

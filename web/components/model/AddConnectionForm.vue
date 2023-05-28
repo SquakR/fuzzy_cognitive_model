@@ -142,7 +142,9 @@ const initialValues = computed<Values>(() => {
   if (props.model.project.connectionValueType === 'symbolic') {
     initialValues.value = '+'
   } else {
-    initialValues.value = userStore.locale === 'ru-RU' ? '0,0' : '0.0'
+    initialValues.value = new Intl.NumberFormat(userStore.locale, {
+      minimumFractionDigits: 1,
+    }).format(0)
   }
   return initialValues
 })

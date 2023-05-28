@@ -1,6 +1,6 @@
 <template>
   <PluginsAdjustmentBreadcrumbs :items="bc" />
-  <VCard class="mt-2">
+  <VCard>
     <VCardTitle>{{ t('title') }}</VCardTitle>
     <VCardText>
       <VRow>

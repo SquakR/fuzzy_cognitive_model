@@ -3,6 +3,7 @@
     v-model="value"
     :label="label"
     :error-messages="errors"
+    :readonly="readonly"
     color="primary"
     @blur="handleBlur"
     @click:append-inner="$emit('click:append-inner')"
@@ -13,6 +14,7 @@
 export interface Props {
   name: string
   label?: string
+  readonly?: boolean
 }
 export interface Emits {
   (e: 'click:append-inner'): void
@@ -20,6 +22,7 @@ export interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   label: undefined,
+  readonly: undefined,
 })
 defineEmits<Emits>()
 

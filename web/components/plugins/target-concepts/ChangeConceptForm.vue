@@ -7,11 +7,12 @@
     :validation-schema="validationSchema"
     :initial-values="initialValues"
     :on-submit="onSubmit"
+    :readonly="readonly"
     width="468"
     flat
   >
-    <BaseCheckbox :label="t('isTarget')" name="isTarget" />
-    <BaseTextField :label="t('value')" name="value" />
+    <BaseCheckbox :label="t('isTarget')" :readonly="readonly" name="isTarget" />
+    <BaseTextField :label="t('value')" :readonly="readonly" name="value" />
   </BaseForm>
 </template>
 
@@ -27,9 +28,12 @@ import {
 export interface Props {
   selectedConcept: ConceptOutType
   targetConceptsPlugin: TargetConceptsPlugin
+  readonly?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  readonly: false,
+})
 
 interface Values {
   isTarget: boolean
@@ -45,10 +49,11 @@ const validationSchema = $yup.object({
   value: $yup.number().min(0).max(1),
 })
 const initialValues = computed<Values>(() => {
-  const value = String(props.selectedConcept.pluginsData.targetConcepts!.value)
   return {
     isTarget: props.selectedConcept.pluginsData.targetConcepts!.isTarget,
-    value: userStore.locale === 'ru-RU' ? value.replace('.', ',') : value,
+    value: new Intl.NumberFormat(userStore.locale).format(
+      props.selectedConcept.pluginsData.targetConcepts!.value!
+    ),
   }
 })
 const onSubmit = async (values: Values) => {

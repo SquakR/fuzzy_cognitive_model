@@ -17,26 +17,31 @@
             :change-concept="changeConcept"
             :delete-concept="deleteConcept"
             :delete-concept-pending="deleteConceptPending"
+            :readonly="readonly"
         /></VWindowItem>
         <VWindowItem v-if="plugins.adjustment.isInstalled" value="adjustment">
           <PluginsControlConceptsChangeConceptForm
             :selected-concept="selectedConcept"
             :control-concepts-plugin="plugins.controlConcepts"
+            :readonly="readonly"
           />
           <VDivider />
           <PluginsConceptConstraintsChangeConceptForm
             :selected-concept="selectedConcept"
             :concept-constraints-plugin="plugins.conceptConstraints"
+            :readonly="readonly"
           />
           <VDivider />
           <PluginsTargetConceptsChangeConceptForm
             :selected-concept="selectedConcept"
             :target-concepts-plugin="plugins.targetConcepts"
+            :readonly="readonly"
           />
           <VDivider />
           <PluginsAdjustmentChangeConceptForm
             :selected-concept="selectedConcept"
             :adjustment-plugin="plugins.adjustment"
+            :readonly="readonly"
           />
           <VDivider />
         </VWindowItem>
@@ -57,8 +62,10 @@ export interface Props {
   changeConcept: ReturnType<typeof useModelActions>['changeConcept']
   deleteConcept: ReturnType<typeof useModelActions>['deleteConcept']
   deleteConceptPending: boolean
+  readonly?: boolean
 }
-defineProps<Props>()
+
+withDefaults(defineProps<Props>(), { readonly: false })
 
 const { t } = useI18n()
 

@@ -3,6 +3,7 @@
     v-model="value"
     :variant="variant"
     :label="label"
+    :readonly="readonly"
     :clearable="clearable"
     :error-messages="errors"
     :counter="counter"
@@ -25,6 +26,7 @@ export interface Props {
     | 'solo-inverted'
     | 'solo-filled'
   label?: string
+  readonly?: boolean
   clearable?: boolean
   counter?: string | number | true
   appendInnerIcon?: string
@@ -36,6 +38,7 @@ export interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   variant: 'underlined',
   label: undefined,
+  readonly: undefined,
   clearable: false,
   counter: undefined,
   appendInnerIcon: undefined,

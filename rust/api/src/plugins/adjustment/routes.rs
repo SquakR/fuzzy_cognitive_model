@@ -149,6 +149,18 @@ pub fn get_adjustment_generations(
     .to_path_result()
 }
 
+/// Get adjustment chromosome
+#[openapi(tag = "adjustment")]
+#[get("/adjustment_chromosomes/<adjustment_chromosome_id>")]
+pub fn get_adjustment_chromosome(
+    adjustment_chromosome_id: i32,
+    user: User,
+) -> PathResult<AdjustmentChromosomeOutType> {
+    let conn = &mut db::establish_connection();
+    adjustment_out_services::get_adjustment_chromosome(conn, &user, adjustment_chromosome_id)
+        .to_path_result()
+}
+
 /// Get adjustment chromosomes
 #[openapi(tag = "adjustment")]
 #[get(

@@ -1,6 +1,6 @@
 <template>
   <PluginsAdjustmentBreadcrumbs :items="bc" />
-  <VCard class="mt-2">
+  <VCard>
     <VCardTitle>{{ t('title') }}</VCardTitle>
     <VCardText>
       <VRow>
@@ -51,29 +51,30 @@ const headers = computed(() => [
   { key: 'fitness', title: t('fitness'), sortable: false },
 ])
 
-const { data: project } = await useGetProject(
-  { key: 'project' },
-  Number(route.params.project_id),
-  { pick: ['name'] }
-)
-const { data: adjustmentRun } = await useGetAdjustmentRun(
-  { key: 'adjustmentRun' },
-  Number(route.params.adjustment_run_id),
-  { pick: ['name'] }
-)
-
 const page = ref(1)
 const perPage = ref(10)
-const {
-  data: adjustmentGenerationPagination,
-  pending: loading,
-  refresh,
-} = await useGetAdjustmentGenerations(
-  { key: 'adjustmentGenerations' },
-  Number(route.params.adjustment_run_id),
-  page,
-  perPage
-)
+
+const [
+  { data: project },
+  { data: adjustmentRun },
+  { data: adjustmentGenerationPagination, pending: loading, refresh },
+] = await Promise.all([
+  useGetProject({ key: 'project' }, Number(route.params.project_id), {
+    pick: ['name'],
+  }),
+  useGetAdjustmentRun(
+    { key: 'adjustmentRun' },
+    Number(route.params.adjustment_run_id),
+    { pick: ['name'] }
+  ),
+  useGetAdjustmentGenerations(
+    { key: 'adjustmentGenerations' },
+    Number(route.params.adjustment_run_id),
+    page,
+    perPage
+  ),
+])
+
 const { itemsLength, data: adjustmentGenerations } = usePagination(
   adjustmentGenerationPagination,
   refresh,

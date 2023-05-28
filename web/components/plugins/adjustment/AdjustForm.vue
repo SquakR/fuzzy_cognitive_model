@@ -88,7 +88,7 @@ const initialValues = computed<Values>(() => ({
   generationSaveInterval: '10',
   maxGenerations: '1000',
   maxWithoutImprovements: '10',
-  error: userStore.locale === 'ru-RU' ? '0,001' : '0.001',
+  error: new Intl.NumberFormat(userStore.locale).format(0.001),
 }))
 
 const onSubmit = async (values: Values) => {

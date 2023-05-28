@@ -6,14 +6,27 @@
     :validation-schema="validationSchema"
     :initial-values="initialValues"
     :on-submit="onSubmit"
+    :readonly="readonly"
     width="468"
     flat
   >
-    <BaseTextField :label="t('name')" name="name" />
-    <BaseTextarea :label="t('description')" name="description" />
-    <BaseTextField :label="t('value')" name="value" />
-    <BaseTextField :label="t('xPosition')" name="xPosition" />
-    <BaseTextField :label="t('yPosition')" name="yPosition" />
+    <BaseTextField :label="t('name')" :readonly="readonly" name="name" />
+    <BaseTextarea
+      :label="t('description')"
+      :readonly="readonly"
+      name="description"
+    />
+    <BaseTextField :label="t('value')" :readonly="readonly" name="value" />
+    <BaseTextField
+      :label="t('xPosition')"
+      :readonly="readonly"
+      name="xPosition"
+    />
+    <BaseTextField
+      :label="t('yPosition')"
+      :readonly="readonly"
+      name="yPosition"
+    />
     <template #actions="{ loading, buttonText }">
       <VBtn
         :loading="deleteConceptPending"
@@ -55,14 +68,23 @@ export interface Props {
   changeConcept: ReturnType<typeof useModelActions>['changeConcept']
   deleteConcept: ReturnType<typeof useModelActions>['deleteConcept']
   deleteConceptPending: boolean
+  readonly?: boolean
 }
-const props = defineProps<Props>()
+
+const props = withDefaults(defineProps<Props>(), {
+  readonly: false,
+})
 
 const form = ref<InstanceType<typeof BaseForm> | null>(null)
 
 const { $yup } = useNuxtApp()
 const { t } = useI18n()
 const userStore = useUserStore()
+
+const positionFormatter = new Intl.NumberFormat(userStore.locale, {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
 
 onMounted(() => {
   props.cy.on('drag', 'node', onDrag)
@@ -74,14 +96,8 @@ const onDrag = (e: cytoscape.EventObject) => {
   if (props.selectedConcept.id === e.target.data().conceptId) {
     const position = e.target.position()
     form.value?.form?.setValues({
-      xPosition:
-        userStore.locale === 'ru-RU'
-          ? position.x.toFixed(2).replace('.', ',')
-          : position.x.toFixed(2),
-      yPosition:
-        userStore.locale === 'ru-RU'
-          ? position.y.toFixed(2).replace('.', ',')
-          : position.y.toFixed(2),
+      xPosition: positionFormatter.format(position.x),
+      yPosition: positionFormatter.format(position.y),
     })
   }
 }
@@ -134,19 +150,13 @@ const initialValues = computed(() => {
   const initialValues: Record<string, string> = {
     name: props.selectedConcept.name,
     description: props.selectedConcept.description,
-    xPosition:
-      userStore.locale === 'ru-RU'
-        ? props.selectedConcept.xPosition.toFixed(2).replace('.', ',')
-        : props.selectedConcept.xPosition.toFixed(2),
-    yPosition:
-      userStore.locale === 'ru-RU'
-        ? props.selectedConcept.yPosition.toFixed(2).replace('.', ',')
-        : props.selectedConcept.yPosition.toFixed(2),
+    xPosition: positionFormatter.format(props.selectedConcept.xPosition),
+    yPosition: positionFormatter.format(props.selectedConcept.yPosition),
   }
   if (props.model.project.conceptValueType === 'from_zero_to_one') {
-    const value = String(props.selectedConcept.value)
-    initialValues.value =
-      userStore.locale === 'ru-RU' ? value.replace('.', ',') : value
+    initialValues.value = new Intl.NumberFormat(userStore.locale, {
+      maximumFractionDigits: 5,
+    }).format(props.selectedConcept.value!)
   }
   return initialValues
 })

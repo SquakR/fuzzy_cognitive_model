@@ -18,17 +18,20 @@
             :change-connection="changeConnection"
             :delete-connection="deleteConnection"
             :delete-connection-pending="deleteConnectionPending"
+            :readonly="readonly"
           />
         </VWindowItem>
         <VWindowItem v-if="plugins.adjustment.isInstalled" value="adjustment">
           <PluginsControlConnectionsChangeConnectionForm
             :selected-connection="selectedConnection"
             :control-connections-plugin="plugins.controlConnections"
+            :readonly="readonly"
           />
           <VDivider />
           <PluginsConnectionConstraintsChangeConnectionForm
             :selected-connection="selectedConnection"
             :connection-constraints-plugin="plugins.connectionConstraints"
+            :readonly="readonly"
           />
           <VDivider />
         </VWindowItem>
@@ -49,8 +52,12 @@ export interface Props {
   changeConnection: ReturnType<typeof useModelActions>['changeConnection']
   deleteConnection: ReturnType<typeof useModelActions>['deleteConnection']
   deleteConnectionPending: boolean
+  readonly?: boolean
 }
-defineProps<Props>()
+
+withDefaults(defineProps<Props>(), {
+  readonly: false,
+})
 
 const { t } = useI18n()
 

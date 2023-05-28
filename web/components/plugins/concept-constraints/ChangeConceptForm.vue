@@ -7,14 +7,35 @@
     :validation-schema="validationSchema"
     :initial-values="initialValues"
     :on-submit="onSubmit"
+    :readonly="readonly"
     width="468"
     flat
   >
-    <BaseCheckbox :label="t('hasConstraint')" name="hasConstraint" />
-    <BaseTextField :label="t('minValue')" name="minValue" />
-    <BaseCheckbox :label="t('includeMinValue')" name="includeMinValue" />
-    <BaseTextField :label="t('maxValue')" name="maxValue" />
-    <BaseCheckbox :label="t('includeMaxValue')" name="includeMaxValue" />
+    <BaseCheckbox
+      :label="t('hasConstraint')"
+      :readonly="readonly"
+      name="hasConstraint"
+    />
+    <BaseTextField
+      :label="t('minValue')"
+      :readonly="readonly"
+      name="minValue"
+    />
+    <BaseCheckbox
+      :label="t('includeMinValue')"
+      :readonly="readonly"
+      name="includeMinValue"
+    />
+    <BaseTextField
+      :label="t('maxValue')"
+      :readonly="readonly"
+      name="maxValue"
+    />
+    <BaseCheckbox
+      :label="t('includeMaxValue')"
+      :readonly="readonly"
+      name="includeMaxValue"
+    />
   </BaseForm>
 </template>
 
@@ -30,9 +51,12 @@ import {
 export interface Props {
   selectedConcept: ConceptOutType
   conceptConstraintsPlugin: ConceptConstraintsPlugin
+  readonly?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  readonly: false,
+})
 
 interface Values {
   hasConstraint: boolean
@@ -70,21 +94,18 @@ const validationSchema = $yup.object({
   includeMaxValue: $yup.boolean().required(),
 })
 const initialValues = computed<Values>(() => {
-  const minValue = String(
-    props.selectedConcept.pluginsData.conceptConstraints!.minValue
-  )
-  const maxValue = String(
-    props.selectedConcept.pluginsData.conceptConstraints!.maxValue
-  )
+  const formatter = new Intl.NumberFormat(userStore.locale)
   return {
     hasConstraint:
       props.selectedConcept.pluginsData.conceptConstraints!.hasConstraint,
-    minValue:
-      userStore.locale === 'ru-RU' ? minValue.replace('.', ',') : minValue,
+    minValue: formatter.format(
+      props.selectedConcept.pluginsData.conceptConstraints!.minValue
+    ),
     includeMinValue:
       props.selectedConcept.pluginsData.conceptConstraints!.includeMinValue,
-    maxValue:
-      userStore.locale === 'ru-RU' ? maxValue.replace('.', ',') : maxValue,
+    maxValue: formatter.format(
+      props.selectedConcept.pluginsData.conceptConstraints!.maxValue
+    ),
     includeMaxValue:
       props.selectedConcept.pluginsData.conceptConstraints!.includeMaxValue,
   }

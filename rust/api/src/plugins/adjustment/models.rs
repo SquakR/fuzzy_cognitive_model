@@ -68,6 +68,7 @@ pub struct AdjustmentGeneration {
 pub struct AdjustmentChromosome {
     pub id: i32,
     pub adjustment_generation_id: i32,
+    pub number: i32,
     pub fitness: f64,
 }
 

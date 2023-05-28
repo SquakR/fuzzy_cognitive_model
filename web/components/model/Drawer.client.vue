@@ -1,5 +1,5 @@
 <template>
-  <Teleport to=".editor-layout__drawer">
+  <Teleport to=".model-layout__drawer">
     <VExpandXTransition>
       <VCard v-show="isActive" ref="drawerCard" class="drawer-card">
         <ModelChangeConceptDrawerContent
@@ -10,6 +10,7 @@
           :change-concept="changeConcept"
           :delete-concept="deleteConcept"
           :delete-concept-pending="deleteConceptPending"
+          :readonly="readonly"
         />
         <ModelChangeConnectionDrawerContent
           :model="model"
@@ -19,6 +20,7 @@
           :change-connection="changeConnection"
           :delete-connection="deleteConnection"
           :delete-connection-pending="deleteConnectionPending"
+          :readonly="readonly"
         />
       </VCard>
     </VExpandXTransition>
@@ -44,8 +46,12 @@ export interface Props {
   changeConnection: ReturnType<typeof useModelActions>['changeConnection']
   deleteConnection: ReturnType<typeof useModelActions>['deleteConnection']
   deleteConnectionPending: boolean
+  readonly?: boolean
 }
-const props = defineProps<Props>()
+
+const props = withDefaults(defineProps<Props>(), {
+  readonly: false,
+})
 
 const selectedConcept = ref<ConceptOutType | null>(null)
 const selectedConnection = ref<ConnectionOutType | null>(null)

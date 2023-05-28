@@ -6,10 +6,11 @@
     :validation-schema="validationSchema"
     :initial-values="initialValues"
     :on-submit="onSubmit"
+    :readonly="readonly"
     width="468"
     flat
   >
-    <PluginsAdjustmentDynamicModelTypeSelect />
+    <PluginsAdjustmentDynamicModelTypeSelect :readonly="readonly" />
   </BaseForm>
 </template>
 
@@ -26,9 +27,12 @@ import {
 export interface Props {
   selectedConcept: ConceptOutType
   adjustmentPlugin: AdjustmentPlugin
+  readonly: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  readonly: false,
+})
 
 const { $yup } = useNuxtApp()
 const { t } = useI18n()

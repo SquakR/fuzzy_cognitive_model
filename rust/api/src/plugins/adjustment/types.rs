@@ -94,6 +94,8 @@ pub struct AdjustmentGenerationOutType {
 pub struct AdjustmentChromosomeOutType {
     /// Adjustment chromosome identifier
     pub id: i32,
+    /// Adjustment chromosome number
+    pub number: i32,
     /// Adjustment chromosome fitness
     pub fitness: f64,
     /// Adjustment chromosome concept values
@@ -108,6 +110,8 @@ pub struct AdjustmentChromosomeOutType {
 pub struct AdjustmentChromosomeGenerationOutType {
     /// Adjustment chromosome identifier
     pub id: i32,
+    /// Adjustment chromosome number
+    pub number: i32,
     /// Adjustment chromosome fitness
     pub fitness: f64,
     /// Adjustment generation identifier

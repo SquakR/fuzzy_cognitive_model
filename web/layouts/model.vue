@@ -2,42 +2,49 @@
   <VLayout full-height>
     <TheAppBar />
     <VMain>
-      <VContainer class="editor-layout_full-height" fluid>
+      <VContainer class="model-layout_full-height" fluid>
         <NuxtPage />
       </VContainer>
       <TheGlobalMessage />
     </VMain>
-    <div class="editor-layout__drawer"></div>
+    <div class="model-layout__drawer"></div>
   </VLayout>
 </template>
 
 <script setup lang="ts">
 onMounted(() => {
   document.documentElement.classList.add(
-    'editor-layout__html',
-    'editor-layout_full-height'
+    'model-layout__html',
+    'model-layout_full-height'
   )
-  document.body.classList.add('editor-layout_full-height')
-  document.querySelector('#__nuxt')!.classList.add('editor-layout_full-height')
+  document.body.classList.add('model-layout_full-height')
+  document.querySelector('#__nuxt')!.classList.add('model-layout_full-height')
 })
 onUnmounted(() => {
   document.documentElement.classList.remove(
-    'editor-layout__html',
-    'editor-layout_full-height'
+    'model-layout__html',
+    'model-layout_full-height'
   )
-  document.body.classList.remove('editor-layout_full-height')
+  document.body.classList.remove('model-layout_full-height')
   document
     .querySelector('#__nuxt')!
-    .classList.remove('editor-layout_full-height')
+    .classList.remove('model-layout_full-height')
 })
 </script>
 
 <style lang="sass">
-.editor-layout__html
+$grey-lighten-5: #FAFAFA
+
+.model-layout__html
   overflow: hidden
-.editor-layout_full-height
+.model-layout_full-height
   height: 100%
-.editor-layout__drawer
+
+.model__cytoscape-container
+  width: 100%
+  background-color: $grey-lighten-5
+
+.model-layout__drawer
   pointer-events: none
   position: absolute
   top: 64px

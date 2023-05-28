@@ -1,6 +1,6 @@
 <template>
   <PluginsAdjustmentBreadcrumbs :items="bc" />
-  <VCard class="mt-2">
+  <VCard>
     <VCardTitle>{{ t('title') }}</VCardTitle>
     <VCardText>
       <VRow>
@@ -51,49 +51,43 @@ const headers = computed(() => [
   { key: 'fitness', title: t('fitness'), sortable: false },
 ])
 
-const { data: project } = await useGetProject(
-  { key: 'project' },
-  Number(route.params.project_id),
-  { pick: ['name'] }
-)
-const { data: adjustmentRun } = await useGetAdjustmentRun(
-  { key: 'adjustmentRun' },
-  Number(route.params.adjustment_run_id),
-  { pick: ['name'] }
-)
-const { data: adjustmentGeneration } = await useGetAdjustmentGeneration(
-  {
-    key: 'adjustmentGeneration',
-  },
-  Number(route.params.generation_id),
-  { pick: ['number'] }
-)
-
 const page = ref(1)
 const perPage = ref(10)
-const {
-  data: adjustmentChromosomePagination,
-  pending: loading,
-  refresh,
-} = await useGetAdjustmentChromosomes(
-  { key: 'adjustmentChromosomes' },
-  Number(route.params.generation_id),
-  page,
-  perPage
-)
-const { itemsLength, data: adjustmentChromosomesData } = usePagination(
+
+const [
+  { data: project },
+  { data: adjustmentRun },
+  { data: adjustmentGeneration },
+  { data: adjustmentChromosomePagination, pending: loading, refresh },
+] = await Promise.all([
+  useGetProject({ key: 'project' }, Number(route.params.project_id), {
+    pick: ['name'],
+  }),
+  useGetAdjustmentRun(
+    { key: 'adjustmentRun' },
+    Number(route.params.adjustment_run_id),
+    { pick: ['name'] }
+  ),
+  useGetAdjustmentGeneration(
+    {
+      key: 'adjustmentGeneration',
+    },
+    Number(route.params.generation_id),
+    { pick: ['number'] }
+  ),
+  useGetAdjustmentChromosomes(
+    { key: 'adjustmentChromosomes' },
+    Number(route.params.generation_id),
+    page,
+    perPage
+  ),
+])
+
+const { itemsLength, data: adjustmentChromosomes } = usePagination(
   adjustmentChromosomePagination,
   refresh,
   page,
   perPage
-)
-const adjustmentChromosomes = computed(() =>
-  adjustmentChromosomesData.value
-    ? adjustmentChromosomesData.value.map((adjustmentChromosome, index) => ({
-        ...adjustmentChromosome,
-        number: perPage.value * (page.value - 1) + index + 1,
-      }))
-    : []
 )
 
 const bc = computed<BreadcrumbsItem[]>(() => [

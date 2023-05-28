@@ -78,9 +78,9 @@ const generationLink = computed(() => ({
 <i18n locale="en-US" lang="json">
 {
   "data": "Data",
-  "fitness": "Fitness: %{fitness}",
-  "generationNumber": "Generation number: %{generationNumber}",
-  "generationFitness": "Generation fitness: %{generationFitness}",
+  "fitness": "Fitness: {fitness}",
+  "generationNumber": "Generation number: {generationNumber}",
+  "generationFitness": "Generation fitness: {generationFitness}",
   "generation": "Generation"
 }
 </i18n>
@@ -88,9 +88,9 @@ const generationLink = computed(() => ({
 <i18n locale="ru-RU" lang="json">
 {
   "data": "Данные",
-  "fitness": "Приспособленность: %{fitness}",
-  "generationNumber": "Номер поколения: %{generationNumber}",
-  "generationFitness": "Приспособленность поколения: %{generationFitness}",
+  "fitness": "Приспособленность: {fitness}",
+  "generationNumber": "Номер поколения: {generationNumber}",
+  "generationFitness": "Приспособленность поколения: {generationFitness}",
   "generation": "Поколение"
 }
 </i18n>

@@ -86,7 +86,9 @@ const initialValues = computed(() => {
     yPosition: '0',
   }
   if (props.model.project.conceptValueType === 'from_zero_to_one') {
-    initialValues.value = userStore.locale === 'ru-RU' ? '0,0' : '0.0'
+    initialValues.value = new Intl.NumberFormat(userStore.locale, {
+      minimumFractionDigits: 1,
+    }).format(0)
   }
   return initialValues
 })

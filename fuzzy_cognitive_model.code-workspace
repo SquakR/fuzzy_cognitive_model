@@ -80,6 +80,7 @@
       "pinia",
       "reborrow",
       "regexes",
+      "Roboto",
       "schemars",
       "selectify",
       "SUBSTR",
@@ -89,6 +90,7 @@
       "ungrabify",
       "unplugin",
       "unselectify",
+      "valign",
       "vuetify",
       "vueuse",
       "yansi"

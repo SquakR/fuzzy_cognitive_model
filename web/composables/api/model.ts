@@ -27,6 +27,17 @@ export const useGetModel = (
   })
 }
 
+export const useGetModelCopy = (
+  opts: LocalFetchOptions,
+  modelCopyId: number,
+  fetchOptions?: UseFetchOptions<ModelOutType>
+) => {
+  return useLocalFetch<ModelOutType>(`/models/${modelCopyId}`, opts, {
+    ...fetchOptions,
+    method: 'GET',
+  })
+}
+
 export const useCreateConcept = (opts: LocalFetchFuncOptions) => {
   const { execute: fetch, ...rest } = useLocalFetchFunc<CreateConceptType>(
     opts,

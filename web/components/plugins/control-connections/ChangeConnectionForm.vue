@@ -6,10 +6,15 @@
     :validation-schema="validationSchema"
     :initial-values="initialValues"
     :on-submit="onSubmit"
+    :readonly="readonly"
     width="468"
     flat
   >
-    <BaseCheckbox :label="t('isControl')" name="isControl" />
+    <BaseCheckbox
+      :label="t('isControl')"
+      :readonly="readonly"
+      name="isControl"
+    />
   </BaseForm>
 </template>
 
@@ -25,9 +30,12 @@ import {
 export interface Props {
   selectedConnection: ConnectionOutType
   controlConnectionsPlugin: ControlConnectionsPlugin
+  readonly?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  readonly: false,
+})
 
 const { $yup } = useNuxtApp()
 const { t } = useI18n()

@@ -1,8 +1,7 @@
 <template>
-  <VProgressLinear v-if="loading" class="mt-2" color="primary" indeterminate />
-  <VCard v-else height="100%">
+  <VCard height="100%">
     <VCardTitle>{{ model!.project.name }}</VCardTitle>
-    <VCardText class="d-flex flex-column model-id__model-editor-container">
+    <VCardText class="d-flex flex-column project-id__card-text">
       <ModelEditor :model="model!"></ModelEditor>
     </VCardText>
   </VCard>
@@ -10,18 +9,18 @@
 
 <script setup lang="ts">
 definePageMeta({
-  layout: 'editor',
+  layout: 'model',
   middleware: 'auth',
 })
 const route = useRoute()
 
-const { data: model, pending: loading } = await useGetModel(
+const { data: model } = await useGetModel(
   { key: 'model' },
   Number(route.params.id)
 )
 </script>
 
 <style lang="sass">
-.model-id__model-editor-container
+.project-id__card-text
   height: calc(100% - 48px)
 </style>

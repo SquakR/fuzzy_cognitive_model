@@ -293,6 +293,21 @@ export const useGetAdjustmentGenerations = (
   )
 }
 
+export const useGetAdjustmentChromosome = (
+  opts: LocalFetchOptions,
+  adjustmentChromosomeId: number,
+  fetchOptions?: UseFetchOptions<AdjustmentChromosomeOutType>
+) => {
+  return useLocalFetch<AdjustmentChromosomeOutType>(
+    `/adjustment_chromosomes/${adjustmentChromosomeId}`,
+    opts,
+    {
+      ...fetchOptions,
+      method: 'GET',
+    }
+  )
+}
+
 export const useGetAdjustmentChromosomes = (
   opts: LocalFetchOptions,
   adjustmentGenerationId: number,

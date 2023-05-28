@@ -5,11 +5,16 @@
     :validation-schema="validationSchema"
     :initial-values="initialValues"
     :on-submit="onSubmit"
+    :readonly="readonly"
     width="468"
     flat
   >
-    <BaseTextarea :label="t('description')" name="description" />
-    <BaseTextField :label="t('value')" name="value" />
+    <BaseTextarea
+      :label="t('description')"
+      :readonly="readonly"
+      name="description"
+    />
+    <BaseTextField :label="t('value')" :readonly="readonly" name="value" />
     <BaseTextField :label="t('source')" name="source" readonly />
     <BaseTextField :label="t('target')" name="target" readonly />
     <template #actions="{ loading, buttonText }">
@@ -52,9 +57,12 @@ export interface Props {
   changeConnection: ReturnType<typeof useModelActions>['changeConnection']
   deleteConnection: ReturnType<typeof useModelActions>['deleteConnection']
   deleteConnectionPending: boolean
+  readonly?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  readonly: false,
+})
 
 interface Values {
   description: string
@@ -127,10 +135,9 @@ const initialValues = computed<Values>(() => {
   if (props.model.project.connectionValueType === 'symbolic') {
     initialValues.value = props.selectedConnection.value === 0 ? '-' : '+'
   } else {
-    initialValues.value =
-      userStore.locale === 'ru-RU'
-        ? String(props.selectedConnection.value).replace('.', ',')
-        : String(props.selectedConnection.value)
+    initialValues.value = new Intl.NumberFormat(userStore.locale, {
+      maximumFractionDigits: 5,
+    }).format(props.selectedConnection.value)
   }
   return initialValues
 })

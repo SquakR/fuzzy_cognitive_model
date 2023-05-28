@@ -27,6 +27,7 @@ CREATE TABLE adjustment_chromosomes (
   id SERIAL PRIMARY KEY,
   adjustment_generation_id INTEGER NOT NULL,
   FOREIGN KEY (adjustment_generation_id) REFERENCES adjustment_generations(id) ON DELETE CASCADE,
+  number INTEGER NOT NULL,
   fitness DOUBLE PRECISION NOT NULL
 );
 CREATE TABLE adjustment_concept_values (

@@ -65,11 +65,12 @@ impl SaveResult<(), AppError> for SaveResultServer {
                         adjustment_generations::fitness.eq(generation.fitness),
                     ))
                     .get_result::<AdjustmentGeneration>(conn)?;
-                for chromosome in &mut generation.chromosomes {
+                for (i, chromosome) in generation.chromosomes.iter_mut().enumerate() {
                     let adjustment_chromosome = diesel::insert_into(adjustment_chromosomes::table)
                         .values((
                             adjustment_chromosomes::adjustment_generation_id
                                 .eq(adjustment_generation.id),
+                            adjustment_chromosomes::number.eq(i as i32 + 1),
                             adjustment_chromosomes::fitness.eq(chromosome.fitness),
                         ))
                         .get_result::<AdjustmentChromosome>(conn)?;

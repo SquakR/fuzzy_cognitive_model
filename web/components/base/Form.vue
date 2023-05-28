@@ -35,6 +35,7 @@
       </VCardText>
       <VCardActions>
         <slot
+          v-if="!readonly"
           name="actions"
           :disabled="disabled"
           :loading="isSubmitting"
@@ -66,6 +67,7 @@ export interface Props {
   initialValues: Record<string, any>
   onSubmit: SubmissionHandler<any>
   disabled?: boolean
+  readonly?: boolean
   title?: string
   subtitle?: string
   width?: string | number
@@ -76,6 +78,7 @@ export interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   disabled: false,
+  readonly: false,
   title: undefined,
   subtitle: undefined,
   width: 500,

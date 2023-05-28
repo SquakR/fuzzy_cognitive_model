@@ -3,6 +3,7 @@
     class="plugins-adjustment-dynamic-model-type-select"
     :items="dynamicModelTypeItems"
     :label="t('dynamicModelType')"
+    :readonly="readonly"
     name="dynamicModelType"
     clearable
   >
@@ -19,6 +20,14 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+
+export interface Props {
+  readonly?: boolean
+}
+
+withDefaults(defineProps<Props>(), {
+  readonly: false,
+})
 
 const { t } = useI18n()
 
