@@ -14,9 +14,6 @@
             <VListItemTitle>{{ t('error', { error }) }}</VListItemTitle>
           </VListItem>
           <VListItem>
-            <VListItemTitle>{{ t('fitness', { fitness }) }}</VListItemTitle>
-          </VListItem>
-          <VListItem>
             <VListItemTitle>{{
               t('generationNumber', { generationNumber })
             }}</VListItemTitle>
@@ -24,11 +21,6 @@
           <VListItem>
             <VListItemTitle>{{
               t('generationError', { generationError })
-            }}</VListItemTitle>
-          </VListItem>
-          <VListItem>
-            <VListItemTitle>{{
-              t('generationFitness', { generationFitness })
             }}</VListItemTitle>
           </VListItem>
           <VListItem>
@@ -66,17 +58,11 @@ const formatter = new Intl.NumberFormat(userStore.locale, {
 const error = computed(() =>
   formatter.format(props.adjustmentRun.resultChromosome!.error)
 )
-const fitness = computed(() =>
-  formatter.format(props.adjustmentRun.resultChromosome!.fitness)
-)
 const generationNumber = computed(
   () => props.adjustmentRun.resultChromosome!.generationNumber
 )
 const generationError = computed(() =>
   formatter.format(props.adjustmentRun.resultChromosome!.generationError)
-)
-const generationFitness = computed(() =>
-  formatter.format(props.adjustmentRun.resultChromosome!.generationFitness)
 )
 const generationLink = computed(() => ({
   name: 'adjustment-project_id-adjustment_run_id-generation_id',
@@ -92,10 +78,8 @@ const generationLink = computed(() => ({
 {
   "data": "Data",
   "error": "Error: {error}",
-  "fitness": "Fitness: {fitness}",
   "generationNumber": "Generation number: {generationNumber}",
   "generationError": "Generation error: {generationError}",
-  "generationFitness": "Generation fitness: {generationFitness}",
   "generation": "Generation"
 }
 </i18n>
@@ -104,10 +88,8 @@ const generationLink = computed(() => ({
 {
   "data": "Данные",
   "error": "Ошибка: {error}",
-  "fitness": "Приспособленность: {fitness}",
   "generationNumber": "Номер поколения: {generationNumber}",
   "generationError": "Ошибка поколения: {generationError}",
-  "generationFitness": "Приспособленность поколения: {generationFitness}",
   "generation": "Поколение"
 }
 </i18n>

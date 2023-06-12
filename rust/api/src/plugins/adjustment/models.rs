@@ -61,7 +61,6 @@ pub struct AdjustmentGeneration {
     pub adjustment_run_id: i32,
     pub number: i32,
     pub error: f64,
-    pub fitness: f64,
 }
 
 #[derive(Queryable, Identifiable)]
@@ -71,7 +70,6 @@ pub struct AdjustmentChromosome {
     pub adjustment_generation_id: i32,
     pub number: i32,
     pub error: f64,
-    pub fitness: f64,
 }
 
 #[derive(Queryable, Identifiable)]

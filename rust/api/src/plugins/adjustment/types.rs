@@ -86,8 +86,6 @@ pub struct AdjustmentGenerationOutType {
     pub number: i32,
     /// Adjustment generation average error
     pub error: f64,
-    /// Adjustment generation average fitness
-    pub fitness: f64,
 }
 
 /// Type of adjustment chromosome
@@ -100,8 +98,6 @@ pub struct AdjustmentChromosomeOutType {
     pub number: i32,
     /// Adjustment chromosome error
     pub error: f64,
-    /// Adjustment chromosome fitness
-    pub fitness: f64,
     /// Adjustment chromosome concept values
     pub concept_values: Vec<AdjustmentConceptValueOutType>,
     /// Adjustment chromosome connection values
@@ -118,16 +114,12 @@ pub struct AdjustmentChromosomeGenerationOutType {
     pub number: i32,
     /// Adjustment chromosome error
     pub error: f64,
-    /// Adjustment chromosome fitness
-    pub fitness: f64,
     /// Adjustment generation identifier
     pub generation_id: i32,
     /// Adjustment generation number
     pub generation_number: i32,
     /// Adjustment generation average error
     pub generation_error: f64,
-    /// Adjustment generation average fitness
-    pub generation_fitness: f64,
     /// Adjustment chromosome concept values
     pub concept_values: Vec<AdjustmentConceptValueOutType>,
     /// Adjustment chromosome connection values

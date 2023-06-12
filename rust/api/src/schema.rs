@@ -24,7 +24,6 @@ diesel::table! {
         adjustment_generation_id -> Int4,
         number -> Int4,
         error -> Float8,
-        fitness -> Float8,
     }
 }
 
@@ -52,7 +51,6 @@ diesel::table! {
         adjustment_run_id -> Int4,
         number -> Int4,
         error -> Float8,
-        fitness -> Float8,
     }
 }
 

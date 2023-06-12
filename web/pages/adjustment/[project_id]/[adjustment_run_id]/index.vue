@@ -27,9 +27,6 @@
         <template #item.error="{ item }">
           {{ formatGenerationError(item.raw) }}
         </template>
-        <template #item.fitness="{ item }">
-          {{ formatGenerationFitness(item.raw) }}
-        </template>
       </VDataTableServer>
     </VCardText>
   </VCard>
@@ -52,7 +49,6 @@ const userStore = useUserStore()
 const headers = computed(() => [
   { key: 'number', title: t('number'), sortable: false },
   { key: 'error', title: t('error'), sortable: false },
-  { key: 'fitness', title: t('fitness'), sortable: false },
 ])
 
 const page = ref(1)
@@ -119,19 +115,12 @@ const getChromosomesLink = (
   }
 }
 
-const formatter = new Intl.NumberFormat(userStore.locale, {
-  minimumFractionDigits: 5,
-})
-
 const formatGenerationError = (
   adjustmentGeneration: AdjustmentGenerationOutType
 ) => {
-  return formatter.format(adjustmentGeneration.error)
-}
-const formatGenerationFitness = (
-  adjustmentGeneration: AdjustmentGenerationOutType
-) => {
-  return formatter.format(adjustmentGeneration.fitness)
+  return new Intl.NumberFormat(userStore.locale, {
+    minimumFractionDigits: 5,
+  }).format(adjustmentGeneration.error)
 }
 </script>
 
@@ -139,8 +128,7 @@ const formatGenerationFitness = (
 {
   "title": "Generations",
   "number": "Number",
-  "error": "Error",
-  "fitness": "Fitness"
+  "error": "Error"
 }
 </i18n>
 
@@ -148,7 +136,6 @@ const formatGenerationFitness = (
 {
   "title": "Поколения",
   "number": "Номер",
-  "error": "Ошибка",
-  "fitness": "Приспособленность"
+  "error": "Ошибка"
 }
 </i18n>
