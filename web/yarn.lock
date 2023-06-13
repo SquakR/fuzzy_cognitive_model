@@ -4516,9 +4516,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fuzzy_cognitive_model@workspace:.":
+"fuzzy-cognitive-model-wasm@portal:.\\..\\rust\\wasm\\\\pkg::locator=fuzzy-cognitive-model%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "fuzzy_cognitive_model@workspace:."
+  resolution: "fuzzy-cognitive-model-wasm@portal:./../rust/wasm//pkg::locator=fuzzy-cognitive-model%40workspace%3A."
+  languageName: node
+  linkType: soft
+
+"fuzzy-cognitive-model@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "fuzzy-cognitive-model@workspace:."
   dependencies:
     "@commitlint/cli": ^17.6.3
     "@commitlint/config-conventional": ^17.6.3
@@ -4542,6 +4548,7 @@ __metadata:
     eslint-plugin-nuxt: ^4.0.0
     eslint-plugin-prettier: ^4.2.1
     eslint-plugin-vue: ^9.11.0
+    fuzzy-cognitive-model-wasm: "portal:.\\..\\rust\\wasm\\\\pkg"
     husky: ^8.0.3
     lint-staged: ^13.2.2
     mathjax-full: ^3.2.2
@@ -4550,6 +4557,7 @@ __metadata:
     rxjs: ^7.8.1
     sass: ^1.62.1
     typescript: ^5.0.4
+    vite-plugin-wasm: ^3.2.2
     vue-i18n: ^9.2.2
     vuetify: ^3.2.2
     yup: ^1.1.1
@@ -9361,6 +9369,15 @@ __metadata:
     vue-tsc:
       optional: true
   checksum: 9590f7efb968a294bf575be0c106a4d9d4000d86a6a5870debb52a5a38ef25334f7e2fb65d21a522a6bca59e7767709ba752746c72aa28ff53d0f1f32fe17d50
+  languageName: node
+  linkType: hard
+
+"vite-plugin-wasm@npm:^3.2.2":
+  version: 3.2.2
+  resolution: "vite-plugin-wasm@npm:3.2.2"
+  peerDependencies:
+    vite: ^2 || ^3 || ^4
+  checksum: ed9b56b3cd47e6376c21592f4d24f818334d5796226f6c1dfca89a4f744d69a34cb85dd5e06f164a2670827113ccfa5f03d0361e51210012706123374b0f8277
   languageName: node
   linkType: hard
 

@@ -741,6 +741,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuzzy-cognitive-model-wasm"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "console_error_panic_hook",
+ "fuzzy_cognitive_model_common",
+ "getrandom",
+ "js-sys",
+ "serde",
+ "serde-wasm-bindgen",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "wasm-bindgen-test",
+ "web-sys",
+ "wee_alloc",
+]
+
+[[package]]
 name = "fuzzy_cognitive_model_api"
 version = "0.1.0"
 dependencies = [
@@ -783,24 +801,6 @@ dependencies = [
  "ordered-float",
  "rand",
  "serde",
-]
-
-[[package]]
-name = "fuzzy_cognitive_model_wasm"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "console_error_panic_hook",
- "fuzzy_cognitive_model_common",
- "getrandom",
- "js-sys",
- "serde",
- "serde-wasm-bindgen",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-bindgen-test",
- "web-sys",
- "wee_alloc",
 ]
 
 [[package]]

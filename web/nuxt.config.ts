@@ -1,5 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n'
+import wasm from 'vite-plugin-wasm'
 
 export default defineNuxtConfig({
   css: [
@@ -27,7 +28,7 @@ export default defineNuxtConfig({
     transpile: ['vuetify', 'rxjs'],
   },
   vite: {
-    plugins: [VueI18nPlugin.vite({})],
+    plugins: [VueI18nPlugin.vite({}), wasm()],
   },
   runtimeConfig: {
     public: {

@@ -13,6 +13,7 @@ pub trait SaveResult<T, E> {
 }
 
 #[derive(Clone, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum DynamicModel {
     DeltaDelta,
     DeltaValue,
@@ -21,6 +22,7 @@ pub enum DynamicModel {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StopCondition {
     pub max_generations: i32,
     pub max_without_improvements: i32,
@@ -28,6 +30,7 @@ pub struct StopCondition {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AdjustmentInput {
     pub name: String,
     pub description: String,
@@ -39,6 +42,7 @@ pub struct AdjustmentInput {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AdjustmentModel {
     pub adjustment_input: AdjustmentInput,
     pub concepts_map: HashMap<i32, Arc<Concept>>,
@@ -54,6 +58,7 @@ pub struct AdjustmentModel {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Concept {
     pub id: i32,
     pub value: f64,
@@ -65,6 +70,7 @@ pub struct Concept {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Connection {
     pub id: i32,
     pub value: f64,
@@ -75,6 +81,7 @@ pub struct Connection {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Constraint {
     pub min_value: f64,
     pub include_min_value: bool,
@@ -83,6 +90,7 @@ pub struct Constraint {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Chromosome {
     pub id: Option<i32>,
     pub concepts: HashMap<i32, f64>,
@@ -91,6 +99,7 @@ pub struct Chromosome {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Generation {
     pub chromosomes: Vec<Chromosome>,
     pub error: f64,
@@ -196,64 +205,21 @@ impl AdjustmentModel {
         concepts: &HashMap<i32, f64>,
         connections: &HashMap<i32, f64>,
     ) -> f64 {
-        let mut previous_state = self.get_initial_state(concepts);
-        let mut delta_state = previous_state.clone();
-        for _ in 0..self.adjustment_input.max_model_time {
-            let mut current_state = previous_state.clone();
-            for concept in self.concepts_map.values() {
-                let dynamic_model_type = concept
-                    .dynamic_model
-                    .as_ref()
-                    .unwrap_or(&self.adjustment_input.dynamic_model);
-                let to_connections = self
-                    .connections_map
-                    .values()
-                    .filter(|connection| connection.target_id == concept.id)
-                    .map(|connection| match connections.get(&connection.id) {
-                        Some(value) => (connection.source_id, *value),
-                        None => (connection.source_id, connection.value),
-                    });
-                if to_connections.clone().count() != 0 {
-                    let current_value = current_state.get_mut(&concept.id).unwrap();
-                    match dynamic_model_type {
-                        DynamicModel::DeltaDelta => {
-                            *current_value += Self::normalize_value(
-                                to_connections
-                                    .map(|(source_id, value)| value * delta_state[&source_id])
-                                    .sum::<f64>(),
-                            );
-                        }
-                        DynamicModel::DeltaValue => {
-                            *current_value += Self::normalize_value(
-                                to_connections
-                                    .map(|(source_id, value)| value * previous_state[&source_id])
-                                    .sum::<f64>(),
-                            );
-                        }
-                        DynamicModel::ValueDelta => {
-                            *current_value = Self::normalize_value(
-                                to_connections
-                                    .map(|(source_id, value)| value * delta_state[&source_id])
-                                    .sum::<f64>(),
-                            );
-                        }
-                        DynamicModel::ValueValue => {
-                            *current_value = Self::normalize_value(
-                                to_connections
-                                    .map(|(source_id, value)| value * previous_state[&source_id])
-                                    .sum::<f64>(),
-                            );
-                        }
-                    };
-                }
-            }
-            delta_state = Self::get_delta_state(&current_state, &previous_state);
-            previous_state = current_state;
+        let concepts = self.get_initial_state(concepts);
+        let time_simulation = TimeSimulation::new(
+            self.adjustment_input.max_model_time,
+            self.concepts_map.clone(),
+            self.connections_map.clone(),
+            self.target_concepts.clone(),
+            self.adjustment_input.dynamic_model.clone(),
+            concepts,
+            connections.clone(),
+        );
+        let mut error = time_simulation.get_error();
+        for data in time_simulation {
+            error = data.error;
         }
-        self.target_concepts
-            .iter()
-            .map(|concept| (previous_state[&concept.id] - concept.target_value.unwrap()).powf(2.0))
-            .sum::<f64>()
+        error
     }
     fn get_generation_error(chromosomes: &[Chromosome]) -> f64 {
         chromosomes
@@ -354,16 +320,6 @@ impl AdjustmentModel {
             error,
         }
     }
-    fn get_initial_state(&self, concepts: &HashMap<i32, f64>) -> State {
-        let mut state = concepts.clone();
-        for concept in &self.regular_concepts {
-            state.insert(concept.id, concept.value);
-        }
-        for concept in &self.target_concepts {
-            state.insert(concept.id, concept.value);
-        }
-        state
-    }
     fn create_child_chromosome(
         &self,
         parent1: &Chromosome,
@@ -424,8 +380,130 @@ impl AdjustmentModel {
             .min_by_key(|chromosome| OrderedFloat(chromosome.error))
             .unwrap()
     }
-    fn get_delta_state(state1: &State, state2: &State) -> State {
-        State::from_iter(state1.iter().map(|(k, v)| (*k, v - state2[k])))
+    fn get_initial_state(&self, concepts: &HashMap<i32, f64>) -> State {
+        let mut state = concepts.clone();
+        for concept in &self.regular_concepts {
+            state.insert(concept.id, concept.value);
+        }
+        for concept in &self.target_concepts {
+            state.insert(concept.id, concept.value);
+        }
+        state
+    }
+}
+
+pub struct TimeSimulation {
+    max_model_time: i32,
+    current_time: i32,
+    error: f64,
+    concepts_map: HashMap<i32, Arc<Concept>>,
+    connections_map: HashMap<i32, Arc<Connection>>,
+    target_concepts: Vec<Arc<Concept>>,
+    dynamic_model: DynamicModel,
+    previous_state: HashMap<i32, f64>,
+    delta_state: HashMap<i32, f64>,
+    connections: HashMap<i32, f64>,
+}
+
+#[derive(Serialize)]
+pub struct TimeSimulationData {
+    pub time: i32,
+    pub error: f64,
+    pub state: HashMap<i32, f64>,
+}
+
+impl TimeSimulation {
+    pub fn new(
+        max_model_time: i32,
+        concepts_map: HashMap<i32, Arc<Concept>>,
+        connections_map: HashMap<i32, Arc<Connection>>,
+        target_concepts: Vec<Arc<Concept>>,
+        dynamic_model: DynamicModel,
+        concepts: HashMap<i32, f64>,
+        connections: HashMap<i32, f64>,
+    ) -> Self {
+        let previous_state = concepts;
+        let delta_state = previous_state.clone();
+        Self {
+            max_model_time,
+            current_time: 1,
+            concepts_map,
+            error: Self::calculate_error(&previous_state, &target_concepts),
+            connections_map,
+            target_concepts,
+            dynamic_model,
+            previous_state,
+            delta_state,
+            connections,
+        }
+    }
+    pub fn get_max_model_time(&self) -> i32 {
+        self.max_model_time
+    }
+    pub fn get_current_time(&self) -> i32 {
+        self.current_time
+    }
+    pub fn get_error(&self) -> f64 {
+        self.error
+    }
+    pub fn get_state(&self) -> HashMap<i32, f64> {
+        self.previous_state.clone()
+    }
+    fn execute_next_value(
+        &self,
+        current_state: &mut HashMap<i32, f64>,
+        concept_id: i32,
+        dynamic_model: &DynamicModel,
+        to_connections: &[(i32, f64)],
+    ) -> () {
+        let current_value = current_state.get_mut(&concept_id).unwrap();
+        match dynamic_model {
+            DynamicModel::DeltaDelta => {
+                *current_value += Self::normalize_value(
+                    to_connections
+                        .iter()
+                        .map(|(source_id, value)| value * self.delta_state[&source_id])
+                        .sum::<f64>(),
+                );
+            }
+            DynamicModel::DeltaValue => {
+                *current_value += Self::normalize_value(
+                    to_connections
+                        .iter()
+                        .map(|(source_id, value)| value * self.previous_state[&source_id])
+                        .sum::<f64>(),
+                );
+            }
+            DynamicModel::ValueDelta => {
+                *current_value = Self::normalize_value(
+                    to_connections
+                        .iter()
+                        .map(|(source_id, value)| value * self.delta_state[&source_id])
+                        .sum::<f64>(),
+                );
+            }
+            DynamicModel::ValueValue => {
+                *current_value = Self::normalize_value(
+                    to_connections
+                        .iter()
+                        .map(|(source_id, value)| value * self.previous_state[&source_id])
+                        .sum::<f64>(),
+                );
+            }
+        };
+    }
+    fn calculate_delta_state(&self, current_state: &State) -> State {
+        State::from_iter(
+            current_state
+                .iter()
+                .map(|(k, v)| (*k, v - self.previous_state[k])),
+        )
+    }
+    fn calculate_error(state: &HashMap<i32, f64>, target_concepts: &[Arc<Concept>]) -> f64 {
+        target_concepts
+            .iter()
+            .map(|concept| (state[&concept.id] - concept.target_value.unwrap()).powf(2.0))
+            .sum::<f64>()
     }
     fn normalize_value(value: f64) -> f64 {
         if value > 1.0 {
@@ -435,6 +513,53 @@ impl AdjustmentModel {
             return 0.0;
         }
         value
+    }
+}
+
+impl Iterator for TimeSimulation {
+    type Item = TimeSimulationData;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_time > self.max_model_time {
+            panic!("The current time must be less or equal to the max model time");
+        }
+        let mut current_state = self.previous_state.clone();
+        for concept in self.concepts_map.values() {
+            let dynamic_model = concept
+                .dynamic_model
+                .as_ref()
+                .unwrap_or(&self.dynamic_model);
+            let to_connections = self
+                .connections_map
+                .values()
+                .filter(|connection| connection.target_id == concept.id)
+                .map(|connection| match self.connections.get(&connection.id) {
+                    Some(value) => (connection.source_id, *value),
+                    None => (connection.source_id, connection.value),
+                })
+                .collect::<Vec<_>>();
+            if to_connections.len() == 0 {
+                continue;
+            }
+            self.execute_next_value(
+                &mut current_state,
+                concept.id,
+                dynamic_model,
+                &to_connections,
+            )
+        }
+        self.delta_state = self.calculate_delta_state(&current_state);
+        self.previous_state = current_state;
+        self.error = Self::calculate_error(&self.previous_state, &self.target_concepts);
+        self.current_time += 1;
+        if self.current_time <= self.max_model_time {
+            Some(TimeSimulationData {
+                time: self.current_time,
+                error: self.error,
+                state: self.previous_state.clone(),
+            })
+        } else {
+            None
+        }
     }
 }
 

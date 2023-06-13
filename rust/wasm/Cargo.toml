@@ -1,5 +1,5 @@
 [package]
-name = "fuzzy_cognitive_model_wasm"
+name = "fuzzy-cognitive-model-wasm"
 description = """
 WebAssembly application for structural and parametric adjustment of fuzzy cognitive models based on genetic algorithms.
 """

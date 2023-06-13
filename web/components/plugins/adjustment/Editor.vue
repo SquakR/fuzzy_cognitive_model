@@ -19,6 +19,7 @@
 </template>
 
 <script setup lang="ts">
+import { useUserStore } from '~/store'
 import { EditorMode, ModelOutType } from '~/types'
 
 export interface Props {
@@ -27,9 +28,26 @@ export interface Props {
 
 const props = defineProps<Props>()
 
+const userStore = useUserStore()
+
 const { container, cy, plugins } = useModel(toRef(props, 'model'))
 
 const mode = ref<EditorMode>('change')
+
+watch(
+  () => props.model.concepts,
+  (newValue) => {
+    for (const concept of newValue) {
+      setConceptDataWithPosition(
+        cy.value!,
+        props.model,
+        concept,
+        userStore.locale
+      )
+    }
+  },
+  { deep: true }
+)
 
 const {
   changeConcept,

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use fuzzy_cognitive_model_common::adjustment::{
-    AdjustmentModel, Chromosome, Generation, SaveResult,
+    AdjustmentModel, Chromosome, Generation, SaveResult, TimeSimulation,
 };
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
@@ -65,22 +65,65 @@ impl AdjustmentExecutor {
                 .unwrap(),
         }
     }
-    #[wasm_bindgen]
     pub fn start(&mut self) -> () {
         self.adjustment_model.start();
     }
-    #[wasm_bindgen]
     pub async fn next(&mut self) -> Result<JsValue, JsValue> {
         match self.adjustment_model.next(&mut self.save_result).await {
             Ok(run_next) => Ok(JsValue::from_bool(run_next)),
             Err(error) => Err(error),
         }
     }
-    #[wasm_bindgen]
     pub async fn finish(&mut self) -> Result<JsValue, JsValue> {
         match self.adjustment_model.finish(&mut self.save_result).await {
             Ok(chromosome) => Ok(serde_wasm_bindgen::to_value(&chromosome).unwrap()),
             Err(error) => Err(error),
         }
+    }
+}
+
+#[wasm_bindgen]
+pub struct TimeSimulationExecutor {
+    time_simulation: TimeSimulation,
+}
+
+#[wasm_bindgen]
+impl TimeSimulationExecutor {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        max_model_time: JsValue,
+        concepts_map: JsValue,
+        connections_map: JsValue,
+        target_concepts: JsValue,
+        dynamic_model: JsValue,
+        concepts: JsValue,
+        connections: JsValue,
+    ) -> Self {
+        Self {
+            time_simulation: TimeSimulation::new(
+                serde_wasm_bindgen::from_value(max_model_time).unwrap(),
+                serde_wasm_bindgen::from_value(concepts_map).unwrap(),
+                serde_wasm_bindgen::from_value(connections_map).unwrap(),
+                serde_wasm_bindgen::from_value(target_concepts).unwrap(),
+                serde_wasm_bindgen::from_value(dynamic_model).unwrap(),
+                serde_wasm_bindgen::from_value(concepts).unwrap(),
+                serde_wasm_bindgen::from_value(connections).unwrap(),
+            ),
+        }
+    }
+    pub fn get_max_model_time(&self) -> i32 {
+        self.time_simulation.get_max_model_time()
+    }
+    pub fn get_current_time(&self) -> i32 {
+        self.time_simulation.get_current_time()
+    }
+    pub fn get_error(&self) -> f64 {
+        self.time_simulation.get_error()
+    }
+    pub fn get_state(&self) -> JsValue {
+        serde_wasm_bindgen::to_value(&self.time_simulation.get_state()).unwrap()
+    }
+    pub fn next(&mut self) -> JsValue {
+        serde_wasm_bindgen::to_value(&self.time_simulation.next()).unwrap()
     }
 }

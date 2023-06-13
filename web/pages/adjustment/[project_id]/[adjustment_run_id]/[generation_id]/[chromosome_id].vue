@@ -1,9 +1,14 @@
 <template>
   <PluginsAdjustmentBreadcrumbs :items="bc" />
   <VCard height="calc(100% - 40px)">
-    <VCardTitle class="d-flex">
+    <VCardTitle class="d-flex align-center">
       {{ t('title', { error }) }}
       <VSpacer />
+      <PluginsAdjustmentSimulationIteration
+        v-model="iteration"
+        class="mr-2"
+        :max-model-time="adjustmentRun!.maxModelTime"
+      />
       <PluginsAdjustmentModelButton
         :project-id="Number($route.params.project_id)"
       />
@@ -15,9 +20,10 @@
 </template>
 
 <script setup lang="ts">
+import { TimeSimulationExecutor } from 'fuzzy-cognitive-model-wasm'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '~/store'
-import { BreadcrumbsItem } from '~/types'
+import { BreadcrumbsItem, Concept, Connection } from '~/types'
 
 definePageMeta({
   layout: 'model',
@@ -40,7 +46,7 @@ const [
   useGetAdjustmentRun(
     { key: 'adjustmentRun' },
     Number(route.params.adjustment_run_id),
-    { pick: ['name', 'modelCopyId'] }
+    { pick: ['name', 'modelCopyId', 'maxModelTime', 'dynamicModelType'] }
   ),
   useGetAdjustmentGeneration(
     {
@@ -61,9 +67,9 @@ const { data: modelData } = await useGetModelCopy(
   { key: 'modelCopy' },
   adjustmentRun.value!.modelCopyId
 )
-const model = computed(() => ({
-  project: { ...modelData.value!.project },
-  concepts: modelData.value!.concepts.map((concept) => {
+
+const getInitialConcepts = () => {
+  return modelData.value!.concepts.map((concept) => {
     const newConcept = { ...concept }
     const conceptValue = adjustmentChromosome.value!.conceptValues.find(
       (conceptValue) => conceptValue.conceptId === concept.id
@@ -72,7 +78,12 @@ const model = computed(() => ({
       newConcept.value = conceptValue.value
     }
     return newConcept
-  }),
+  })
+}
+
+const model = ref({
+  project: { ...modelData.value!.project },
+  concepts: getInitialConcepts(),
   connections: modelData.value!.connections.map((connection) => {
     const newConnection = { ...connection }
     const connectionValue = adjustmentChromosome.value!.connectionValues.find(
@@ -83,7 +94,82 @@ const model = computed(() => ({
     }
     return newConnection
   }),
-}))
+})
+
+const iteration = ref(0)
+onMounted(() => {
+  watch(iteration, (newValue) => {
+    if (newValue === 0) {
+      model.value.concepts = getInitialConcepts()
+      return
+    }
+
+    const concepts = modelData.value!.concepts.map<Concept>((concept) => {
+      const conceptValue = adjustmentChromosome.value!.conceptValues.find(
+        (conceptValue) => conceptValue.conceptId === concept.id
+      )
+      return {
+        id: concept.id,
+        value: conceptValue?.value || concept.value!,
+        isControl: concept.pluginsData.controlConcepts!.isControl,
+        isTarget: concept.pluginsData.targetConcepts!.isTarget,
+        targetValue: concept.pluginsData.targetConcepts!.isTarget
+          ? concept.pluginsData.targetConcepts!.value
+          : null,
+        constraint: concept.pluginsData.conceptConstraints!.hasConstraint
+          ? concept.pluginsData.conceptConstraints!
+          : null,
+        dynamicModel: concept.pluginsData.adjustment!.dynamicModelType,
+      }
+    })
+    const conceptsMap = new Map()
+    for (const concept of concepts) {
+      conceptsMap.set(concept.id, concept)
+    }
+
+    const connections = modelData.value!.connections.map<Connection>(
+      (connection) => ({
+        id: connection.id,
+        value: connection.value,
+        sourceId: connection.sourceId,
+        targetId: connection.targetId,
+        isControl: connection.pluginsData.controlConnections!.isControl,
+        constraint: connection.pluginsData.connectionConstraints!.hasConstraint
+          ? connection.pluginsData.connectionConstraints!
+          : null,
+      })
+    )
+    const connectionsMap = new Map()
+    for (const connection of connections) {
+      connectionsMap.set(connection.id, connection)
+    }
+
+    const conceptState = new Map()
+    for (const concept of concepts) {
+      conceptState.set(concept.id, concept.value)
+    }
+    const connectionState = new Map()
+    for (const connection of connections.filter(
+      (connection) => connection.isControl
+    )) {
+      conceptState.set(connection.id, connection.value)
+    }
+    const executor = new TimeSimulationExecutor(
+      newValue,
+      conceptsMap,
+      connectionsMap,
+      concepts.filter((concept) => concept.isTarget),
+      adjustmentRun.value!.dynamicModelType,
+      conceptState,
+      connectionState
+    )
+    while (executor.next()) {}
+    for (const concept of model.value.concepts) {
+      const state = executor.get_state() as Map<number, number>
+      concept.value = state.get(concept.id)!
+    }
+  })
+})
 
 const bc = computed<BreadcrumbsItem[]>(() => [
   {
@@ -137,13 +223,15 @@ const error = computed(() =>
 
 <i18n locale="en-US" lang="json">
 {
-  "title": "Chromosome ({error})"
+  "title": "Chromosome ({error})",
+  "iteration": "Iteration"
 }
 </i18n>
 
 <i18n locale="ru-RU" lang="json">
 {
-  "title": "Хромосома ({error})"
+  "title": "Хромосома ({error})",
+  "iteration": "Итерация"
 }
 </i18n>
 
