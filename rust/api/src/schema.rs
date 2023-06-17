@@ -23,6 +23,7 @@ diesel::table! {
         id -> Int4,
         adjustment_generation_id -> Int4,
         number -> Int4,
+        time -> Int4,
         error -> Float8,
     }
 }
@@ -64,6 +65,7 @@ diesel::table! {
         model_copy_id -> Int4,
         name -> Varchar,
         description -> Text,
+        min_model_time -> Int4,
         max_model_time -> Int4,
         dynamic_model_type -> DynamicModelType,
         generation_size -> Int4,

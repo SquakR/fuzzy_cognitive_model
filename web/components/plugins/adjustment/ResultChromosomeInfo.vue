@@ -11,6 +11,11 @@
         </template>
         <VList>
           <VListItem>
+            <VListItemTitle>{{
+              t('time', { time: adjustmentRun.resultChromosome!.time })
+            }}</VListItemTitle>
+          </VListItem>
+          <VListItem>
             <VListItemTitle>{{ t('error', { error }) }}</VListItemTitle>
           </VListItem>
           <VListItem>
@@ -52,17 +57,20 @@ const userStore = useUserStore()
 
 const tooltipActive = ref(false)
 
-const formatter = new Intl.NumberFormat(userStore.locale, {
-  minimumFractionDigits: 5,
-})
+const formatter = computed(
+  () =>
+    new Intl.NumberFormat(userStore.locale, {
+      minimumFractionDigits: 5,
+    })
+)
 const error = computed(() =>
-  formatter.format(props.adjustmentRun.resultChromosome!.error)
+  formatter.value.format(props.adjustmentRun.resultChromosome!.error)
 )
 const generationNumber = computed(
   () => props.adjustmentRun.resultChromosome!.generationNumber
 )
 const generationError = computed(() =>
-  formatter.format(props.adjustmentRun.resultChromosome!.generationError)
+  formatter.value.format(props.adjustmentRun.resultChromosome!.generationError)
 )
 const generationLink = computed(() => ({
   name: 'adjustment-project_id-adjustment_run_id-generation_id',
@@ -77,6 +85,7 @@ const generationLink = computed(() => ({
 <i18n locale="en-US" lang="json">
 {
   "data": "Data",
+  "time": "Time: {time}",
   "error": "Error: {error}",
   "generationNumber": "Generation number: {generationNumber}",
   "generationError": "Generation error: {generationError}",
@@ -87,6 +96,7 @@ const generationLink = computed(() => ({
 <i18n locale="ru-RU" lang="json">
 {
   "data": "Данные",
+  "time": "Время: {time}",
   "error": "Ошибка: {error}",
   "generationNumber": "Номер поколения: {generationNumber}",
   "generationError": "Ошибка поколения: {generationError}",

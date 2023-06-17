@@ -2,13 +2,16 @@
   <PluginsAdjustmentBreadcrumbs :items="bc" />
   <VCard height="calc(100% - 40px)">
     <VCardTitle class="d-flex align-center">
-      {{ t('title', { error }) }}
+      {{ t('title', { time: adjustmentChromosome!.time, error }) }}
       <VSpacer />
       <PluginsAdjustmentSimulationIteration
         v-model="iteration"
         class="mr-2"
         :max-model-time="adjustmentRun!.maxModelTime"
       />
+      <span class="mr-3 text-subtitle-1">{{
+        t('iterationError', { error: iterationError })
+      }}</span>
       <PluginsAdjustmentModelButton
         :project-id="Number($route.params.project_id)"
       />
@@ -96,79 +99,95 @@ const model = ref({
   }),
 })
 
-const iteration = ref(0)
-onMounted(() => {
-  watch(iteration, (newValue) => {
-    if (newValue === 0) {
-      model.value.concepts = getInitialConcepts()
-      return
-    }
-
-    const concepts = modelData.value!.concepts.map<Concept>((concept) => {
-      const conceptValue = adjustmentChromosome.value!.conceptValues.find(
-        (conceptValue) => conceptValue.conceptId === concept.id
-      )
-      return {
-        id: concept.id,
-        value: conceptValue?.value || concept.value!,
-        isControl: concept.pluginsData.controlConcepts!.isControl,
-        isTarget: concept.pluginsData.targetConcepts!.isTarget,
-        targetValue: concept.pluginsData.targetConcepts!.isTarget
-          ? concept.pluginsData.targetConcepts!.value
-          : null,
-        constraint: concept.pluginsData.conceptConstraints!.hasConstraint
-          ? concept.pluginsData.conceptConstraints!
-          : null,
-        dynamicModel: concept.pluginsData.adjustment!.dynamicModelType,
-      }
-    })
-    const conceptsMap = new Map()
-    for (const concept of concepts) {
-      conceptsMap.set(concept.id, concept)
-    }
-
-    const connections = modelData.value!.connections.map<Connection>(
-      (connection) => ({
-        id: connection.id,
-        value: connection.value,
-        sourceId: connection.sourceId,
-        targetId: connection.targetId,
-        isControl: connection.pluginsData.controlConnections!.isControl,
-        constraint: connection.pluginsData.connectionConstraints!.hasConstraint
-          ? connection.pluginsData.connectionConstraints!
-          : null,
-      })
-    )
-    const connectionsMap = new Map()
-    for (const connection of connections) {
-      connectionsMap.set(connection.id, connection)
-    }
-
-    const conceptState = new Map()
-    for (const concept of concepts) {
-      conceptState.set(concept.id, concept.value)
-    }
-    const connectionState = new Map()
-    for (const connection of connections.filter(
-      (connection) => connection.isControl
-    )) {
-      conceptState.set(connection.id, connection.value)
-    }
-    const executor = new TimeSimulationExecutor(
-      newValue,
-      conceptsMap,
-      connectionsMap,
-      concepts.filter((concept) => concept.isTarget),
-      adjustmentRun.value!.dynamicModelType,
-      conceptState,
-      connectionState
-    )
-    while (executor.next()) {}
-    for (const concept of model.value.concepts) {
-      const state = executor.get_state() as Map<number, number>
-      concept.value = state.get(concept.id)!
-    }
+const formatter = computed(() =>
+  Intl.NumberFormat(userStore.locale, {
+    minimumFractionDigits: 5,
   })
+)
+
+const iteration = ref(0)
+const iterationError = ref('')
+onMounted(() => {
+  watch(
+    iteration,
+    (newValue) => {
+      const concepts = modelData.value!.concepts.map<Concept>((concept) => {
+        const conceptValue = adjustmentChromosome.value!.conceptValues.find(
+          (conceptValue) => conceptValue.conceptId === concept.id
+        )
+        return {
+          id: concept.id,
+          value: conceptValue?.value || concept.value!,
+          isControl: concept.pluginsData.controlConcepts!.isControl,
+          isTarget: concept.pluginsData.targetConcepts!.isTarget,
+          targetValue: concept.pluginsData.targetConcepts!.isTarget
+            ? concept.pluginsData.targetConcepts!.value
+            : null,
+          constraint: concept.pluginsData.conceptConstraints!.hasConstraint
+            ? concept.pluginsData.conceptConstraints!
+            : null,
+          dynamicModel: concept.pluginsData.adjustment!.dynamicModelType,
+        }
+      })
+      const conceptsMap = new Map()
+      for (const concept of concepts) {
+        conceptsMap.set(concept.id, concept)
+      }
+
+      const connections = modelData.value!.connections.map<Connection>(
+        (connection) => ({
+          id: connection.id,
+          value: connection.value,
+          sourceId: connection.sourceId,
+          targetId: connection.targetId,
+          isControl: connection.pluginsData.controlConnections!.isControl,
+          constraint: connection.pluginsData.connectionConstraints!
+            .hasConstraint
+            ? connection.pluginsData.connectionConstraints!
+            : null,
+        })
+      )
+      const connectionsMap = new Map()
+      for (const connection of connections) {
+        connectionsMap.set(connection.id, connection)
+      }
+
+      const conceptState = new Map()
+      for (const concept of concepts) {
+        conceptState.set(concept.id, concept.value)
+      }
+      const connectionState = new Map()
+      for (const connection of connections.filter(
+        (connection) => connection.isControl
+      )) {
+        conceptState.set(connection.id, connection.value)
+      }
+      const executor = new TimeSimulationExecutor(
+        newValue,
+        conceptsMap,
+        connectionsMap,
+        concepts.filter((concept) => concept.isTarget),
+        adjustmentRun.value!.dynamicModelType,
+        conceptState,
+        connectionState
+      )
+
+      if (newValue === 0) {
+        model.value.concepts = getInitialConcepts()
+        iterationError.value = formatter.value.format(executor.get_error())
+        return
+      }
+
+      while (executor.next()) {}
+      for (const concept of model.value.concepts) {
+        const state = executor.get_state() as Map<number, number>
+        concept.value = state.get(concept.id)!
+      }
+
+      iterationError.value = formatter.value.format(executor.get_error())
+    },
+    { immediate: true }
+  )
 })
 
 const bc = computed<BreadcrumbsItem[]>(() => [
@@ -215,23 +234,21 @@ const bc = computed<BreadcrumbsItem[]>(() => [
 ])
 
 const error = computed(() =>
-  new Intl.NumberFormat(userStore.locale, {
-    minimumFractionDigits: 5,
-  }).format(adjustmentChromosome.value!.error)
+  formatter.value.format(adjustmentChromosome.value!.error)
 )
 </script>
 
 <i18n locale="en-US" lang="json">
 {
-  "title": "Chromosome ({error})",
-  "iteration": "Iteration"
+  "title": "Chromosome ({time}; {error})",
+  "iterationError": "Error: {error}"
 }
 </i18n>
 
 <i18n locale="ru-RU" lang="json">
 {
-  "title": "Хромосома ({error})",
-  "iteration": "Итерация"
+  "title": "Хромосома ({time}; {error})",
+  "iterationError": "Ошибка: {error}"
 }
 </i18n>
 

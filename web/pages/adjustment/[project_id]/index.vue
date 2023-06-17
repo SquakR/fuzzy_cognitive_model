@@ -62,6 +62,10 @@
         </template>
         <template #expanded-row="{ item }">
           <tr>
+            <td :colspan="2">{{ t('minModelTime') }}</td>
+            <td :colspan="3">{{ item.raw.minModelTime }}</td>
+          </tr>
+          <tr>
             <td :colspan="2">{{ t('maxModelTime') }}</td>
             <td :colspan="3">{{ item.raw.maxModelTime }}</td>
           </tr>
@@ -199,6 +203,7 @@ const getFormula = (adjustmentRun: AdjustmentRunOutType) => {
   "description": "Description",
   "createdAt": "Date of creation",
   "result": "Result",
+  "minModelTime": "Minimum Model Time",
   "maxModelTime": "Maximum Model Time",
   "dynamicModelType": "Dynamic Model",
   "generationSize": "Generation Size",
@@ -217,6 +222,7 @@ const getFormula = (adjustmentRun: AdjustmentRunOutType) => {
   "description": "Описание",
   "createdAt": "Дата создание",
   "result": "Результат",
+  "minModelTime": "Минимальное модельное время",
   "maxModelTime": "Максимальное модельное время",
   "dynamicModelType": "Модель динамики",
   "generationSize": "Размер поколения",

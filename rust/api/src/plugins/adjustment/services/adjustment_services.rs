@@ -201,6 +201,7 @@ fn create_adjustment_run(
             adjustment_runs::model_copy_id.eq(model_copy_id),
             adjustment_runs::name.eq(&adjustment_input.name),
             adjustment_runs::description.eq(&adjustment_input.description),
+            adjustment_runs::min_model_time.eq(&adjustment_input.min_model_time),
             adjustment_runs::max_model_time.eq(&adjustment_input.max_model_time),
             adjustment_runs::dynamic_model_type.eq(DynamicModelType::from(
                 adjustment_input.dynamic_model.clone(),
@@ -378,6 +379,7 @@ impl From<AdjustmentInType> for AdjustmentInput {
         Self {
             name: adjustment_in.name,
             description: adjustment_in.description,
+            min_model_time: adjustment_in.min_model_time,
             max_model_time: adjustment_in.max_model_time,
             dynamic_model: DynamicModel::from(adjustment_in.dynamic_model_type),
             generation_size: adjustment_in.generation_size,

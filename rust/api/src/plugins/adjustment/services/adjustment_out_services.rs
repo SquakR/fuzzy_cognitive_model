@@ -235,25 +235,27 @@ impl AdjustmentRunOutType {
     ) -> ServiceResult<Self> {
         let result_chromosome = match adjustment_run.result_chromosome_id {
             Some(result_chromosome_id) => {
-                let (id, number, error, generation_id, generation_number, generation_error) =
+                let (id, number, time, error, generation_id, generation_number, generation_error) =
                     adjustment_chromosomes::table
                         .inner_join(adjustment_generations::table)
                         .filter(adjustment_chromosomes::id.eq(result_chromosome_id))
                         .select((
                             adjustment_chromosomes::id,
                             adjustment_chromosomes::number,
+                            adjustment_chromosomes::time,
                             adjustment_chromosomes::error,
                             adjustment_generations::id,
                             adjustment_generations::number,
                             adjustment_generations::error,
                         ))
-                        .get_result::<(i32, i32, f64, i32, i32, f64)>(conn)
+                        .get_result::<(i32, i32, i32, f64, i32, i32, f64)>(conn)
                         .to_service_result()?;
                 let concept_values = Self::get_concept_values(conn, result_chromosome_id)?;
                 let connection_values = Self::get_connection_values(conn, result_chromosome_id)?;
                 Some(AdjustmentChromosomeGenerationOutType {
                     id,
                     number,
+                    time,
                     error,
                     generation_id,
                     generation_number,
@@ -292,8 +294,15 @@ impl AdjustmentRunOutType {
                         .find(|(_, rc)| rc.0 == *result_chromosome_id)
                         .unwrap()
                         .0;
-                    let (id, number, error, generation_id, generation_number, generation_error) =
-                        result_chromosomes.remove(result_chromosome_index);
+                    let (
+                        id,
+                        number,
+                        time,
+                        error,
+                        generation_id,
+                        generation_number,
+                        generation_error,
+                    ) = result_chromosomes.remove(result_chromosome_index);
                     let concept_value_indices = concept_values
                         .iter()
                         .enumerate()
@@ -321,6 +330,7 @@ impl AdjustmentRunOutType {
                     Some(AdjustmentChromosomeGenerationOutType {
                         id,
                         number,
+                        time,
                         error,
                         generation_id,
                         generation_number,
@@ -338,19 +348,20 @@ impl AdjustmentRunOutType {
     fn find_chromosomes(
         conn: &mut PgConnection,
         chromosome_ids: &[i32],
-    ) -> QueryResult<Vec<(i32, i32, f64, i32, i32, f64)>> {
+    ) -> QueryResult<Vec<(i32, i32, i32, f64, i32, i32, f64)>> {
         adjustment_chromosomes::table
             .inner_join(adjustment_generations::table)
             .filter(adjustment_chromosomes::id.eq_any(chromosome_ids))
             .select((
                 adjustment_chromosomes::id,
                 adjustment_chromosomes::number,
+                adjustment_chromosomes::time,
                 adjustment_chromosomes::error,
                 adjustment_generations::id,
                 adjustment_generations::number,
                 adjustment_generations::error,
             ))
-            .get_results::<(i32, i32, f64, i32, i32, f64)>(conn)
+            .get_results::<(i32, i32, i32, f64, i32, i32, f64)>(conn)
     }
     fn get_concept_values(
         conn: &mut PgConnection,
@@ -412,6 +423,7 @@ impl From<(AdjustmentRun, Option<AdjustmentChromosomeGenerationOutType>)> for Ad
             model_copy_id: adjustment_run.model_copy_id,
             name: adjustment_run.name,
             description: adjustment_run.description,
+            min_model_time: adjustment_run.min_model_time,
             max_model_time: adjustment_run.max_model_time,
             dynamic_model_type: adjustment_run.dynamic_model_type,
             generation_size: adjustment_run.generation_size,
@@ -449,6 +461,7 @@ impl AdjustmentChromosomeOutType {
         Ok(Self {
             id: adjustment_chromosome.id,
             number: adjustment_chromosome.number,
+            time: adjustment_chromosome.time,
             error: adjustment_chromosome.error,
             concept_values: concept_values
                 .into_iter()
@@ -500,6 +513,7 @@ impl AdjustmentChromosomeOutType {
             result.push(Self {
                 id: adjustment_chromosome.id,
                 number: adjustment_chromosome.number,
+                time: adjustment_chromosome.time,
                 error: adjustment_chromosome.error,
                 concept_values: concept_out_values,
                 connection_values: connection_out_values,

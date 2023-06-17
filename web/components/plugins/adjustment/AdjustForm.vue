@@ -14,6 +14,7 @@
     </template>
     <BaseTextField :label="t('name')" name="name" />
     <BaseTextarea :label="t('description')" name="description" />
+    <BaseTextField :label="t('minModelTime')" name="minModelTime" />
     <BaseTextField :label="t('maxModelTime')" name="maxModelTime" />
     <PluginsAdjustmentDynamicModelTypeSelect />
     <BaseTextField :label="t('generationSize')" name="generationSize" />
@@ -45,6 +46,7 @@ const props = defineProps<Props>()
 interface Values {
   name: string
   description: string
+  minModelTime: string
   maxModelTime: string
   dynamicModelType: DynamicModelType
   generationSize: string
@@ -82,6 +84,7 @@ const validationSchema = $yup.object({
 const initialValues = computed<Values>(() => ({
   name: '',
   description: '',
+  minModelTime: '0',
   maxModelTime: '100',
   dynamicModelType: 'delta_delta',
   generationSize: '100',
@@ -95,6 +98,7 @@ const onSubmit = async (values: Values) => {
   await props.adjust(props.projectId, {
     name: values.name,
     description: values.description,
+    minModelTime: Number(values.minModelTime),
     maxModelTime: Number(values.maxModelTime),
     dynamicModelType: values.dynamicModelType,
     generationSize: Number(values.generationSize),
@@ -115,6 +119,7 @@ const onSubmit = async (values: Values) => {
   "buttonText": "Adjust",
   "name": "Name",
   "description": "Description",
+  "minModelTime": "Minimum Model Time",
   "maxModelTime": "Maximum Model Time",
   "dynamicModelType": "Dynamic Model",
   "generationSize": "Generation Size",
@@ -131,6 +136,7 @@ const onSubmit = async (values: Values) => {
   "buttonText": "Настроить",
   "name": "Название",
   "description": "Описание",
+  "minModelTime": "Минимальное модельное время",
   "maxModelTime": "Максимальное модельное время",
   "dynamicModelType": "Модель динамики",
   "generationSize": "Размер поколения",

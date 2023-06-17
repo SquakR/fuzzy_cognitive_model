@@ -7,6 +7,7 @@ CREATE TABLE adjustment_runs (
   FOREIGN KEY (model_copy_id) REFERENCES model_copies(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
+  min_model_time INTEGER NOT NULL,
   max_model_time INTEGER NOT NULL,
   dynamic_model_type dynamic_model_type NOT NULL,
   generation_size INTEGER NOT NULL,
@@ -28,6 +29,7 @@ CREATE TABLE adjustment_chromosomes (
   adjustment_generation_id INTEGER NOT NULL,
   FOREIGN KEY (adjustment_generation_id) REFERENCES adjustment_generations(id) ON DELETE CASCADE,
   number INTEGER NOT NULL,
+  time INTEGER NOT NULL,
   error DOUBLE PRECISION NOT NULL
 );
 CREATE TABLE adjustment_concept_values (

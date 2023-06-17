@@ -36,6 +36,8 @@ pub struct AdjustmentInType {
     pub name: String,
     /// Adjustment run description
     pub description: String,
+    /// Minimum model time
+    pub min_model_time: i32,
     /// Maximum model time
     pub max_model_time: i32,
     /// Dynamics mode type
@@ -60,6 +62,8 @@ pub struct AdjustmentRunOutType {
     pub name: String,
     /// Adjustment run description
     pub description: String,
+    /// Minimum model time
+    pub min_model_time: i32,
     /// Maximum model time
     pub max_model_time: i32,
     /// Dynamics mode type
@@ -96,6 +100,8 @@ pub struct AdjustmentChromosomeOutType {
     pub id: i32,
     /// Adjustment chromosome number
     pub number: i32,
+    /// Adjustment chromosome time
+    pub time: i32,
     /// Adjustment chromosome error
     pub error: f64,
     /// Adjustment chromosome concept values
@@ -112,6 +118,8 @@ pub struct AdjustmentChromosomeGenerationOutType {
     pub id: i32,
     /// Adjustment chromosome number
     pub number: i32,
+    /// Adjustment chromosome time
+    pub time: i32,
     /// Adjustment chromosome error
     pub error: f64,
     /// Adjustment generation identifier

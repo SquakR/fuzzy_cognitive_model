@@ -40,8 +40,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
-
 export interface Props {
   modelValue: number
   maxModelTime: number
@@ -49,6 +47,8 @@ export interface Props {
 export interface Emits {
   (e: 'update:modelValue', modelValue: number): void
 }
+
+const { t } = useI18n()
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()

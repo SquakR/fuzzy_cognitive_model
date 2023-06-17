@@ -34,6 +34,7 @@ pub struct StopCondition {
 pub struct AdjustmentInput {
     pub name: String,
     pub description: String,
+    pub min_model_time: i32,
     pub max_model_time: i32,
     pub dynamic_model: DynamicModel,
     pub generation_size: i32,
@@ -90,12 +91,18 @@ pub struct Constraint {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+pub struct Fitness {
+    pub time: i32,
+    pub error: f64,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Chromosome {
     pub id: Option<i32>,
     pub concepts: HashMap<i32, f64>,
     pub connections: HashMap<i32, f64>,
-    pub error: f64,
+    pub fitness: Option<Fitness>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -160,7 +167,7 @@ impl AdjustmentModel {
                 .await?;
             self.is_generation_saved = true;
         }
-        let best_chromosome_error = self.get_best_chromosome().error;
+        let best_chromosome_error = self.get_best_chromosome().fitness.as_ref().unwrap().error;
         if best_chromosome_error < self.adjustment_input.stop_condition.error {
             return Ok(false);
         }
@@ -200,11 +207,11 @@ impl AdjustmentModel {
         save_result.save_result(best_chromosome).await?;
         return Ok(best_chromosome.clone());
     }
-    fn get_chromosome_error(
+    fn get_chromosome_fitness(
         &self,
         concepts: &HashMap<i32, f64>,
         connections: &HashMap<i32, f64>,
-    ) -> f64 {
+    ) -> Fitness {
         let concepts = self.get_initial_state(concepts);
         let time_simulation = TimeSimulation::new(
             self.adjustment_input.max_model_time,
@@ -215,16 +222,22 @@ impl AdjustmentModel {
             concepts,
             connections.clone(),
         );
-        let mut error = time_simulation.get_error();
+        let mut fitness = Fitness {
+            error: f64::MAX,
+            time: self.adjustment_input.min_model_time,
+        };
         for data in time_simulation {
-            error = data.error;
+            if data.time >= self.adjustment_input.min_model_time && data.error < fitness.error {
+                fitness.error = data.error;
+                fitness.time = data.time;
+            }
         }
-        error
+        fitness
     }
     fn get_generation_error(chromosomes: &[Chromosome]) -> f64 {
         chromosomes
             .iter()
-            .map(|chromosome| chromosome.error)
+            .map(|chromosome| chromosome.fitness.as_ref().unwrap().error)
             .sum::<f64>()
             / chromosomes.len() as f64
     }
@@ -236,7 +249,9 @@ impl AdjustmentModel {
                 &generation.chromosomes[rng.gen_range(0..generation.chromosomes.len())];
             let candidate2 =
                 &generation.chromosomes[rng.gen_range(0..generation.chromosomes.len())];
-            if candidate1.error <= candidate2.error {
+            if candidate1.fitness.as_ref().unwrap().error
+                <= candidate2.fitness.as_ref().unwrap().error
+            {
                 parents.push(candidate1);
             } else {
                 parents.push(candidate2);
@@ -274,8 +289,8 @@ impl AdjustmentModel {
             *chromosome.connections.get_mut(&connection.id).unwrap() =
                 connection.generate_value(rng);
         }
-        let error = self.get_chromosome_error(&chromosome.concepts, &chromosome.connections);
-        chromosome.error = error;
+        let fitness = self.get_chromosome_fitness(&chromosome.concepts, &chromosome.connections);
+        chromosome.fitness = Some(fitness);
         chromosome
     }
     fn create_first_generation(&self) -> Generation {
@@ -312,12 +327,12 @@ impl AdjustmentModel {
         for connection in &self.control_connections {
             connections.insert(connection.id, connection.generate_value(rng));
         }
-        let error = self.get_chromosome_error(&concepts, &connections);
+        let fitness = self.get_chromosome_fitness(&concepts, &connections);
         Chromosome {
             id: None,
             concepts,
             connections,
-            error,
+            fitness: Some(fitness),
         }
     }
     fn create_child_chromosome(
@@ -368,7 +383,7 @@ impl AdjustmentModel {
             id: None,
             concepts,
             connections,
-            error: 0.0,
+            fitness: None,
         }
     }
     fn get_best_chromosome(&self) -> &Chromosome {
@@ -377,7 +392,7 @@ impl AdjustmentModel {
             .unwrap()
             .chromosomes
             .iter()
-            .min_by_key(|chromosome| OrderedFloat(chromosome.error))
+            .min_by_key(|chromosome| OrderedFloat(chromosome.fitness.as_ref().unwrap().error))
             .unwrap()
     }
     fn get_initial_state(&self, concepts: &HashMap<i32, f64>) -> State {
@@ -459,20 +474,18 @@ impl TimeSimulation {
         let current_value = current_state.get_mut(&concept_id).unwrap();
         match dynamic_model {
             DynamicModel::DeltaDelta => {
-                *current_value += Self::normalize_value(
-                    to_connections
-                        .iter()
-                        .map(|(source_id, value)| value * self.delta_state[&source_id])
-                        .sum::<f64>(),
-                );
+                *current_value += to_connections
+                    .iter()
+                    .map(|(source_id, value)| value * self.delta_state[&source_id])
+                    .sum::<f64>();
+                *current_value = Self::normalize_value(*current_value)
             }
             DynamicModel::DeltaValue => {
-                *current_value += Self::normalize_value(
-                    to_connections
-                        .iter()
-                        .map(|(source_id, value)| value * self.previous_state[&source_id])
-                        .sum::<f64>(),
-                );
+                *current_value += to_connections
+                    .iter()
+                    .map(|(source_id, value)| value * self.previous_state[&source_id])
+                    .sum::<f64>();
+                *current_value = Self::normalize_value(*current_value)
             }
             DynamicModel::ValueDelta => {
                 *current_value = Self::normalize_value(
@@ -549,8 +562,8 @@ impl Iterator for TimeSimulation {
         }
         self.delta_state = self.calculate_delta_state(&current_state);
         self.previous_state = current_state;
-        self.error = Self::calculate_error(&self.previous_state, &self.target_concepts);
         self.current_time += 1;
+        self.error = Self::calculate_error(&self.previous_state, &self.target_concepts);
         if self.current_time <= self.max_model_time {
             Some(TimeSimulationData {
                 time: self.current_time,

@@ -71,7 +71,16 @@ impl SaveResult<(), AppError> for SaveResultServer {
                             adjustment_chromosomes::adjustment_generation_id
                                 .eq(adjustment_generation.id),
                             adjustment_chromosomes::number.eq(i as i32 + 1),
-                            adjustment_chromosomes::error.eq(chromosome.error),
+                            adjustment_chromosomes::time.eq(chromosome
+                                .fitness
+                                .as_ref()
+                                .unwrap()
+                                .time),
+                            adjustment_chromosomes::error.eq(chromosome
+                                .fitness
+                                .as_ref()
+                                .unwrap()
+                                .error),
                         ))
                         .get_result::<AdjustmentChromosome>(conn)?;
                     chromosome.id = Some(adjustment_chromosome.id);

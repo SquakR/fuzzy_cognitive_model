@@ -21,6 +21,7 @@ export interface StopConditionType {
 export interface AdjustmentInType {
   name: string
   description: string
+  minModelTime: number
   maxModelTime: number
   dynamicModelType: DynamicModelType
   generationSize: number
@@ -33,6 +34,7 @@ export interface AdjustmentRunOutType {
   modelCopyId: number
   name: string
   description: string
+  minModelTime: number
   maxModelTime: number
   dynamicModelType: DynamicModelType
   generationSize: number
@@ -51,6 +53,7 @@ export interface AdjustmentGenerationOutType {
 export interface AdjustmentChromosomeOutType {
   id: number
   number: number
+  time: number
   error: number
   conceptValues: AdjustmentConceptValueOutType[]
   connectionValues: AdjustmentConnectionValueOutType[]
@@ -58,6 +61,7 @@ export interface AdjustmentChromosomeOutType {
 
 export interface AdjustmentChromosomeGenerationOutType {
   id: number
+  time: number
   number: number
   error: number
   generationId: number

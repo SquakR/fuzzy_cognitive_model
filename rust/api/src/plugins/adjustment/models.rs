@@ -43,6 +43,7 @@ pub struct AdjustmentRun {
     pub model_copy_id: i32,
     pub name: String,
     pub description: String,
+    pub min_model_time: i32,
     pub max_model_time: i32,
     pub dynamic_model_type: DynamicModelType,
     pub generation_size: i32,
@@ -69,6 +70,7 @@ pub struct AdjustmentChromosome {
     pub id: i32,
     pub adjustment_generation_id: i32,
     pub number: i32,
+    pub time: i32,
     pub error: f64,
 }
 

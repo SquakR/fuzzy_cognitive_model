@@ -1,6 +1,6 @@
+import { defu } from 'defu'
 import type { NitroFetchOptions, NitroFetchRequest } from 'nitropack'
-import { FetchResult as NuxtFetchResult, UseFetchOptions } from 'nuxt/app'
-import { KeysOf } from 'nuxt/dist/app/composables/asyncData'
+import { UseFetchOptions } from 'nuxt/app'
 import { FetchError, FetchRequest } from 'ofetch'
 import { useMessageStore, useUserStore } from '~/store'
 import {
@@ -10,64 +10,47 @@ import {
   LocalFetchResult,
 } from '~/types'
 
-export const useLocalFetchRaw = <
-  ResT = void,
-  _ResT = ResT extends void ? NuxtFetchResult<NitroFetchRequest, 'get'> : ResT,
-  DataT = _ResT,
-  PickKeys extends KeysOf<DataT> = KeysOf<DataT>
->(
+export const useLocalFetchRaw = <T>(
   request:
     | Ref<NitroFetchRequest>
     | NitroFetchRequest
     | (() => NitroFetchRequest),
-  fetchOpts?: UseFetchOptions<_ResT, DataT, PickKeys, NitroFetchRequest, 'get'>
+  fetchOpts?: UseFetchOptions<T>
 ) => {
   const config = useRuntimeConfig()
   const userStore = useUserStore()
   const headers = useRequestHeaders(['cookie'])
 
-  return useFetch<
-    ResT,
-    FetchError,
-    NitroFetchRequest,
-    'get',
-    _ResT,
-    DataT,
-    PickKeys
-  >(request, {
+  const defaults: UseFetchOptions<T> = {
     baseURL: config.public.API_HTTP_BASE_URL,
     headers: {
       'Accept-Language': userStore.locale,
       ...headers,
     },
     credentials: 'include',
-    ...fetchOpts,
-  })
+  }
+
+  return useFetch(request, defu(fetchOpts, defaults))
 }
 
-export const useLocalFetch = async <
-  ResT = void,
-  _ResT = ResT extends void ? NuxtFetchResult<NitroFetchRequest, 'get'> : ResT,
-  DataT = _ResT,
-  PickKeys extends KeysOf<DataT> = KeysOf<DataT>
->(
+export const useLocalFetch = async <T>(
   request:
     | Ref<NitroFetchRequest>
     | NitroFetchRequest
     | (() => NitroFetchRequest),
   opts: LocalFetchOptions,
-  fetchOpts?: UseFetchOptions<_ResT, DataT, PickKeys, NitroFetchRequest, 'get'>
+  fetchOpts?: UseFetchOptions<T>
 ) => {
   const messageStore = useMessageStore()
-  const { error, ...rest } = await useLocalFetchRaw<
-    ResT,
-    _ResT,
-    DataT,
-    PickKeys
-  >(request, {
+
+  const defaults: UseFetchOptions<T> = {
     key: opts.key,
-    ...fetchOpts,
-  })
+  }
+
+  const { error, ...rest } = await useLocalFetchRaw(
+    request,
+    defu(fetchOpts, defaults)
+  )
   watch(
     error,
     (newValue) => {
