@@ -26,7 +26,12 @@
 import { TimeSimulationExecutor } from 'fuzzy-cognitive-model-wasm'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '~/store'
-import { BreadcrumbsItem, Concept, Connection } from '~/types'
+import {
+  BreadcrumbsItem,
+  Concept,
+  Connection,
+  TimeSimulationData,
+} from '~/types'
 
 definePageMeta({
   layout: 'model',
@@ -187,13 +192,15 @@ onMounted(() => {
         return
       }
 
-      while (executor.next()) {}
-      for (const concept of model.value.concepts) {
-        const state = executor.get_state() as Map<number, number>
-        concept.value = state.get(concept.id)!
+      let data: TimeSimulationData
+      while ((data = executor.next())) {
+        if (data.time === iteration.value) {
+          for (const concept of model.value.concepts) {
+            concept.value = data.state.get(concept.id)!
+          }
+        }
+        iterationError.value = formatter.value.format(executor.get_error())
       }
-
-      iterationError.value = formatter.value.format(executor.get_error())
     },
     { immediate: true }
   )

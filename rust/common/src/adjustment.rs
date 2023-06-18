@@ -176,7 +176,11 @@ impl AdjustmentModel {
                 .await?;
             self.is_generation_saved = true;
         }
-        let best_chromosome_error = self.get_best_chromosome().fitness.as_ref().unwrap().error;
+        let best_chromosome_error = self.current_generation.as_ref().unwrap().chromosomes[0]
+            .fitness
+            .as_ref()
+            .unwrap()
+            .error;
         if best_chromosome_error < self.adjustment_input.stop_condition.error {
             return Ok(false);
         }
@@ -212,7 +216,7 @@ impl AdjustmentModel {
                 )
                 .await?;
         }
-        let best_chromosome = self.get_best_chromosome();
+        let best_chromosome = &self.current_generation.as_ref().unwrap().chromosomes[0];
         save_result.save_result(best_chromosome).await?;
         return Ok(best_chromosome.clone());
     }
@@ -250,10 +254,10 @@ impl AdjustmentModel {
             .sum::<f64>()
             / chromosomes.len() as f64
     }
-    fn select_parent_candidates(&self, rng: &mut ThreadRng) -> Vec<&Chromosome> {
+    fn select_parent_candidates(&self, rng: &mut ThreadRng, best_count: i32) -> Vec<&Chromosome> {
         let generation = self.current_generation.as_ref().unwrap();
         let mut parents = Vec::new();
-        for _ in 0..self.adjustment_input.generation_size {
+        for _ in 0..self.adjustment_input.generation_size - best_count {
             let candidate1 =
                 &generation.chromosomes[rng.gen_range(0..generation.chromosomes.len())];
             let candidate2 =
@@ -308,14 +312,16 @@ impl AdjustmentModel {
         for _ in 0..self.adjustment_input.generation_size {
             chromosomes.push(Self::create_random_chromosome(self, &mut rng));
         }
+        Self::sort_by_fitness(&mut chromosomes);
         let error = Self::get_generation_error(&chromosomes);
         Generation { chromosomes, error }
     }
     fn create_next_generation(&self) -> Generation {
         let mut rng = rand::thread_rng();
         let mut rng_clone = rng.clone();
-        let chromosomes = self
-            .select_parent_candidates(&mut rng)
+        let best_count = self.adjustment_input.generation_size / 10;
+        let mut chromosomes = self
+            .select_parent_candidates(&mut rng, best_count)
             .chunks(2)
             .flat_map(|chunk| match chunk {
                 &[p1, p2] => self.cross_chromosomes(p1, p2, &mut rng),
@@ -324,6 +330,12 @@ impl AdjustmentModel {
             })
             .map(|chromosome| self.mutate_chromosome(chromosome, &mut rng_clone))
             .collect::<Vec<_>>();
+        for chromosome in
+            &self.current_generation.as_ref().unwrap().chromosomes[0..best_count as usize]
+        {
+            chromosomes.push(chromosome.clone());
+        }
+        Self::sort_by_fitness(&mut chromosomes);
         let error = Self::get_generation_error(&chromosomes);
         Generation { chromosomes, error }
     }
@@ -395,15 +407,6 @@ impl AdjustmentModel {
             fitness: None,
         }
     }
-    fn get_best_chromosome(&self) -> &Chromosome {
-        self.current_generation
-            .as_ref()
-            .unwrap()
-            .chromosomes
-            .iter()
-            .min_by_key(|chromosome| OrderedFloat(chromosome.fitness.as_ref().unwrap().error))
-            .unwrap()
-    }
     fn get_initial_state(&self, concepts: &HashMap<i32, f64>) -> State {
         let mut state = concepts.clone();
         for concept in &self.regular_concepts {
@@ -413,6 +416,10 @@ impl AdjustmentModel {
             state.insert(concept.id, concept.value);
         }
         state
+    }
+    fn sort_by_fitness(chromosomes: &mut Vec<Chromosome>) -> () {
+        chromosomes
+            .sort_by_key(|chromosome| OrderedFloat(chromosome.fitness.as_ref().unwrap().error))
     }
 }
 
@@ -450,7 +457,7 @@ impl TimeSimulation {
         let delta_state = previous_state.clone();
         Self {
             max_model_time,
-            current_time: 1,
+            current_time: 0,
             concepts_map,
             error: Self::calculate_error(&previous_state, &target_concepts),
             connections_map,
