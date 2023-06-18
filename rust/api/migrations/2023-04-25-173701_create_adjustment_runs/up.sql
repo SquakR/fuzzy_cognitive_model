@@ -24,7 +24,7 @@ CREATE TABLE adjustment_generations (
   number INTEGER NOT NULL,
   error DOUBLE PRECISION NOT NULL
 );
-CREATE TABLE adjustment_chromosomes (
+CREATE TABLE adjustment_individuals (
   id SERIAL PRIMARY KEY,
   adjustment_generation_id INTEGER NOT NULL,
   FOREIGN KEY (adjustment_generation_id) REFERENCES adjustment_generations(id) ON DELETE CASCADE,
@@ -34,22 +34,22 @@ CREATE TABLE adjustment_chromosomes (
 );
 CREATE TABLE adjustment_concept_values (
   id SERIAL PRIMARY KEY,
-  adjustment_chromosome_id INTEGER NOT NULL,
-  FOREIGN KEY (adjustment_chromosome_id) REFERENCES adjustment_chromosomes(id) ON DELETE CASCADE,
+  adjustment_individual_id INTEGER NOT NULL,
+  FOREIGN KEY (adjustment_individual_id) REFERENCES adjustment_individuals(id) ON DELETE CASCADE,
   concept_id INTEGER NOT NULL,
   FOREIGN KEY (concept_id) REFERENCES concepts(id) ON DELETE CASCADE,
   value DOUBLE PRECISION NOT NULL
 );
 CREATE TABLE adjustment_connection_values (
   id SERIAL PRIMARY KEY,
-  adjustment_chromosome_id INTEGER NOT NULL,
-  FOREIGN KEY (adjustment_chromosome_id) REFERENCES adjustment_chromosomes(id) ON DELETE CASCADE,
+  adjustment_individual_id INTEGER NOT NULL,
+  FOREIGN KEY (adjustment_individual_id) REFERENCES adjustment_individuals(id) ON DELETE CASCADE,
   connection_id INTEGER NOT NULL,
   FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE,
   value DOUBLE PRECISION NOT NULL
 );
 ALTER TABLE adjustment_runs
-ADD COLUMN result_chromosome_id INTEGER DEFAULT NULL;
+ADD COLUMN result_individual_id INTEGER DEFAULT NULL;
 ALTER TABLE adjustment_runs
-ADD FOREIGN KEY (result_chromosome_id) REFERENCES adjustment_chromosomes(id) ON DELETE
+ADD FOREIGN KEY (result_individual_id) REFERENCES adjustment_individuals(id) ON DELETE
 SET NULL;

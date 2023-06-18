@@ -1,7 +1,7 @@
 use crate::schema::adjustment_runs;
 use crate::schema::{
-    adjustment_chromosomes, adjustment_concept_values, adjustment_connection_values,
-    adjustment_generations, concept_dynamic_models,
+    adjustment_concept_values, adjustment_connection_values, adjustment_generations,
+    adjustment_individuals, concept_dynamic_models,
 };
 use chrono::{DateTime, Utc};
 use diesel::{Identifiable, Queryable};
@@ -52,7 +52,7 @@ pub struct AdjustmentRun {
     pub max_without_improvements: i32,
     pub error: f64,
     pub created_at: DateTime<Utc>,
-    pub result_chromosome_id: Option<i32>,
+    pub result_individual_id: Option<i32>,
 }
 
 #[derive(Queryable, Identifiable)]
@@ -66,7 +66,7 @@ pub struct AdjustmentGeneration {
 
 #[derive(Queryable, Identifiable)]
 #[diesel(belongs_to(AdjustmentGeneration))]
-pub struct AdjustmentChromosome {
+pub struct AdjustmentIndividual {
     pub id: i32,
     pub adjustment_generation_id: i32,
     pub number: i32,
@@ -79,7 +79,7 @@ pub struct AdjustmentChromosome {
 #[diesel(belongs_to(Concept))]
 pub struct AdjustmentConceptValue {
     pub id: i32,
-    pub adjustment_chromosome_id: i32,
+    pub adjustment_individual_id: i32,
     pub concept_id: i32,
     pub value: f64,
 }
@@ -89,7 +89,7 @@ pub struct AdjustmentConceptValue {
 #[diesel(belongs_to(Connection))]
 pub struct AdjustmentConnectionValue {
     pub id: i32,
-    pub adjustment_chromosome_id: i32,
+    pub adjustment_individual_id: i32,
     pub connection_id: i32,
     pub value: f64,
 }

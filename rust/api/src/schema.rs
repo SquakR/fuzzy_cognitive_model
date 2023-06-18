@@ -19,19 +19,9 @@ pub mod sql_types {
 }
 
 diesel::table! {
-    adjustment_chromosomes (id) {
-        id -> Int4,
-        adjustment_generation_id -> Int4,
-        number -> Int4,
-        time -> Int4,
-        error -> Float8,
-    }
-}
-
-diesel::table! {
     adjustment_concept_values (id) {
         id -> Int4,
-        adjustment_chromosome_id -> Int4,
+        adjustment_individual_id -> Int4,
         concept_id -> Int4,
         value -> Float8,
     }
@@ -40,7 +30,7 @@ diesel::table! {
 diesel::table! {
     adjustment_connection_values (id) {
         id -> Int4,
-        adjustment_chromosome_id -> Int4,
+        adjustment_individual_id -> Int4,
         connection_id -> Int4,
         value -> Float8,
     }
@@ -51,6 +41,16 @@ diesel::table! {
         id -> Int4,
         adjustment_run_id -> Int4,
         number -> Int4,
+        error -> Float8,
+    }
+}
+
+diesel::table! {
+    adjustment_individuals (id) {
+        id -> Int4,
+        adjustment_generation_id -> Int4,
+        number -> Int4,
+        time -> Int4,
         error -> Float8,
     }
 }
@@ -74,7 +74,7 @@ diesel::table! {
         max_without_improvements -> Int4,
         error -> Float8,
         created_at -> Timestamptz,
-        result_chromosome_id -> Nullable<Int4>,
+        result_individual_id -> Nullable<Int4>,
     }
 }
 
@@ -306,13 +306,13 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(adjustment_chromosomes -> adjustment_generations (adjustment_generation_id));
-diesel::joinable!(adjustment_concept_values -> adjustment_chromosomes (adjustment_chromosome_id));
+diesel::joinable!(adjustment_concept_values -> adjustment_individuals (adjustment_individual_id));
 diesel::joinable!(adjustment_concept_values -> concepts (concept_id));
-diesel::joinable!(adjustment_connection_values -> adjustment_chromosomes (adjustment_chromosome_id));
+diesel::joinable!(adjustment_connection_values -> adjustment_individuals (adjustment_individual_id));
 diesel::joinable!(adjustment_connection_values -> connections (connection_id));
 diesel::joinable!(adjustment_generations -> adjustment_runs (adjustment_run_id));
-diesel::joinable!(adjustment_runs -> adjustment_chromosomes (result_chromosome_id));
+diesel::joinable!(adjustment_individuals -> adjustment_generations (adjustment_generation_id));
+diesel::joinable!(adjustment_runs -> adjustment_individuals (result_individual_id));
 diesel::joinable!(adjustment_runs -> model_copies (model_copy_id));
 diesel::joinable!(adjustment_runs -> projects (project_id));
 diesel::joinable!(concept_constraints -> concepts (concept_id));
@@ -335,10 +335,10 @@ diesel::joinable!(sessions -> users (user_id));
 diesel::joinable!(target_concepts -> concepts (concept_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    adjustment_chromosomes,
     adjustment_concept_values,
     adjustment_connection_values,
     adjustment_generations,
+    adjustment_individuals,
     adjustment_runs,
     concept_constraints,
     concept_dynamic_models,

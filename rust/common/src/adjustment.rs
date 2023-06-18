@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 #[async_trait]
 pub trait SaveResult<T, E> {
-    async fn save_result(&mut self, result_chromosome: &Chromosome) -> Result<T, E>;
+    async fn save_result(&mut self, result_individual: &Individual) -> Result<T, E>;
     async fn save_generation(&mut self, generation: &mut Generation, number: i32) -> Result<T, E>;
 }
 
@@ -107,7 +107,7 @@ pub struct Fitness {
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Chromosome {
+pub struct Individual {
     pub id: Option<i32>,
     pub concepts: HashMap<i32, f64>,
     pub connections: HashMap<i32, f64>,
@@ -117,7 +117,7 @@ pub struct Chromosome {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Generation {
-    pub chromosomes: Vec<Chromosome>,
+    pub individuals: Vec<Individual>,
     pub error: f64,
 }
 
@@ -176,12 +176,12 @@ impl AdjustmentModel {
                 .await?;
             self.is_generation_saved = true;
         }
-        let best_chromosome_error = self.current_generation.as_ref().unwrap().chromosomes[0]
+        let best_individual_error = self.current_generation.as_ref().unwrap().individuals[0]
             .fitness
             .as_ref()
             .unwrap()
             .error;
-        if best_chromosome_error < self.adjustment_input.stop_condition.error {
+        if best_individual_error < self.adjustment_input.stop_condition.error {
             return Ok(false);
         }
         let next_generation = self.create_next_generation();
@@ -204,7 +204,7 @@ impl AdjustmentModel {
                         .max_without_improvements,
         )
     }
-    pub async fn finish<S, T, E>(&mut self, save_result: &mut S) -> Result<Chromosome, E>
+    pub async fn finish<S, T, E>(&mut self, save_result: &mut S) -> Result<Individual, E>
     where
         S: SaveResult<T, E>,
     {
@@ -216,11 +216,11 @@ impl AdjustmentModel {
                 )
                 .await?;
         }
-        let best_chromosome = &self.current_generation.as_ref().unwrap().chromosomes[0];
-        save_result.save_result(best_chromosome).await?;
-        return Ok(best_chromosome.clone());
+        let best_individual = &self.current_generation.as_ref().unwrap().individuals[0];
+        save_result.save_result(best_individual).await?;
+        return Ok(best_individual.clone());
     }
-    fn get_chromosome_fitness(
+    fn get_individual_fitness(
         &self,
         concepts: &HashMap<i32, f64>,
         connections: &HashMap<i32, f64>,
@@ -247,21 +247,21 @@ impl AdjustmentModel {
         }
         fitness
     }
-    fn get_generation_error(chromosomes: &[Chromosome]) -> f64 {
-        chromosomes
+    fn get_generation_error(individuals: &[Individual]) -> f64 {
+        individuals
             .iter()
-            .map(|chromosome| chromosome.fitness.as_ref().unwrap().error)
+            .map(|individual| individual.fitness.as_ref().unwrap().error)
             .sum::<f64>()
-            / chromosomes.len() as f64
+            / individuals.len() as f64
     }
-    fn select_parent_candidates(&self, rng: &mut ThreadRng, best_count: i32) -> Vec<&Chromosome> {
+    fn select_parent_candidates(&self, rng: &mut ThreadRng, best_count: i32) -> Vec<&Individual> {
         let generation = self.current_generation.as_ref().unwrap();
         let mut parents = Vec::new();
         for _ in 0..self.adjustment_input.generation_size - best_count {
             let candidate1 =
-                &generation.chromosomes[rng.gen_range(0..generation.chromosomes.len())];
+                &generation.individuals[rng.gen_range(0..generation.individuals.len())];
             let candidate2 =
-                &generation.chromosomes[rng.gen_range(0..generation.chromosomes.len())];
+                &generation.individuals[rng.gen_range(0..generation.individuals.len())];
             if candidate1.fitness.as_ref().unwrap().error
                 <= candidate2.fitness.as_ref().unwrap().error
             {
@@ -272,74 +272,74 @@ impl AdjustmentModel {
         }
         parents
     }
-    fn cross_chromosomes(
+    fn cross_individuals(
         &self,
-        parent1: &Chromosome,
-        parent2: &Chromosome,
+        parent1: &Individual,
+        parent2: &Individual,
         rng: &mut ThreadRng,
-    ) -> Vec<Chromosome> {
+    ) -> Vec<Individual> {
         if rng.gen::<f64>() < 0.05 {
             return vec![parent1.clone(), parent2.clone()];
         }
         return vec![
-            self.create_child_chromosome(parent1, parent2, rng),
-            self.create_child_chromosome(parent1, parent2, rng),
+            self.create_child_individual(parent1, parent2, rng),
+            self.create_child_individual(parent1, parent2, rng),
         ];
     }
-    fn mutate_chromosome(&self, mut chromosome: Chromosome, rng: &mut ThreadRng) -> Chromosome {
+    fn mutate_individual(&self, mut individual: Individual, rng: &mut ThreadRng) -> Individual {
         let (concept_probability, connection_probability) = if rng.gen::<f64>() < 0.5 {
             (0.9, 0.5)
         } else {
             (0.5, 0.9)
         };
-        if chromosome.concepts.len() > 0 && rng.gen::<f64>() < concept_probability {
+        if individual.concepts.len() > 0 && rng.gen::<f64>() < concept_probability {
             let concept = &self.control_concepts[rng.gen_range(0..self.control_concepts.len())];
-            *chromosome.concepts.get_mut(&concept.id).unwrap() = concept.generate_value(rng);
+            *individual.concepts.get_mut(&concept.id).unwrap() = concept.generate_value(rng);
         }
-        if chromosome.connections.len() > 0 && rng.gen::<f64>() < connection_probability {
+        if individual.connections.len() > 0 && rng.gen::<f64>() < connection_probability {
             let connection =
                 &self.control_connections[rng.gen_range(0..self.control_connections.len())];
-            *chromosome.connections.get_mut(&connection.id).unwrap() =
+            *individual.connections.get_mut(&connection.id).unwrap() =
                 connection.generate_value(rng);
         }
-        let fitness = self.get_chromosome_fitness(&chromosome.concepts, &chromosome.connections);
-        chromosome.fitness = Some(fitness);
-        chromosome
+        let fitness = self.get_individual_fitness(&individual.concepts, &individual.connections);
+        individual.fitness = Some(fitness);
+        individual
     }
     fn create_first_generation(&self) -> Generation {
         let mut rng = rand::thread_rng();
-        let mut chromosomes = Vec::new();
+        let mut individuals = Vec::new();
         for _ in 0..self.adjustment_input.generation_size {
-            chromosomes.push(Self::create_random_chromosome(self, &mut rng));
+            individuals.push(Self::create_random_individual(self, &mut rng));
         }
-        Self::sort_by_fitness(&mut chromosomes);
-        let error = Self::get_generation_error(&chromosomes);
-        Generation { chromosomes, error }
+        Self::sort_by_fitness(&mut individuals);
+        let error = Self::get_generation_error(&individuals);
+        Generation { individuals, error }
     }
     fn create_next_generation(&self) -> Generation {
         let mut rng = rand::thread_rng();
         let mut rng_clone = rng.clone();
         let best_count = self.adjustment_input.generation_size / 10;
-        let mut chromosomes = self
+        let mut individuals = self
             .select_parent_candidates(&mut rng, best_count)
             .chunks(2)
             .flat_map(|chunk| match chunk {
-                &[p1, p2] => self.cross_chromosomes(p1, p2, &mut rng),
+                &[p1, p2] => self.cross_individuals(p1, p2, &mut rng),
                 &[p] => vec![p.clone()],
                 _ => unreachable!(),
             })
-            .map(|chromosome| self.mutate_chromosome(chromosome, &mut rng_clone))
+            .map(|individual| self.mutate_individual(individual, &mut rng_clone))
             .collect::<Vec<_>>();
-        for chromosome in
-            &self.current_generation.as_ref().unwrap().chromosomes[0..best_count as usize]
+        for individual in
+            &self.current_generation.as_ref().unwrap().individuals[0..best_count as usize]
         {
-            chromosomes.push(chromosome.clone());
+            individuals.push(individual.clone());
         }
-        Self::sort_by_fitness(&mut chromosomes);
-        let error = Self::get_generation_error(&chromosomes);
-        Generation { chromosomes, error }
+        Self::sort_by_fitness(&mut individuals);
+        let error = Self::get_generation_error(&individuals);
+        Generation { individuals, error }
     }
-    fn create_random_chromosome(&self, rng: &mut ThreadRng) -> Chromosome {
+    fn create_random_individual(&self, rng: &mut ThreadRng) -> Individual {
         let mut concepts = HashMap::new();
         for concept in &self.control_concepts {
             concepts.insert(concept.id, concept.generate_value(rng));
@@ -348,20 +348,20 @@ impl AdjustmentModel {
         for connection in &self.control_connections {
             connections.insert(connection.id, connection.generate_value(rng));
         }
-        let fitness = self.get_chromosome_fitness(&concepts, &connections);
-        Chromosome {
+        let fitness = self.get_individual_fitness(&concepts, &connections);
+        Individual {
             id: None,
             concepts,
             connections,
             fitness: Some(fitness),
         }
     }
-    fn create_child_chromosome(
+    fn create_child_individual(
         &self,
-        parent1: &Chromosome,
-        parent2: &Chromosome,
+        parent1: &Individual,
+        parent2: &Individual,
         rng: &mut ThreadRng,
-    ) -> Chromosome {
+    ) -> Individual {
         let mut concepts = HashMap::new();
         for (id, p1) in &parent1.concepts {
             let mut p1 = *p1;
@@ -400,7 +400,7 @@ impl AdjustmentModel {
             }
             connections.insert(*id, rng.gen_range(min..=max));
         }
-        Chromosome {
+        Individual {
             id: None,
             concepts,
             connections,
@@ -417,9 +417,9 @@ impl AdjustmentModel {
         }
         state
     }
-    fn sort_by_fitness(chromosomes: &mut Vec<Chromosome>) -> () {
-        chromosomes
-            .sort_by_key(|chromosome| OrderedFloat(chromosome.fitness.as_ref().unwrap().error))
+    fn sort_by_fitness(individuals: &mut Vec<Individual>) -> () {
+        individuals
+            .sort_by_key(|individual| OrderedFloat(individual.fitness.as_ref().unwrap().error))
     }
 }
 

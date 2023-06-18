@@ -29,7 +29,7 @@
         show-expand
       >
         <template #item.name="{ item }">
-          <template v-if="item.raw.resultChromosome">
+          <template v-if="item.raw.resultIndividual">
             <NuxtLink :to="getGenerationLink(item.raw)">{{
               item.raw.name
             }}</NuxtLink>
@@ -44,11 +44,11 @@
           {{ dateTimeFilter(item.raw.createdAt) }}
         </template>
         <template #item.result="{ item }">
-          <template v-if="item.raw.resultChromosome">
-            <NuxtLink :to="getResultChromosomeLink(item.raw)" class="mr-2">{{
+          <template v-if="item.raw.resultIndividual">
+            <NuxtLink :to="getResultIndividualLink(item.raw)" class="mr-2">{{
               t('result')
             }}</NuxtLink>
-            <PluginsAdjustmentResultChromosomeInfo :adjustment-run="item.raw" />
+            <PluginsAdjustmentResultIndividualInfo :adjustment-run="item.raw" />
           </template>
           <VProgressLinear
             v-else
@@ -179,14 +179,14 @@ const getGenerationLink = (adjustmentRun: AdjustmentRunOutType) => {
     },
   }
 }
-const getResultChromosomeLink = (adjustmentRun: AdjustmentRunOutType) => {
+const getResultIndividualLink = (adjustmentRun: AdjustmentRunOutType) => {
   return {
-    name: 'adjustment-project_id-adjustment_run_id-generation_id-chromosome_id',
+    name: 'adjustment-project_id-adjustment_run_id-generation_id-individual_id',
     params: {
       project_id: route.params.project_id,
       adjustment_run_id: adjustmentRun.id,
-      generation_id: adjustmentRun.resultChromosome!.generationId,
-      chromosome_id: adjustmentRun.resultChromosome!.id,
+      generation_id: adjustmentRun.resultIndividual!.generationId,
+      individual_id: adjustmentRun.resultIndividual!.id,
     },
   }
 }

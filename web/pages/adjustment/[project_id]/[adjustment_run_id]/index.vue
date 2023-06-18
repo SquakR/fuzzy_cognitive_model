@@ -20,7 +20,7 @@
         :items="adjustmentGenerations"
       >
         <template #item.number="{ item }">
-          <NuxtLink :to="getChromosomesLink(item.raw)">
+          <NuxtLink :to="getIndividualsLink(item.raw)">
             {{ item.raw.number }}
           </NuxtLink>
         </template>
@@ -102,7 +102,7 @@ const bc = computed<BreadcrumbsItem[]>(() => [
   },
 ])
 
-const getChromosomesLink = (
+const getIndividualsLink = (
   adjustmentGeneration: AdjustmentGenerationOutType
 ) => {
   return {

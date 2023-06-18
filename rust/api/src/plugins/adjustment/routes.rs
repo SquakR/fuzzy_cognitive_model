@@ -3,9 +3,9 @@ use super::services::{
     adjustment_out_services, adjustment_services, concept_dynamic_model_services,
 };
 use super::types::{
-    AdjustmentChromosomeOutType, AdjustmentChromosomesInType, AdjustmentGenerationOutType,
-    AdjustmentGenerationsInType, AdjustmentInType, AdjustmentRunActionType, AdjustmentRunOutType,
-    AdjustmentRunsInType, ConceptDynamicModelOutType,
+    AdjustmentGenerationOutType, AdjustmentGenerationsInType, AdjustmentInType,
+    AdjustmentIndividualInType, AdjustmentIndividualOutType, AdjustmentRunActionType,
+    AdjustmentRunOutType, AdjustmentRunsInType, ConceptDynamicModelOutType,
 };
 use crate::db;
 use crate::locale::Locale;
@@ -149,34 +149,34 @@ pub fn get_adjustment_generations(
     .to_path_result()
 }
 
-/// Get adjustment chromosome
+/// Get adjustment individuals
 #[openapi(tag = "adjustment")]
-#[get("/adjustment_chromosomes/<adjustment_chromosome_id>")]
-pub fn get_adjustment_chromosome(
-    adjustment_chromosome_id: i32,
+#[get("/adjustment_individuals/<adjustment_individual_id>")]
+pub fn get_adjustment_individual(
+    adjustment_individual_id: i32,
     user: User,
-) -> PathResult<AdjustmentChromosomeOutType> {
+) -> PathResult<AdjustmentIndividualOutType> {
     let conn = &mut db::establish_connection();
-    adjustment_out_services::get_adjustment_chromosome(conn, &user, adjustment_chromosome_id)
+    adjustment_out_services::get_adjustment_individual(conn, &user, adjustment_individual_id)
         .to_path_result()
 }
 
-/// Get adjustment chromosomes
+/// Get adjustment individuals
 #[openapi(tag = "adjustment")]
 #[get(
-    "/adjustment_generations/<adjustment_generation_id>/adjustment_chromosomes?<adjustment_chromosomes_in..>"
+    "/adjustment_generations/<adjustment_generation_id>/adjustment_individuals?<adjustment_individuals_in..>"
 )]
-pub fn get_adjustment_chromosomes(
+pub fn get_adjustment_individuals(
     adjustment_generation_id: i32,
-    adjustment_chromosomes_in: AdjustmentChromosomesInType,
+    adjustment_individuals_in: AdjustmentIndividualInType,
     user: User,
-) -> PathResult<PaginationOutType<AdjustmentChromosomeOutType>> {
+) -> PathResult<PaginationOutType<AdjustmentIndividualOutType>> {
     let conn = &mut db::establish_connection();
     let pagination_in = PaginationInType {
-        page: adjustment_chromosomes_in.page.unwrap_or(1),
-        per_page: adjustment_chromosomes_in.per_page.unwrap_or(15),
+        page: adjustment_individuals_in.page.unwrap_or(1),
+        per_page: adjustment_individuals_in.per_page.unwrap_or(15),
     };
-    adjustment_out_services::paginate_adjustment_chromosomes(
+    adjustment_out_services::paginate_adjustment_individuals(
         conn,
         &user,
         adjustment_generation_id,

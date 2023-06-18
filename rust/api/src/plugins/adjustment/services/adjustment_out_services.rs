@@ -1,5 +1,5 @@
 use super::super::models::{
-    AdjustmentChromosome, AdjustmentConceptValue, AdjustmentConnectionValue, AdjustmentGeneration,
+    AdjustmentConceptValue, AdjustmentConnectionValue, AdjustmentGeneration, AdjustmentIndividual,
     AdjustmentRun,
 };
 use super::super::types::{
@@ -10,12 +10,12 @@ use crate::filter_date_time;
 use crate::models::{Project, User};
 use crate::pagination::Paginate;
 use crate::plugins::adjustment::types::{
-    AdjustmentChromosomeGenerationOutType, AdjustmentChromosomeOutType,
+    AdjustmentIndividualGenerationOutType, AdjustmentIndividualOutType,
 };
 use crate::response::{ServiceResult, ToServiceResult};
 use crate::schema::{
-    adjustment_chromosomes, adjustment_concept_values, adjustment_connection_values,
-    adjustment_generations, adjustment_runs, projects,
+    adjustment_concept_values, adjustment_connection_values, adjustment_generations,
+    adjustment_individuals, adjustment_runs, projects,
 };
 use crate::services::{permission_services, project_services};
 use crate::types::{IntervalInType, PaginationInType, PaginationOutType};
@@ -112,36 +112,36 @@ pub fn paginate_adjustment_generations(
     })
 }
 
-pub fn get_adjustment_chromosome(
+pub fn get_adjustment_individual(
     conn: &mut PgConnection,
     user: &User,
-    adjustment_chromosome_id: i32,
-) -> ServiceResult<AdjustmentChromosomeOutType> {
-    let project = find_project_by_adjustment_chromosome_id(conn, adjustment_chromosome_id)
+    adjustment_individual_id: i32,
+) -> ServiceResult<AdjustmentIndividualOutType> {
+    let project = find_project_by_adjustment_individual_id(conn, adjustment_individual_id)
         .to_service_result_find(String::from("adjustment_generation_not_found_error"))?;
     permission_services::can_view_project(conn, &project, user)?;
-    let adjustment_chromosome =
-        find_adjustment_chromosome_by_id(conn, adjustment_chromosome_id).to_service_result()?;
-    AdjustmentChromosomeOutType::from_chromosome(conn, adjustment_chromosome)
+    let adjustment_individual =
+        find_adjustment_individual_by_id(conn, adjustment_individual_id).to_service_result()?;
+    AdjustmentIndividualOutType::from_individual(conn, adjustment_individual)
 }
 
-pub fn paginate_adjustment_chromosomes(
+pub fn paginate_adjustment_individuals(
     conn: &mut PgConnection,
     user: &User,
     adjustment_generation_id: i32,
     pagination_in: PaginationInType,
-) -> ServiceResult<PaginationOutType<AdjustmentChromosomeOutType>> {
+) -> ServiceResult<PaginationOutType<AdjustmentIndividualOutType>> {
     let project = find_project_by_adjustment_generation_id(conn, adjustment_generation_id)
         .to_service_result_find(String::from("adjustment_generation_not_found_error"))?;
     permission_services::can_view_project(conn, &project, user)?;
-    let (adjustment_chromosomes, total_count, total_pages) = adjustment_chromosomes::table
-        .filter(adjustment_chromosomes::adjustment_generation_id.eq(adjustment_generation_id))
+    let (adjustment_individuals, total_count, total_pages) = adjustment_individuals::table
+        .filter(adjustment_individuals::adjustment_generation_id.eq(adjustment_generation_id))
         .paginate(pagination_in.page as i64)
         .per_page(pagination_in.per_page as i64)
-        .load_and_count_pages::<AdjustmentChromosome>(conn)
+        .load_and_count_pages::<AdjustmentIndividual>(conn)
         .to_service_result()?;
     Ok(PaginationOutType {
-        data: AdjustmentChromosomeOutType::from_chromosomes(conn, adjustment_chromosomes)?,
+        data: AdjustmentIndividualOutType::from_individuals(conn, adjustment_individuals)?,
         total_count: total_count as i32,
         total_pages: total_pages as i32,
     })
@@ -187,44 +187,44 @@ pub fn find_project_by_adjustment_generation_id(
         .get_result::<Project>(conn)
 }
 
-pub fn find_adjustment_chromosome_by_id(
+pub fn find_adjustment_individual_by_id(
     conn: &mut PgConnection,
-    adjustment_chromosome_id: i32,
-) -> QueryResult<AdjustmentChromosome> {
-    adjustment_chromosomes::table
-        .filter(adjustment_chromosomes::id.eq(adjustment_chromosome_id))
-        .get_result::<AdjustmentChromosome>(conn)
+    adjustment_individual_id: i32,
+) -> QueryResult<AdjustmentIndividual> {
+    adjustment_individuals::table
+        .filter(adjustment_individuals::id.eq(adjustment_individual_id))
+        .get_result::<AdjustmentIndividual>(conn)
 }
 
-pub fn find_project_by_adjustment_chromosome_id(
+pub fn find_project_by_adjustment_individual_id(
     conn: &mut PgConnection,
-    adjustment_chromosome_id: i32,
+    adjustment_individual_id: i32,
 ) -> QueryResult<Project> {
-    adjustment_chromosomes::table
+    adjustment_individuals::table
         .inner_join(
             adjustment_generations::table
                 .inner_join(adjustment_runs::table.inner_join(projects::table)),
         )
-        .filter(adjustment_chromosomes::id.eq(adjustment_chromosome_id))
+        .filter(adjustment_individuals::id.eq(adjustment_individual_id))
         .select(projects::all_columns)
         .get_result::<Project>(conn)
 }
 
 fn find_concept_values(
     conn: &mut PgConnection,
-    chromosome_ids: &[i32],
+    individual_ids: &[i32],
 ) -> QueryResult<Vec<AdjustmentConceptValue>> {
     adjustment_concept_values::table
-        .filter(adjustment_concept_values::adjustment_chromosome_id.eq_any(chromosome_ids))
+        .filter(adjustment_concept_values::adjustment_individual_id.eq_any(individual_ids))
         .get_results::<AdjustmentConceptValue>(conn)
 }
 
 fn find_connection_values(
     conn: &mut PgConnection,
-    chromosome_ids: &[i32],
+    individual_ids: &[i32],
 ) -> QueryResult<Vec<AdjustmentConnectionValue>> {
     adjustment_connection_values::table
-        .filter(adjustment_connection_values::adjustment_chromosome_id.eq_any(chromosome_ids))
+        .filter(adjustment_connection_values::adjustment_individual_id.eq_any(individual_ids))
         .get_results::<AdjustmentConnectionValue>(conn)
 }
 
@@ -233,26 +233,26 @@ impl AdjustmentRunOutType {
         conn: &mut PgConnection,
         adjustment_run: AdjustmentRun,
     ) -> ServiceResult<Self> {
-        let result_chromosome = match adjustment_run.result_chromosome_id {
-            Some(result_chromosome_id) => {
+        let result_individual = match adjustment_run.result_individual_id {
+            Some(result_individual_id) => {
                 let (id, number, time, error, generation_id, generation_number, generation_error) =
-                    adjustment_chromosomes::table
+                    adjustment_individuals::table
                         .inner_join(adjustment_generations::table)
-                        .filter(adjustment_chromosomes::id.eq(result_chromosome_id))
+                        .filter(adjustment_individuals::id.eq(result_individual_id))
                         .select((
-                            adjustment_chromosomes::id,
-                            adjustment_chromosomes::number,
-                            adjustment_chromosomes::time,
-                            adjustment_chromosomes::error,
+                            adjustment_individuals::id,
+                            adjustment_individuals::number,
+                            adjustment_individuals::time,
+                            adjustment_individuals::error,
                             adjustment_generations::id,
                             adjustment_generations::number,
                             adjustment_generations::error,
                         ))
                         .get_result::<(i32, i32, i32, f64, i32, i32, f64)>(conn)
                         .to_service_result()?;
-                let concept_values = Self::get_concept_values(conn, result_chromosome_id)?;
-                let connection_values = Self::get_connection_values(conn, result_chromosome_id)?;
-                Some(AdjustmentChromosomeGenerationOutType {
+                let concept_values = Self::get_concept_values(conn, result_individual_id)?;
+                let connection_values = Self::get_connection_values(conn, result_individual_id)?;
+                Some(AdjustmentIndividualGenerationOutType {
                     id,
                     number,
                     time,
@@ -266,32 +266,32 @@ impl AdjustmentRunOutType {
             }
             None => None,
         };
-        Ok(Self::from((adjustment_run, result_chromosome)))
+        Ok(Self::from((adjustment_run, result_individual)))
     }
     pub fn from_adjustment_runs(
         conn: &mut PgConnection,
         adjustment_runs: Vec<AdjustmentRun>,
     ) -> ServiceResult<Vec<Self>> {
-        let chromosome_ids = adjustment_runs
+        let individual_ids = adjustment_runs
             .iter()
-            .filter_map(|ar| match ar.result_chromosome_id {
+            .filter_map(|ar| match ar.result_individual_id {
                 Some(id) => Some(id),
                 None => None,
             })
             .collect::<Vec<_>>();
-        let mut result_chromosomes =
-            Self::find_chromosomes(conn, &chromosome_ids).to_service_result()?;
-        let mut concept_values = find_concept_values(conn, &chromosome_ids).to_service_result()?;
+        let mut result_individuals =
+            Self::find_individuals(conn, &individual_ids).to_service_result()?;
+        let mut concept_values = find_concept_values(conn, &individual_ids).to_service_result()?;
         let mut connection_values =
-            find_connection_values(conn, &chromosome_ids).to_service_result()?;
+            find_connection_values(conn, &individual_ids).to_service_result()?;
         let mut result = vec![];
         for adjustment_run in adjustment_runs {
-            let result_chromosome = match &adjustment_run.result_chromosome_id {
-                Some(result_chromosome_id) => {
-                    let result_chromosome_index = result_chromosomes
+            let result_individual = match &adjustment_run.result_individual_id {
+                Some(result_individual_id) => {
+                    let result_individual_index = result_individuals
                         .iter()
                         .enumerate()
-                        .find(|(_, rc)| rc.0 == *result_chromosome_id)
+                        .find(|(_, rc)| rc.0 == *result_individual_id)
                         .unwrap()
                         .0;
                     let (
@@ -302,11 +302,11 @@ impl AdjustmentRunOutType {
                         generation_id,
                         generation_number,
                         generation_error,
-                    ) = result_chromosomes.remove(result_chromosome_index);
+                    ) = result_individuals.remove(result_individual_index);
                     let concept_value_indices = concept_values
                         .iter()
                         .enumerate()
-                        .filter(|(_, cv)| cv.adjustment_chromosome_id == *result_chromosome_id)
+                        .filter(|(_, cv)| cv.adjustment_individual_id == *result_individual_id)
                         .map(|(i, _)| i)
                         .collect::<Vec<_>>();
                     let mut concept_out_values = vec![];
@@ -318,7 +318,7 @@ impl AdjustmentRunOutType {
                     let connection_value_indices = connection_values
                         .iter()
                         .enumerate()
-                        .filter(|(_, cv)| cv.adjustment_chromosome_id == *result_chromosome_id)
+                        .filter(|(_, cv)| cv.adjustment_individual_id == *result_individual_id)
                         .map(|(i, _)| i)
                         .collect::<Vec<_>>();
                     let mut connection_out_values = vec![];
@@ -327,7 +327,7 @@ impl AdjustmentRunOutType {
                             connection_values.remove(index),
                         ));
                     }
-                    Some(AdjustmentChromosomeGenerationOutType {
+                    Some(AdjustmentIndividualGenerationOutType {
                         id,
                         number,
                         time,
@@ -341,22 +341,22 @@ impl AdjustmentRunOutType {
                 }
                 None => None,
             };
-            result.push(Self::from((adjustment_run, result_chromosome)))
+            result.push(Self::from((adjustment_run, result_individual)))
         }
         Ok(result)
     }
-    fn find_chromosomes(
+    fn find_individuals(
         conn: &mut PgConnection,
-        chromosome_ids: &[i32],
+        individual_ids: &[i32],
     ) -> QueryResult<Vec<(i32, i32, i32, f64, i32, i32, f64)>> {
-        adjustment_chromosomes::table
+        adjustment_individuals::table
             .inner_join(adjustment_generations::table)
-            .filter(adjustment_chromosomes::id.eq_any(chromosome_ids))
+            .filter(adjustment_individuals::id.eq_any(individual_ids))
             .select((
-                adjustment_chromosomes::id,
-                adjustment_chromosomes::number,
-                adjustment_chromosomes::time,
-                adjustment_chromosomes::error,
+                adjustment_individuals::id,
+                adjustment_individuals::number,
+                adjustment_individuals::time,
+                adjustment_individuals::error,
                 adjustment_generations::id,
                 adjustment_generations::number,
                 adjustment_generations::error,
@@ -365,7 +365,7 @@ impl AdjustmentRunOutType {
     }
     fn get_concept_values(
         conn: &mut PgConnection,
-        chromosome_id: i32,
+        individual_id: i32,
     ) -> ServiceResult<Vec<AdjustmentConceptValueOutType>> {
         let concept_values = adjustment_concept_values::table
             .select((
@@ -373,7 +373,7 @@ impl AdjustmentRunOutType {
                 adjustment_concept_values::concept_id,
                 adjustment_concept_values::value,
             ))
-            .filter(adjustment_concept_values::adjustment_chromosome_id.eq(chromosome_id))
+            .filter(adjustment_concept_values::adjustment_individual_id.eq(individual_id))
             .get_results::<(i32, i32, f64)>(conn)
             .to_service_result()?
             .into_iter()
@@ -387,7 +387,7 @@ impl AdjustmentRunOutType {
     }
     fn get_connection_values(
         conn: &mut PgConnection,
-        chromosome_id: i32,
+        individual_id: i32,
     ) -> ServiceResult<Vec<AdjustmentConnectionValueOutType>> {
         let connection_values = adjustment_connection_values::table
             .select((
@@ -395,7 +395,7 @@ impl AdjustmentRunOutType {
                 adjustment_connection_values::connection_id,
                 adjustment_connection_values::value,
             ))
-            .filter(adjustment_connection_values::adjustment_chromosome_id.eq(chromosome_id))
+            .filter(adjustment_connection_values::adjustment_individual_id.eq(individual_id))
             .get_results::<(i32, i32, f64)>(conn)
             .to_service_result()?
             .into_iter()
@@ -411,11 +411,11 @@ impl AdjustmentRunOutType {
     }
 }
 
-impl From<(AdjustmentRun, Option<AdjustmentChromosomeGenerationOutType>)> for AdjustmentRunOutType {
+impl From<(AdjustmentRun, Option<AdjustmentIndividualGenerationOutType>)> for AdjustmentRunOutType {
     fn from(
-        (adjustment_run, result_chromosome): (
+        (adjustment_run, result_individual): (
             AdjustmentRun,
-            Option<AdjustmentChromosomeGenerationOutType>,
+            Option<AdjustmentIndividualGenerationOutType>,
         ),
     ) -> Self {
         Self {
@@ -434,7 +434,7 @@ impl From<(AdjustmentRun, Option<AdjustmentChromosomeGenerationOutType>)> for Ad
                 error: adjustment_run.error,
             },
             created_at: adjustment_run.created_at,
-            result_chromosome,
+            result_individual,
         }
     }
 }
@@ -449,20 +449,20 @@ impl From<AdjustmentGeneration> for AdjustmentGenerationOutType {
     }
 }
 
-impl AdjustmentChromosomeOutType {
-    fn from_chromosome(
+impl AdjustmentIndividualOutType {
+    fn from_individual(
         conn: &mut PgConnection,
-        adjustment_chromosome: AdjustmentChromosome,
+        adjustment_individual: AdjustmentIndividual,
     ) -> ServiceResult<Self> {
         let concept_values =
-            find_concept_values(conn, &vec![adjustment_chromosome.id]).to_service_result()?;
+            find_concept_values(conn, &vec![adjustment_individual.id]).to_service_result()?;
         let connection_values =
-            find_connection_values(conn, &vec![adjustment_chromosome.id]).to_service_result()?;
+            find_connection_values(conn, &vec![adjustment_individual.id]).to_service_result()?;
         Ok(Self {
-            id: adjustment_chromosome.id,
-            number: adjustment_chromosome.number,
-            time: adjustment_chromosome.time,
-            error: adjustment_chromosome.error,
+            id: adjustment_individual.id,
+            number: adjustment_individual.number,
+            time: adjustment_individual.time,
+            error: adjustment_individual.error,
             concept_values: concept_values
                 .into_iter()
                 .map(AdjustmentConceptValueOutType::from)
@@ -473,23 +473,23 @@ impl AdjustmentChromosomeOutType {
                 .collect(),
         })
     }
-    fn from_chromosomes(
+    fn from_individuals(
         conn: &mut PgConnection,
-        adjustment_chromosomes: Vec<AdjustmentChromosome>,
+        adjustment_individuals: Vec<AdjustmentIndividual>,
     ) -> ServiceResult<Vec<Self>> {
-        let chromosome_ids = adjustment_chromosomes
+        let individual_ids = adjustment_individuals
             .iter()
             .map(|ac| ac.id)
             .collect::<Vec<_>>();
-        let mut concept_values = find_concept_values(conn, &chromosome_ids).to_service_result()?;
+        let mut concept_values = find_concept_values(conn, &individual_ids).to_service_result()?;
         let mut connection_values =
-            find_connection_values(conn, &chromosome_ids).to_service_result()?;
+            find_connection_values(conn, &individual_ids).to_service_result()?;
         let mut result = vec![];
-        for adjustment_chromosome in adjustment_chromosomes {
+        for adjustment_individual in adjustment_individuals {
             let concept_value_indices = concept_values
                 .iter()
                 .enumerate()
-                .filter(|(_, cv)| cv.adjustment_chromosome_id == adjustment_chromosome.id)
+                .filter(|(_, cv)| cv.adjustment_individual_id == adjustment_individual.id)
                 .map(|(i, _)| i)
                 .collect::<Vec<_>>();
             let mut concept_out_values = vec![];
@@ -501,7 +501,7 @@ impl AdjustmentChromosomeOutType {
             let connection_value_indices = connection_values
                 .iter()
                 .enumerate()
-                .filter(|(_, cv)| cv.adjustment_chromosome_id == adjustment_chromosome.id)
+                .filter(|(_, cv)| cv.adjustment_individual_id == adjustment_individual.id)
                 .map(|(i, _)| i)
                 .collect::<Vec<_>>();
             let mut connection_out_values = vec![];
@@ -511,10 +511,10 @@ impl AdjustmentChromosomeOutType {
                 ));
             }
             result.push(Self {
-                id: adjustment_chromosome.id,
-                number: adjustment_chromosome.number,
-                time: adjustment_chromosome.time,
-                error: adjustment_chromosome.error,
+                id: adjustment_individual.id,
+                number: adjustment_individual.number,
+                time: adjustment_individual.time,
+                error: adjustment_individual.error,
                 concept_values: concept_out_values,
                 connection_values: connection_out_values,
             })

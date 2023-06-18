@@ -41,7 +41,7 @@ export interface AdjustmentRunOutType {
   generationSaveInterval: number
   stopCondition: StopConditionType
   createdAt: string
-  resultChromosome: AdjustmentChromosomeGenerationOutType | null
+  resultIndividual: AdjustmentIndividualGenerationOutType | null
 }
 
 export interface AdjustmentGenerationOutType {
@@ -50,7 +50,7 @@ export interface AdjustmentGenerationOutType {
   error: number
 }
 
-export interface AdjustmentChromosomeOutType {
+export interface AdjustmentIndividualOutType {
   id: number
   number: number
   time: number
@@ -59,7 +59,7 @@ export interface AdjustmentChromosomeOutType {
   connectionValues: AdjustmentConnectionValueOutType[]
 }
 
-export interface AdjustmentChromosomeGenerationOutType {
+export interface AdjustmentIndividualGenerationOutType {
   id: number
   time: number
   number: number

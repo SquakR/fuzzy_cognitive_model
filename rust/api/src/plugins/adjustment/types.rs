@@ -76,8 +76,8 @@ pub struct AdjustmentRunOutType {
     pub stop_condition: StopConditionType,
     /// Adjustment run creation time
     pub created_at: DateTime<Utc>,
-    /// Resulting chromosome of adjustment run
-    pub result_chromosome: Option<AdjustmentChromosomeGenerationOutType>,
+    /// Resulting individual of adjustment run
+    pub result_individual: Option<AdjustmentIndividualGenerationOutType>,
 }
 
 /// Type of adjustment generation
@@ -92,35 +92,35 @@ pub struct AdjustmentGenerationOutType {
     pub error: f64,
 }
 
-/// Type of adjustment chromosome
+/// Type of adjustment individual
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct AdjustmentChromosomeOutType {
-    /// Adjustment chromosome identifier
+pub struct AdjustmentIndividualOutType {
+    /// Adjustment individual identifier
     pub id: i32,
-    /// Adjustment chromosome number
+    /// Adjustment individual number
     pub number: i32,
-    /// Adjustment chromosome time
+    /// Adjustment individual time
     pub time: i32,
-    /// Adjustment chromosome error
+    /// Adjustment individual error
     pub error: f64,
-    /// Adjustment chromosome concept values
+    /// Adjustment individual concept values
     pub concept_values: Vec<AdjustmentConceptValueOutType>,
-    /// Adjustment chromosome connection values
+    /// Adjustment individual connection values
     pub connection_values: Vec<AdjustmentConnectionValueOutType>,
 }
 
-/// Type of adjustment chromosome with generation information
+/// Type of adjustment individual with generation information
 #[derive(Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct AdjustmentChromosomeGenerationOutType {
-    /// Adjustment chromosome identifier
+pub struct AdjustmentIndividualGenerationOutType {
+    /// Adjustment individual identifier
     pub id: i32,
-    /// Adjustment chromosome number
+    /// Adjustment individual number
     pub number: i32,
-    /// Adjustment chromosome time
+    /// Adjustment individual time
     pub time: i32,
-    /// Adjustment chromosome error
+    /// Adjustment individual error
     pub error: f64,
     /// Adjustment generation identifier
     pub generation_id: i32,
@@ -128,9 +128,9 @@ pub struct AdjustmentChromosomeGenerationOutType {
     pub generation_number: i32,
     /// Adjustment generation average error
     pub generation_error: f64,
-    /// Adjustment chromosome concept values
+    /// Adjustment individual concept values
     pub concept_values: Vec<AdjustmentConceptValueOutType>,
-    /// Adjustment chromosome connection values
+    /// Adjustment individual connection values
     pub connection_values: Vec<AdjustmentConnectionValueOutType>,
 }
 
@@ -194,10 +194,10 @@ pub struct AdjustmentGenerationsInType {
     pub per_page: Option<u16>,
 }
 
-/// Input type for getting adjustment chromosomes
+/// Input type for getting adjustment individuals
 #[derive(FromForm, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct AdjustmentChromosomesInType {
+pub struct AdjustmentIndividualInType {
     /// Page number
     pub page: Option<u16>,
     /// Number of records per page

@@ -12,7 +12,7 @@
         <VList>
           <VListItem>
             <VListItemTitle>{{
-              t('time', { time: adjustmentRun.resultChromosome!.time })
+              t('time', { time: adjustmentRun.resultIndividual!.time })
             }}</VListItemTitle>
           </VListItem>
           <VListItem>
@@ -64,20 +64,20 @@ const formatter = computed(
     })
 )
 const error = computed(() =>
-  formatter.value.format(props.adjustmentRun.resultChromosome!.error)
+  formatter.value.format(props.adjustmentRun.resultIndividual!.error)
 )
 const generationNumber = computed(
-  () => props.adjustmentRun.resultChromosome!.generationNumber
+  () => props.adjustmentRun.resultIndividual!.generationNumber
 )
 const generationError = computed(() =>
-  formatter.value.format(props.adjustmentRun.resultChromosome!.generationError)
+  formatter.value.format(props.adjustmentRun.resultIndividual!.generationError)
 )
 const generationLink = computed(() => ({
   name: 'adjustment-project_id-adjustment_run_id-generation_id',
   params: {
     project_id: route.params.project_id,
     adjustment_run_id: props.adjustmentRun.id,
-    generation_id: props.adjustmentRun.resultChromosome!.generationId,
+    generation_id: props.adjustmentRun.resultIndividual!.generationId,
   },
 }))
 </script>

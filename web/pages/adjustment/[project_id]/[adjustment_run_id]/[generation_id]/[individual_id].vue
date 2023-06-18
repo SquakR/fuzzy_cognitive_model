@@ -2,7 +2,7 @@
   <PluginsAdjustmentBreadcrumbs :items="bc" />
   <VCard height="calc(100% - 40px)">
     <VCardTitle class="d-flex align-center">
-      {{ t('title', { time: adjustmentChromosome!.time, error }) }}
+      {{ t('title', { time: adjustmentIndividual!.time, error }) }}
       <VSpacer />
       <PluginsAdjustmentSimulationIteration
         v-model="iteration"
@@ -16,7 +16,7 @@
         :project-id="Number($route.params.project_id)"
       />
     </VCardTitle>
-    <VCardText class="chromosome-id__card-text">
+    <VCardText class="individual-id__card-text">
       <PluginsAdjustmentEditor :model="model" />
     </VCardText>
   </VCard>
@@ -46,7 +46,7 @@ const [
   { data: project },
   { data: adjustmentRun },
   { data: adjustmentGeneration },
-  { data: adjustmentChromosome },
+  { data: adjustmentIndividual },
 ] = await Promise.all([
   useGetProject({ key: 'project' }, Number(route.params.project_id), {
     pick: ['name'],
@@ -63,11 +63,11 @@ const [
     Number(route.params.generation_id),
     { pick: ['number'] }
   ),
-  useGetAdjustmentChromosome(
+  useGetAdjustmentIndividual(
     {
-      key: 'adjustmentChromosome',
+      key: 'adjustmentIndividual',
     },
-    Number(route.params.chromosome_id)
+    Number(route.params.individual_id)
   ),
 ])
 
@@ -79,7 +79,7 @@ const { data: modelData } = await useGetModelCopy(
 const getInitialConcepts = () => {
   return modelData.value!.concepts.map((concept) => {
     const newConcept = { ...concept }
-    const conceptValue = adjustmentChromosome.value!.conceptValues.find(
+    const conceptValue = adjustmentIndividual.value!.conceptValues.find(
       (conceptValue) => conceptValue.conceptId === concept.id
     )
     if (conceptValue) {
@@ -94,7 +94,7 @@ const model = ref({
   concepts: getInitialConcepts(),
   connections: modelData.value!.connections.map((connection) => {
     const newConnection = { ...connection }
-    const connectionValue = adjustmentChromosome.value!.connectionValues.find(
+    const connectionValue = adjustmentIndividual.value!.connectionValues.find(
       (connectionValue) => connectionValue.connectionId === connection.id
     )
     if (connectionValue) {
@@ -117,7 +117,7 @@ onMounted(() => {
     iteration,
     (newValue) => {
       const concepts = modelData.value!.concepts.map<Concept>((concept) => {
-        const conceptValue = adjustmentChromosome.value!.conceptValues.find(
+        const conceptValue = adjustmentIndividual.value!.conceptValues.find(
           (conceptValue) => conceptValue.conceptId === concept.id
         )
         return {
@@ -142,7 +142,7 @@ onMounted(() => {
       const connections = modelData.value!.connections.map<Connection>(
         (connection) => {
           const connectionValue =
-            adjustmentChromosome.value!.connectionValues.find(
+            adjustmentIndividual.value!.connectionValues.find(
               (connectionValue) =>
                 connectionValue.connectionId === connection.id
             )
@@ -236,39 +236,39 @@ const bc = computed<BreadcrumbsItem[]>(() => [
     },
   },
   {
-    title: String(adjustmentChromosome.value!.number),
+    title: String(adjustmentIndividual.value!.number),
     to: {
-      name: 'adjustment-project_id-adjustment_run_id-generation_id-chromosome_id',
+      name: 'adjustment-project_id-adjustment_run_id-generation_id-individual_id',
       params: {
         project_id: route.params.project_id,
         adjustment_run_id: route.params.adjustment_run_id,
         generation_id: route.params.generation_id,
-        chromosome_id: route.params.chromosome_id,
+        individual_id: route.params.individual_id,
       },
     },
   },
 ])
 
 const error = computed(() =>
-  formatter.value.format(adjustmentChromosome.value!.error)
+  formatter.value.format(adjustmentIndividual.value!.error)
 )
 </script>
 
 <i18n locale="en-US" lang="json">
 {
-  "title": "Chromosome ({time}; {error})",
+  "title": "Individual ({time}; {error})",
   "iterationError": "Error: {error}"
 }
 </i18n>
 
 <i18n locale="ru-RU" lang="json">
 {
-  "title": "Хромосома ({time}; {error})",
+  "title": "Особь ({time}; {error})",
   "iterationError": "Ошибка: {error}"
 }
 </i18n>
 
 <style lang="sass">
-.chromosome-id__card-text
+.individual-id__card-text
   height: calc(100% - 52px)
 </style>

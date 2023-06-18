@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use fuzzy_cognitive_model_common::adjustment::{
-    AdjustmentModel, Chromosome, Generation, SaveResult, TimeSimulation,
+    AdjustmentModel, Generation, Individual, SaveResult, TimeSimulation,
 };
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
@@ -22,7 +22,7 @@ impl SaveResultClient {
 
 #[async_trait]
 impl SaveResult<(), JsValue> for SaveResultClient {
-    async fn save_result(&mut self, result_chromosome: &Chromosome) -> Result<(), JsValue> {
+    async fn save_result(&mut self, result_chromosome: &Individual) -> Result<(), JsValue> {
         Self::get_function("saveResult")
             .call2(
                 &JsValue::undefined(),

@@ -11,8 +11,8 @@ export {
   useAdjustmentRuns,
   useGetAdjustmentGeneration,
   useGetAdjustmentGenerations,
-  useGetAdjustmentChromosome,
-  useGetAdjustmentChromosomes,
+  useGetAdjustmentIndividual,
+  useGetAdjustmentIndividuals,
 } from './adjustment'
 
 export const usePlugins = (

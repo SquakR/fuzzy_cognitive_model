@@ -17,10 +17,10 @@
         :headers="headers"
         :loading="loading"
         :items-length="itemsLength"
-        :items="adjustmentChromosomes"
+        :items="adjustmentIndividuals"
       >
         <template #item.number="{ item }">
-          <NuxtLink :to="getChromosomeLink(item.raw)">
+          <NuxtLink :to="getIndividualLink(item.raw)">
             {{ item.raw.number }}
           </NuxtLink>
         </template>
@@ -36,7 +36,7 @@
 import { useI18n } from 'vue-i18n'
 import { VDataTableServer } from 'vuetify/labs/VDataTable'
 import { useUserStore } from '~/store'
-import { AdjustmentChromosomeOutType, BreadcrumbsItem } from '~/types'
+import { AdjustmentIndividualOutType, BreadcrumbsItem } from '~/types'
 
 definePageMeta({
   middleware: 'auth',
@@ -58,7 +58,7 @@ const [
   { data: project },
   { data: adjustmentRun },
   { data: adjustmentGeneration },
-  { data: adjustmentChromosomePagination, pending: loading, refresh },
+  { data: adjustmentIndividualPagination, pending: loading, refresh },
 ] = await Promise.all([
   useGetProject({ key: 'project' }, Number(route.params.project_id), {
     pick: ['name'],
@@ -75,16 +75,16 @@ const [
     Number(route.params.generation_id),
     { pick: ['number'] }
   ),
-  useGetAdjustmentChromosomes(
-    { key: 'adjustmentChromosomes' },
+  useGetAdjustmentIndividuals(
+    { key: 'adjustmentIndividuals' },
     Number(route.params.generation_id),
     page,
     perPage
   ),
 ])
 
-const { itemsLength, data: adjustmentChromosomes } = usePagination(
-  adjustmentChromosomePagination,
+const { itemsLength, data: adjustmentIndividuals } = usePagination(
+  adjustmentIndividualPagination,
   refresh,
   page,
   perPage
@@ -121,32 +121,32 @@ const bc = computed<BreadcrumbsItem[]>(() => [
   },
 ])
 
-const getChromosomeLink = (
-  adjustmentChromosome: AdjustmentChromosomeOutType
+const getIndividualLink = (
+  adjustmentIndividual: AdjustmentIndividualOutType
 ) => {
   return {
-    name: 'adjustment-project_id-adjustment_run_id-generation_id-chromosome_id',
+    name: 'adjustment-project_id-adjustment_run_id-generation_id-individual_id',
     params: {
       project_id: route.params.project_id,
       adjustment_run_id: route.params.adjustment_run_id,
       generation_id: route.params.generation_id,
-      chromosome_id: adjustmentChromosome.id,
+      individual_id: adjustmentIndividual.id,
     },
   }
 }
 
 const formatGenerationError = (
-  adjustmentChromosome: AdjustmentChromosomeOutType
+  adjustmentIndividual: AdjustmentIndividualOutType
 ) => {
   return new Intl.NumberFormat(userStore.locale, {
     minimumFractionDigits: 5,
-  }).format(adjustmentChromosome.error)
+  }).format(adjustmentIndividual.error)
 }
 </script>
 
 <i18n locale="en-US" lang="json">
 {
-  "title": "Chromosomes",
+  "title": "Individuals",
   "number": "Number",
   "error": "Error"
 }
@@ -154,7 +154,7 @@ const formatGenerationError = (
 
 <i18n locale="ru-RU" lang="json">
 {
-  "title": "Хромосомы",
+  "title": "Особи",
   "number": "Номер",
   "error": "Ошибка"
 }

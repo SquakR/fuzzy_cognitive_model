@@ -139,8 +139,8 @@ impl MountRoutes for Rocket<Build> {
                 adjustment_routes::get_adjustment_runs,
                 adjustment_routes::get_adjustment_generation,
                 adjustment_routes::get_adjustment_generations,
-                adjustment_routes::get_adjustment_chromosome,
-                adjustment_routes::get_adjustment_chromosomes
+                adjustment_routes::get_adjustment_individual,
+                adjustment_routes::get_adjustment_individuals
             ),
         )
     }

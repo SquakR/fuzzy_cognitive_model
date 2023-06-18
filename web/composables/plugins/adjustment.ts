@@ -5,10 +5,10 @@ import {
   ADJUSTMENT_RESULT_KEY,
   ADJUST_KEY,
   AdjustType,
-  AdjustmentChromosomeOutType,
   AdjustmentGenerationOutType,
   AdjustmentGenerationType,
   AdjustmentInType,
+  AdjustmentIndividualOutType,
   AdjustmentResultType,
   AdjustmentRunActionResult,
   AdjustmentRunOutType,
@@ -187,7 +187,7 @@ export const useAdjustmentRuns = async (
     (newValue) => {
       if (newValue) {
         for (const adjustmentRun of newValue) {
-          if (adjustmentRun.resultChromosome) {
+          if (adjustmentRun.resultIndividual) {
             delete lastGenerations.value[adjustmentRun.id]
           } else if (!lastGenerations.value[adjustmentRun.id]) {
             lastGenerations.value[adjustmentRun.id] = 0
@@ -293,13 +293,13 @@ export const useGetAdjustmentGenerations = (
   )
 }
 
-export const useGetAdjustmentChromosome = (
+export const useGetAdjustmentIndividual = (
   opts: LocalFetchOptions,
-  adjustmentChromosomeId: number,
-  fetchOptions?: UseFetchOptions<AdjustmentChromosomeOutType>
+  adjustmentIndividualId: number,
+  fetchOptions?: UseFetchOptions<AdjustmentIndividualOutType>
 ) => {
-  return useLocalFetch<AdjustmentChromosomeOutType>(
-    `/adjustment_chromosomes/${adjustmentChromosomeId}`,
+  return useLocalFetch<AdjustmentIndividualOutType>(
+    `/adjustment_individuals/${adjustmentIndividualId}`,
     opts,
     {
       ...fetchOptions,
@@ -308,15 +308,15 @@ export const useGetAdjustmentChromosome = (
   )
 }
 
-export const useGetAdjustmentChromosomes = (
+export const useGetAdjustmentIndividuals = (
   opts: LocalFetchOptions,
   adjustmentGenerationId: number,
   page: Ref<number>,
   perPage: Ref<number>,
-  fetchOptions?: UseFetchOptions<PaginationOutType<AdjustmentChromosomeOutType>>
+  fetchOptions?: UseFetchOptions<PaginationOutType<AdjustmentIndividualOutType>>
 ) => {
-  return useLocalFetch<PaginationOutType<AdjustmentChromosomeOutType>>(
-    `/adjustment_generations/${adjustmentGenerationId}/adjustment_chromosomes`,
+  return useLocalFetch<PaginationOutType<AdjustmentIndividualOutType>>(
+    `/adjustment_generations/${adjustmentGenerationId}/adjustment_individuals`,
     opts,
     {
       ...fetchOptions,
