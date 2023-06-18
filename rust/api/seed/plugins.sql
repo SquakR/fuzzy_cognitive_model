@@ -19,7 +19,7 @@ INSERT INTO plugins (
 VALUES (
     'Target Concepts',
     'The plugin adds the ability to select target concepts.',
-    null,
+    'from_zero_to_one',
     null
   );
 INSERT INTO plugins (

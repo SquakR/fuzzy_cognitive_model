@@ -30,7 +30,7 @@ pub struct ConnectionConstraintOutType {
     pub min_value: f64,
     /// Whether to include minimum value in constraint
     pub include_min_value: bool,
-    /// Maximum Connection constraint value
+    /// Maximum connection constraint value
     pub max_value: f64,
     /// Whether to include maximum value in constraint
     pub include_max_value: bool,

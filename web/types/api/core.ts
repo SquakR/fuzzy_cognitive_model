@@ -187,7 +187,10 @@ export interface ConceptOutType {
     }
     targetConcepts?: {
       isTarget: boolean
-      value: number | null
+      minValue: number
+      includeMinValue: boolean
+      maxValue: number
+      includeMaxValue: boolean
     }
     conceptConstraints?: {
       hasConstraint: boolean

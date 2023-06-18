@@ -9,7 +9,7 @@ export interface Concept {
   value: number
   isControl: boolean
   isTarget: boolean
-  targetValue: number | null
+  targetValue: TargetValue | null
   constraint: Constraint | null
   dynamicModel: DynamicModel | null
 }
@@ -21,6 +21,13 @@ export interface Connection {
   targetId: number
   isControl: boolean
   constraint: Constraint | null
+}
+
+export interface TargetValue {
+  minValue: number
+  includeMinValue: boolean
+  maxValue: number
+  includeMaxValue: boolean
 }
 
 export interface Constraint {

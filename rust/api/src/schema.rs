@@ -282,7 +282,10 @@ diesel::table! {
     target_concepts (concept_id) {
         concept_id -> Int4,
         is_target -> Bool,
-        value -> Nullable<Float8>,
+        min_value -> Float8,
+        include_min_value -> Bool,
+        max_value -> Float8,
+        include_max_value -> Bool,
     }
 }
 

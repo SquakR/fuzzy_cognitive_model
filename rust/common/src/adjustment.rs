@@ -65,7 +65,7 @@ pub struct Concept {
     pub value: f64,
     pub is_control: bool,
     pub is_target: bool,
-    pub target_value: Option<f64>,
+    pub target_value: Option<TargetValue>,
     pub constraint: Option<Constraint>,
     pub dynamic_model: Option<DynamicModel>,
 }
@@ -79,6 +79,15 @@ pub struct Connection {
     pub target_id: i32,
     pub is_control: bool,
     pub constraint: Option<Constraint>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TargetValue {
+    pub min_value: f64,
+    pub include_min_value: bool,
+    pub max_value: f64,
+    pub include_max_value: bool,
 }
 
 #[derive(Deserialize)]
@@ -515,7 +524,21 @@ impl TimeSimulation {
     fn calculate_error(state: &HashMap<i32, f64>, target_concepts: &[Arc<Concept>]) -> f64 {
         target_concepts
             .iter()
-            .map(|concept| (state[&concept.id] - concept.target_value.unwrap()).powf(2.0))
+            .map(|concept| {
+                let value = state[&concept.id];
+                let target_value = concept.target_value.as_ref().unwrap();
+                if target_value.include_min_value && value < target_value.min_value
+                    || !target_value.include_min_value && value <= target_value.min_value
+                {
+                    return (value - target_value.min_value).powf(2.0);
+                }
+                if target_value.include_max_value && value > target_value.max_value
+                    || !target_value.include_max_value && value >= target_value.max_value
+                {
+                    return (value - target_value.max_value).powf(2.0);
+                }
+                0.0
+            })
             .sum::<f64>()
     }
     fn normalize_value(value: f64) -> f64 {

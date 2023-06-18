@@ -2,7 +2,7 @@ use super::super::Plugins;
 use super::models::TargetConcept;
 use super::types::{TargetConceptInChangeType, TargetConceptOutType};
 use crate::db;
-use crate::models::{Concept, ConceptValueType, Project, User};
+use crate::models::{Concept, Project, User};
 use crate::plugins::control_concepts::services as control_concepts_services;
 use crate::plugins::Plugin;
 use crate::response::{ServiceResult, ToServiceResult};
@@ -60,8 +60,7 @@ pub fn handle_add_concept(
             if !plugin.lock().unwrap().is_enabled(conn, project.id)? {
                 return Ok(concept_out);
             }
-            let target_concept =
-                create_target_concept(conn, &project, concept_out.id).to_service_result()?;
+            let target_concept = create_target_concept(conn, concept_out.id).to_service_result()?;
             add_target_concept(&mut concept_out, &target_concept);
             Ok(concept_out)
         });
@@ -79,10 +78,10 @@ pub fn create_project_target_concepts(
                 .map(|concept| {
                     (
                         target_concepts::concept_id.eq(concept.id),
-                        target_concepts::value.eq(match project.concept_value_type {
-                            ConceptValueType::None => None,
-                            ConceptValueType::FromZeroToOne => Some(0.0),
-                        }),
+                        target_concepts::min_value.eq(0.0),
+                        target_concepts::include_min_value.eq(true),
+                        target_concepts::max_value.eq(1.0),
+                        target_concepts::include_max_value.eq(true),
                     )
                 })
                 .collect::<Vec<_>>(),
@@ -113,16 +112,15 @@ pub fn delete_project_target_concepts(
 
 pub fn create_target_concept(
     conn: &mut PgConnection,
-    project: &Project,
     concept_id: i32,
 ) -> QueryResult<TargetConcept> {
     diesel::insert_into(target_concepts::table)
         .values((
             target_concepts::concept_id.eq(concept_id),
-            target_concepts::value.eq(match project.concept_value_type {
-                ConceptValueType::None => None,
-                ConceptValueType::FromZeroToOne => Some(0.0),
-            }),
+            target_concepts::min_value.eq(0.0),
+            target_concepts::include_min_value.eq(true),
+            target_concepts::max_value.eq(1.0),
+            target_concepts::include_max_value.eq(true),
         ))
         .get_result::<TargetConcept>(conn)
 }
@@ -140,7 +138,8 @@ pub async fn change_target_concept(
     if control_concepts_services::is_control(conn, concept_id)? {
         return validation_error!("concept_is_control_error");
     }
-    model_services::check_concept_value(&project, target_concept_in.value)?;
+    model_services::check_concept_value(&project, Some(target_concept_in.min_value))?;
+    model_services::check_concept_value(&project, Some(target_concept_in.max_value))?;
     let target_concept = find_target_concept_by_id(conn, concept_id)
         .to_service_result_find(String::from("target_concept_not_found_error"))?;
     let (target_concept, concept, project) = conn
@@ -149,7 +148,10 @@ pub async fn change_target_concept(
                 .filter(target_concepts::concept_id.eq(target_concept.concept_id))
                 .set((
                     target_concepts::is_target.eq(target_concept_in.is_target),
-                    target_concepts::value.eq(target_concept_in.value),
+                    target_concepts::min_value.eq(target_concept_in.min_value),
+                    target_concepts::include_min_value.eq(target_concept_in.include_min_value),
+                    target_concepts::max_value.eq(target_concept_in.max_value),
+                    target_concepts::include_max_value.eq(target_concept_in.include_max_value),
                 ))
                 .get_result::<TargetConcept>(conn)?;
             let (concept, project) =
@@ -205,7 +207,10 @@ fn add_target_concept(concept_out: &mut ConceptOutType, target_concept: &TargetC
     };
     plugins_data.entry("targetConcepts").or_insert(json!({
         "isTarget": target_concept.is_target,
-        "value": target_concept.value
+        "minValue": target_concept.min_value,
+        "includeMinValue": target_concept.include_min_value,
+        "maxValue": target_concept.max_value,
+        "includeMaxValue": target_concept.include_max_value,
     }));
 }
 
@@ -214,7 +219,10 @@ impl From<(TargetConcept, Concept)> for TargetConceptOutType {
         Self {
             concept_id: target_concept.concept_id,
             is_target: target_concept.is_target,
-            value: target_concept.value,
+            min_value: target_concept.min_value,
+            include_min_value: target_concept.include_min_value,
+            max_value: target_concept.max_value,
+            include_max_value: target_concept.include_max_value,
             updated_at: concept.updated_at,
         }
     }

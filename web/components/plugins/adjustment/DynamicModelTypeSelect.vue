@@ -56,7 +56,7 @@ const dynamicModelTypeItems = [
 
 <i18n locale="ru-RU" lang="json">
 {
-  "dynamicModelType": "Модель динамики"
+  "dynamicModelType": "Динамическая модель"
 }
 </i18n>
 

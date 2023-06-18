@@ -224,7 +224,7 @@ const getFormula = (adjustmentRun: AdjustmentRunOutType) => {
   "result": "Результат",
   "minModelTime": "Минимальное модельное время",
   "maxModelTime": "Максимальное модельное время",
-  "dynamicModelType": "Модель динамики",
+  "dynamicModelType": "Динамическая модель",
   "generationSize": "Размер поколения",
   "generationSaveInterval": "Интервал сохранения поколений",
   "maxGenerations": "Максимальное число поколений",

@@ -19,6 +19,7 @@ use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::PgConnection;
 use fuzzy_cognitive_model_common::adjustment::{
     AdjustmentInput, AdjustmentModel, Concept, Connection, Constraint, DynamicModel, StopCondition,
+    TargetValue,
 };
 use schemars::JsonSchema;
 use serde::Serialize;
@@ -230,7 +231,10 @@ fn get_concepts(conn: &mut PgConnection, project_id: i32) -> ServiceResult<Vec<A
             concepts::value,
             control_concepts::is_control,
             target_concepts::is_target,
-            target_concepts::value,
+            target_concepts::min_value,
+            target_concepts::include_min_value,
+            target_concepts::max_value,
+            target_concepts::include_max_value,
             concept_constraints::has_constraint,
             concept_constraints::min_value,
             concept_constraints::include_min_value,
@@ -243,7 +247,10 @@ fn get_concepts(conn: &mut PgConnection, project_id: i32) -> ServiceResult<Vec<A
             Option<f64>,
             bool,
             bool,
-            Option<f64>,
+            f64,
+            bool,
+            f64,
+            bool,
             bool,
             f64,
             bool,
@@ -259,7 +266,10 @@ fn get_concepts(conn: &mut PgConnection, project_id: i32) -> ServiceResult<Vec<A
                 value,
                 is_control,
                 is_target,
-                target_value,
+                target_min_value,
+                target_include_min_value,
+                target_max_value,
+                target_include_max_value,
                 has_constraint,
                 min_value,
                 include_min_value,
@@ -267,6 +277,16 @@ fn get_concepts(conn: &mut PgConnection, project_id: i32) -> ServiceResult<Vec<A
                 include_max_value,
                 dynamic_model_type,
             )| {
+                let target_value = if is_target {
+                    Some(TargetValue {
+                        min_value: target_min_value,
+                        include_min_value: target_include_min_value,
+                        max_value: target_max_value,
+                        include_max_value: target_include_max_value,
+                    })
+                } else {
+                    None
+                };
                 let constraint = if has_constraint {
                     Some(Constraint {
                         min_value,

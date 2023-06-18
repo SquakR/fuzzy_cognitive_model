@@ -12,7 +12,26 @@
     flat
   >
     <BaseCheckbox :label="t('isTarget')" :readonly="readonly" name="isTarget" />
-    <BaseTextField :label="t('value')" :readonly="readonly" name="value" />
+    <BaseTextField
+      :label="t('minValue')"
+      :readonly="readonly"
+      name="minValue"
+    />
+    <BaseCheckbox
+      :label="t('includeMinValue')"
+      :readonly="readonly"
+      name="includeMinValue"
+    />
+    <BaseTextField
+      :label="t('maxValue')"
+      :readonly="readonly"
+      name="maxValue"
+    />
+    <BaseCheckbox
+      :label="t('includeMaxValue')"
+      :readonly="readonly"
+      name="includeMaxValue"
+    />
   </BaseForm>
 </template>
 
@@ -37,7 +56,10 @@ const props = withDefaults(defineProps<Props>(), {
 
 interface Values {
   isTarget: boolean
-  value: string
+  minValue: string
+  includeMinValue: boolean
+  maxValue: string
+  includeMaxValue: boolean
 }
 
 const { $yup } = useNuxtApp()
@@ -49,11 +71,19 @@ const validationSchema = $yup.object({
   value: $yup.number().min(0).max(1),
 })
 const initialValues = computed<Values>(() => {
+  const formatter = new Intl.NumberFormat(userStore.locale)
   return {
     isTarget: props.selectedConcept.pluginsData.targetConcepts!.isTarget,
-    value: new Intl.NumberFormat(userStore.locale).format(
-      props.selectedConcept.pluginsData.targetConcepts!.value!
+    minValue: formatter.format(
+      props.selectedConcept.pluginsData.targetConcepts!.minValue!
     ),
+    includeMinValue:
+      props.selectedConcept.pluginsData.targetConcepts!.includeMinValue!,
+    maxValue: formatter.format(
+      props.selectedConcept.pluginsData.targetConcepts!.maxValue!
+    ),
+    includeMaxValue:
+      props.selectedConcept.pluginsData.targetConcepts!.includeMaxValue!,
   }
 })
 const onSubmit = async (values: Values) => {
@@ -61,7 +91,10 @@ const onSubmit = async (values: Values) => {
     props.selectedConcept.id,
     {
       isTarget: values.isTarget,
-      value: Number(values.value.replace(',', '.')),
+      minValue: Number(values.minValue.replace(',', '.')),
+      includeMinValue: values.includeMinValue,
+      maxValue: Number(values.maxValue.replace(',', '.')),
+      includeMaxValue: values.includeMaxValue,
     }
   )
 }
@@ -70,7 +103,10 @@ const onSubmit = async (values: Values) => {
 <i18n locale="en-US" lang="json">
 {
   "isTarget": "Target Concept",
-  "value": "Target Value",
+  "minValue": "Min Value",
+  "includeMinValue": "Include Min Value",
+  "maxValue": "Max Value",
+  "includeMaxValue": "Include Max Value",
   "buttonText": "Change"
 }
 </i18n>
@@ -78,7 +114,10 @@ const onSubmit = async (values: Values) => {
 <i18n locale="ru-RU" lang="json">
 {
   "isTarget": "Целевой концепт",
-  "value": "Целевой значение",
+  "minValue": "Минимальное значение",
+  "includeMinValue": "Включать минимальное значение",
+  "maxValue": "Максимальное значение",
+  "includeMaxValue": "Включать максимальное значение",
   "buttonText": "Изменить"
 }
 </i18n>

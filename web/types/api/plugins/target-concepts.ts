@@ -2,13 +2,19 @@ import { ModelActionType } from '../core'
 
 export interface TargetConceptInChangeType {
   isTarget: boolean
-  value: number | null
+  minValue: number
+  includeMinValue: boolean
+  maxValue: number
+  includeMaxValue: boolean
 }
 
 export interface TargetConceptOutType {
   conceptId: number
   isTarget: boolean
-  value: number | null
+  minValue: number
+  includeMinValue: boolean
+  maxValue: number
+  includeMaxValue: boolean
   updatedAt: string
 }
 

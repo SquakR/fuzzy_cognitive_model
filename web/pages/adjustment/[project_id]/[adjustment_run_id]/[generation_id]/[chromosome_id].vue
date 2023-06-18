@@ -121,7 +121,7 @@ onMounted(() => {
           isControl: concept.pluginsData.controlConcepts!.isControl,
           isTarget: concept.pluginsData.targetConcepts!.isTarget,
           targetValue: concept.pluginsData.targetConcepts!.isTarget
-            ? concept.pluginsData.targetConcepts!.value
+            ? concept.pluginsData.targetConcepts!
             : null,
           constraint: concept.pluginsData.conceptConstraints!.hasConstraint
             ? concept.pluginsData.conceptConstraints!
@@ -135,17 +135,24 @@ onMounted(() => {
       }
 
       const connections = modelData.value!.connections.map<Connection>(
-        (connection) => ({
-          id: connection.id,
-          value: connection.value,
-          sourceId: connection.sourceId,
-          targetId: connection.targetId,
-          isControl: connection.pluginsData.controlConnections!.isControl,
-          constraint: connection.pluginsData.connectionConstraints!
-            .hasConstraint
-            ? connection.pluginsData.connectionConstraints!
-            : null,
-        })
+        (connection) => {
+          const connectionValue =
+            adjustmentChromosome.value!.connectionValues.find(
+              (connectionValue) =>
+                connectionValue.connectionId === connection.id
+            )
+          return {
+            id: connection.id,
+            value: connectionValue?.value || connection.value,
+            sourceId: connection.sourceId,
+            targetId: connection.targetId,
+            isControl: connection.pluginsData.controlConnections!.isControl,
+            constraint: connection.pluginsData.connectionConstraints!
+              .hasConstraint
+              ? connection.pluginsData.connectionConstraints!
+              : null,
+          }
+        }
       )
       const connectionsMap = new Map()
       for (const connection of connections) {
@@ -156,12 +163,14 @@ onMounted(() => {
       for (const concept of concepts) {
         conceptState.set(concept.id, concept.value)
       }
+
       const connectionState = new Map()
       for (const connection of connections.filter(
         (connection) => connection.isControl
       )) {
-        conceptState.set(connection.id, connection.value)
+        connectionState.set(connection.id, connection.value)
       }
+
       const executor = new TimeSimulationExecutor(
         newValue,
         conceptsMap,

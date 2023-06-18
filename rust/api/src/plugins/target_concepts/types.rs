@@ -8,8 +8,14 @@ use rocket_okapi::JsonSchema;
 pub struct TargetConceptInChangeType {
     /// Whether concept is target
     pub is_target: bool,
-    /// Target concept desired value
-    pub value: Option<f64>,
+    /// Minimum target concept desired value
+    pub min_value: f64,
+    /// Whether to include minimum value in desired value
+    pub include_min_value: bool,
+    /// Maximum target concept desired value
+    pub max_value: f64,
+    /// Whether to include maximum value in desired value
+    pub include_max_value: bool,
 }
 
 /// Type of target concept
@@ -20,8 +26,14 @@ pub struct TargetConceptOutType {
     pub concept_id: i32,
     /// Whether concept is target
     pub is_target: bool,
-    /// Target concept desired value
-    pub value: Option<f64>,
+    /// Minimum target concept desired value
+    pub min_value: f64,
+    /// Whether to include minimum value in desired value
+    pub include_min_value: bool,
+    /// Maximum target concept desired value
+    pub max_value: f64,
+    /// Whether to include maximum value in desired value
+    pub include_max_value: bool,
     /// Concept update time
     pub updated_at: DateTime<Utc>,
 }
