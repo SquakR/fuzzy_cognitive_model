@@ -171,7 +171,7 @@ pub fn set_project_plugins(
 /// Set project user permissions
 #[openapi(tag = "projects")]
 #[post(
-    "/projects/<project_id>/user/<user_id>/permissions",
+    "/projects/<project_id>/users/<user_id>/permissions",
     format = "json",
     data = "<new_permissions>"
 )]
@@ -194,7 +194,7 @@ pub fn set_project_user_permissions(
 
 /// Invite user to project
 #[openapi(tag = "projects")]
-#[post("/projects/<project_id>/user/<user_id>/invite")]
+#[post("/projects/<project_id>/users/<user_id>/invite")]
 pub fn invite_user(project_id: i32, user_id: i32, user: User) -> PathEmptyResult {
     let conn = &mut db::establish_connection();
     project_user_services::invite_user(conn, &user, project_id, user_id).to_path_empty_result()
@@ -202,7 +202,7 @@ pub fn invite_user(project_id: i32, user_id: i32, user: User) -> PathEmptyResult
 
 /// Cancel user invitation to project
 #[openapi(tag = "projects")]
-#[post("/projects/<project_id>/user/<user_id>/cancel_invitation")]
+#[post("/projects/<project_id>/users/<user_id>/cancel_invitation")]
 pub fn cancel_invitation(project_id: i32, user_id: i32, user: User) -> PathEmptyResult {
     let conn = &mut db::establish_connection();
     project_user_services::cancel_invitation(conn, &user, project_id, user_id)
@@ -228,7 +228,7 @@ pub fn leave_project(project_id: i32, user: User) -> PathEmptyResult {
 
 /// Exclude user from project
 #[openapi(tag = "projects")]
-#[post("/projects/<project_id>/user/<user_id>/exclude")]
+#[post("/projects/<project_id>/users/<user_id>/exclude")]
 pub fn exclude_user(project_id: i32, user_id: i32, user: User) -> PathEmptyResult {
     let conn = &mut db::establish_connection();
     project_user_services::exclude_user(conn, &user, project_id, user_id).to_path_empty_result()

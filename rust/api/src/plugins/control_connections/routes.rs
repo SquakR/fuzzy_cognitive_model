@@ -11,7 +11,7 @@ use rocket_okapi::openapi;
 /// Change whether connection is control
 #[openapi(tag = "control connections")]
 #[patch(
-    "/connection/<connection_id>/change_is_control",
+    "/connections/<connection_id>/change_is_control",
     format = "json",
     data = "<is_control>"
 )]

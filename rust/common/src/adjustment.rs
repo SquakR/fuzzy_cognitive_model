@@ -529,7 +529,7 @@ impl TimeSimulation {
         )
     }
     fn calculate_error(state: &HashMap<i32, f64>, target_concepts: &[Arc<Concept>]) -> f64 {
-        target_concepts
+        let sum = target_concepts
             .iter()
             .map(|concept| {
                 let value = state[&concept.id];
@@ -546,7 +546,8 @@ impl TimeSimulation {
                 }
                 0.0
             })
-            .sum::<f64>()
+            .sum::<f64>();
+        (sum / target_concepts.len() as f64).sqrt()
     }
     fn normalize_value(value: f64) -> f64 {
         if value > 1.0 {

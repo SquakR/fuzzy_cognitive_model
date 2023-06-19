@@ -85,7 +85,7 @@ const useSetIsControl = (opts: LocalFetchFuncOptions) => {
     })
   const execute = async (connectionId: number, isControl: boolean) => {
     return await fetch(
-      `/connection/${connectionId}/change_is_control`,
+      `/connections/${connectionId}/change_is_control`,
       JSON.stringify(isControl)
     )
   }

@@ -74,7 +74,7 @@ const validationSchema = $yup.object({
     .number()
     .integer()
     .min(1)
-    .when('generationSize', ([generationSize], schema) =>
+    .when('maxGenerations', ([generationSize], schema) =>
       schema.max(generationSize)
     ),
   maxGenerations: $yup.number().integer().min(10).max(10000),
