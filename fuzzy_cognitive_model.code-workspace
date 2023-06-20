@@ -3,7 +3,7 @@
     {
       "path": "rust"
     },
-	{
+    {
       "path": "rust/common"
     },
     {
@@ -12,12 +12,12 @@
     {
       "path": "rust/wasm"
     },
-	{
+    {
       "path": "web"
     },
     {
       "path": "docs"
-    }
+    },
   ],
   "settings": {
     "files.eol": "\n",
@@ -70,6 +70,7 @@
       "ilike",
       "intlify",
       "ipnetwork",
+      "Kosko",
       "lettre",
       "materialdesignicons",
       "Mathjax",
@@ -84,6 +85,7 @@
       "Roboto",
       "schemars",
       "selectify",
+      "Silov",
       "SUBSTR",
       "Timestamptz",
       "trivago",
